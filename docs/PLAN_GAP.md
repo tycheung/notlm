@@ -7,23 +7,25 @@ Open decisions and epics. Slice ids live in `SLICE_BACKLOG.md`. Update status he
 | `boot*` | Repo bootstrap, CI stubs, package skeletons | **mostly done** | P0 — lockfile via npm; pnpm optional |
 | `core*` | Portable core: types, flow, slots, parse, dispatch | planned | Trimmed from VB director-guide lessons |
 | `react*` | React Host adapter: Provider, FAB, palette, spotlight, voice | planned | Feature flags |
-| `schema*` | Pack JSON Schema + Ajv validation | planned | |
-| `pack-template*` | `_template` + `demo-todo` packs | planned | Proves portability |
-| `mapper*` | Playwright DOM/a11y inventory → ControlInventory | planned | Not full process inference |
-| `extract*` | Static `wa dag generate` structured draft + checklist | planned | Routes/forms/guide-ids/notify hooks |
-| `author*` | Build-time LLM pack writing (BYO / Ollama / OpenAI-compat) | planned | **v1**; never in runtime |
-| `codegen*` | Pack → TS emit + annotation checklist | planned | |
-| `process*` | Jobs authoring + record-mode step drafts | planned | Hybrid human/agent |
-| `corpus*` | Corpus runner + seed generators from aliases | planned | Mandatory gate |
+| `schema*` | Pack JSON Schema + Ajv validation for `.workflow-assistant/` | planned | Config-only (ADR-002) |
+| `pack-template*` | `_template` + `demo-todo` as folder JSON shape | planned | Mirror host layout |
+| `mapper*` | Playwright DOM/a11y inventory → `inventory.json` | planned | Writes WA home only |
+| `extract*` | Static `wa dag generate` → structured-draft + checklist | planned | JSON only |
+| `author*` | Build-time LLM → `drafts/` then `--accept` into `pack/` | planned | **v1**; never runtime; JSON only |
+| `codegen*` | **Deprecated for TS emit** — checklist/annotation JSON only | planned | No `guideIds.ts` in v1 |
+| `process*` | Jobs authoring + record-mode traces under `traces/` | planned | Hybrid |
+| `corpus*` | Corpus runner over `pack/corpus.json` | planned | Mandatory gate |
 | `vb-pack*` | Victory Bowling reference pack extraction | later | Optional; do not block core |
 | `publish*` | npm package names, versioning, changelog | later | After demo-todo green |
 | `ci*` | ci_check parity, coverage floors, size gates | planned | Parallel to features |
 
 ## Open product decisions (need ADR when chosen)
 
-1. **Package name scope:** `@workflow-assistant/*` vs `@nimbus/assistant-*` vs scoped under Victory org — default working name `@workflow-assistant/*` until a naming ADR.
-2. **Guide id attribute:** stick with `data-guide-id` for VB parity vs configurable attribute name (prefer configurable defaulting to `data-guide-id`).
-3. **RuntimeContext shape:** pack-extends core base vs fully pack-defined zod/json-schema context — lean pack-defined fields + core-required `pathname` / `layoutPrefix?`.
-4. **Mapper auth:** how crawlers log into host apps (playwright storageState) — defer to mapper epic ADR.
-5. **Build-time LLM:** **Accepted in ADR-001** — BYO + Ollama + OpenAI-compatible; runtime forbidden.
-6. **Default author model:** leave unset (user chooses); document recommended small local models for Ollama in CONTRIBUTING later.
+1. **Package name scope:** `@workflow-assistant/*` vs `@nimbus/assistant-*` — default `@workflow-assistant/*`.
+2. **Guide id attribute:** configurable; default `data-guide-id` in `config.json`.
+3. **RuntimeContext shape:** host `getContext()` fills `data`; binders JSON reference `data.*` paths.
+4. **Mapper auth:** playwright `storageState` — defer to mapper epic ADR.
+5. **Build-time LLM:** **Accepted ADR-001**.
+6. **Host folder + JSON-only learnings:** **Accepted ADR-002** (`.workflow-assistant/`).
+7. **Binder DSL richness:** path/op/value + all/any first; extend only via schema ADR if needed.
+8. **Default author model:** leave unset (user chooses).

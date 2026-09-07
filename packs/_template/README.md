@@ -1,3 +1,6 @@
-# Pack template
+# Pack template (JSON-only)
 
-Copy this folder to start a product pack. Fill `pack.json`, then implement host binders and DOM `data-guide-id` mounts. Schema validation lands in `schema-001`.
+Mirrors the host install folder shape from ADR-002. On a real app, `wa init` creates
+`.workflow-assistant/` with the same files (`config.json` at home root; pack files under `pack/`).
+
+This repo keeps a copy under `packs/_template/` for schema fixtures.

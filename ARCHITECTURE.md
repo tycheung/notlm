@@ -3,23 +3,23 @@
 ## Layers
 
 ```text
-apps/demo                  → consumes react + demo-todo pack
-packages/react             → UI Host adapter (depends on core)
-packages/core              → pure TS runtime (no React, no DOM optional split)
-packages/mapper            → Playwright crawl (Node; may depend on core types only)
-packages/author            → Build-time LLM pack drafting (BYO / Ollama / OpenAI-compat); never imported by core/react runtime
-packages/codegen           → pack → TS emit (depends on schema)
-packages/schema            → JSON Schema + validate helpers
-packs/*                    → data + generated registries (no imports into core)
+host-app/
+  .workflow-assistant/     → ALL config + scan/author learnings (JSON only)  [ADR-002]
+  src/…                    → getContext, data-guide-id, notifyStepCompleted
+
+npm: @workflow-assistant/react  → UI Host (depends on core)
+npm: @workflow-assistant/core   → pure TS runtime; loads/evaluates pack JSON
+CLI: mapper / extract / author  → write JSON into .workflow-assistant/ only
+npm: @workflow-assistant/schema → JSON Schema for the folder format
 ```
 
 ### Import rules (enforced later by `boot-003` / `ci`)
 
-- `core` must not import `react`, `mapper`, `author`, `apps`, or any `packs/*` implementation code at runtime (packs are data loaded by host).
-- `react` may import `core` only among workspace packages — **never** `author`.
-- `mapper` / `codegen` / `author` may import `core` types + `schema`.
-- `apps/*` may import `react`, `core`, and a chosen pack.
+- `core` must not import `react`, `mapper`, `author`, or host app code.
+- `react` may import `core` only — **never** `author`.
+- `mapper` / `author` may import `core` types + `schema`; they write **files**, not TS into `src/`.
 - Default unit CI must not require a live LLM; author tests use fixtures.
+
 ## Size budgets
 
 | Soft | Hard |
@@ -33,30 +33,53 @@ Prefer extract/split over growing god files (`dispatchUserUtterance` lesson from
 ```text
 User utterance / palette pick
   → react Host
-  → core.dispatch(pack, session, ctx, utterance)
-  → nav resolve (pack)
+  → core.dispatch(packJson, session, ctx, utterance)
+  → nav resolve from controls.json
   → host.navigate + optional spotlight/flash
   → host save → notifyStepCompleted → queue advance
 ```
 
-## Pack artifact (logical)
+## Host folder (canonical — ADR-002)
 
 ```text
-pack/
-  pack.json          # id, version, feature defaults
-  flow.json          # steps DAG
-  controls.json      # guide ids + roles
-  intents.json       # aliases, meta, slots
-  glossary.json      # optional
-  corpus.json        # NLU cases
-  binders            # completeness fns — TS module supplied by host or generated stubs
+.workflow-assistant/
+  config.json
+  inventory.json
+  structured-draft.json
+  checklist.json
+  pack/
+    manifest.json
+    flow.json
+    controls.json
+    intents.json
+    binders.json      # declarative completeness DSL
+    corpus.json
+    glossary.json     # optional
+  drafts/             # LLM proposals before --accept
+  traces/             # optional record mode
 ```
 
-Exact on-disk shape evolves under `schema-*` slices; validate with Ajv.
+**Invariant:** scan / LLM assist / dag generate update **only** this tree (JSON). They do not emit application TypeScript learnings.
+
+## Binder DSL (sketch — locked in schema-* slices)
+
+```json
+{
+  "create_list": { "path": "data.listCount", "op": "gte", "value": 1 },
+  "add_item": {
+    "all": [
+      { "path": "data.listCount", "op": "gte", "value": 1 },
+      { "path": "data.itemCount", "op": "gte", "value": 1 }
+    ]
+  }
+}
+```
+
+Core evaluates these against `RuntimeContext.data` from the host’s `getContext()`.
 
 ## Coaching DOM
 
-Default attribute: `data-guide-id="<id>"` (configurable later via ADR).  
+Default attribute: `data-guide-id="<id>"` (set in `config.json` → `guideAttr`).  
 Spotlight and flash **only** query this contract.
 
 ## Voice

@@ -1,0 +1,14 @@
+{
+  "guideAttr": "data-guide-id",
+  "features": { "chat": true, "palette": true, "spotlight": true, "voice": true },
+  "paths": {
+    "inventory": "inventory.json",
+    "structuredDraft": "structured-draft.json",
+    "checklist": "checklist.json",
+    "pack": "pack/"
+  },
+  "author": {
+    "provider": null,
+    "note": "Set WA_LLM_* in env; do not put API keys in this file"
+  }
+}

@@ -101,12 +101,12 @@ Document lasting decisions in `ARCHITECTURE.md` / ADRs. These are normative for 
    (`SpeechRecognition` / `webkitSpeechRecognition`). **Supported product policy:
    Chrome, Edge, Safari.** **Firefox = type-only.** **No Whisper / cloud STT** in v1.
 6. **Pack vs core separation.** Domain steps, aliases, glossary, completeness bindings,
-   routes/modals live in **packs**. Core must stay product-agnostic and **LLM-free**.
+   routes/modals live as **JSON under the host `.workflow-assistant/` folder** (ADR-002).
+   Core stays product-agnostic and **LLM-free**. Do not generate learnings as app TypeScript.
 7. **Secrets** never in logs, test assertions, committed `.env`, or OpenAPI examples.
-   BYO LLM keys only via env/local config for the author CLI.
+   BYO LLM keys only via env/local config for the author CLI — not inside pack JSON.
 8. **Import DAG** respected — `apps` → `packages/react` → `packages/core`; codegen/author
-   do not import React; `react`/`core` must not import `author`. Packs do not import apps.
-   Enforce with an import-graph test.
+   do not import React; `react`/`core` must not import `author`. Enforce with an import-graph test.
 9. **Coverage and size gates** are quality signals — do not game them with hollow mocks
    or empty facades.
 
@@ -598,6 +598,7 @@ RECORD:   PROGRESS (done / notes / next)
 REFACTOR: every 4–6 slices or ~400 LOC soft cap
 VOICE:    Web Speech; Chrome/Edge/Safari; Firefox type-only; NO Whisper
 LLM:      build-time author only (BYO/Ollama/compat); NEVER runtime dispatch
+CONFIG:   .workflow-assistant/*.json only — no generated TS learnings
 WRITES:   coach + navigate + prefill only — no silent API creates
 ANCHORS:  data-guide-id only
 BLOCKED:  write PROGRESS → next unblocked slice

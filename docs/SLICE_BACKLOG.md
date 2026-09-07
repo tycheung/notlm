@@ -51,16 +51,17 @@ Status: `open` | `doing` | `done` | `blocked`.
 
 ---
 
-## P3 — Schema + packs
+## P3 — Schema + packs (JSON folder format)
 
 | ID | Title | Status | Acceptance |
 |----|-------|--------|------------|
-| `schema-001` | JSON Schema for pack (flow, controls, intents) | open | Ajv validates `_template` |
-| `schema-002` | Pack loader: JSON → runtime registries | open | Unit round-trip |
-| `pack-001` | `packs/_template` empty valid pack | open | Schema green |
-| `pack-002` | `packs/demo-todo` 3-step toy flow + aliases | open | Corpus ≥9 cases (3×3) |
-| `pack-003` | demo-todo completeness binders + nav stubs | open | Status eval unit green |
-| `corpus-001` | Shared corpus runner (Vitest) | open | Fails on alias drift |
+| `schema-001` | JSON Schema for `.workflow-assistant/pack/*` + config | open | Ajv validates template |
+| `schema-002` | Binder DSL schema (path/op/value, all/any) | open | Unit eval fixtures |
+| `schema-003` | Loader: folder → runtime PackRuntime | open | Unit round-trip |
+| `pack-001` | `wa init` creates `.workflow-assistant/` stub tree | open | Files match ADR-002 |
+| `pack-002` | `demo-todo` as folder JSON under packs/ or fixture WA home | open | Corpus ≥9 cases |
+| `pack-003` | demo-todo binders.json + nav in controls.json | open | Status eval unit green |
+| `corpus-001` | Corpus runner reads `pack/corpus.json` | open | Fails on alias drift |
 
 ---
 
@@ -71,9 +72,9 @@ Status: `open` | `doing` | `done` | `blocked`.
 | `mapper-001` | Types: ControlInventory, InventoriedControl | open | Types only + doc |
 | `mapper-002` | Playwright crawler: collect interactive a11y nodes | open | Fixture HTML → ≥N controls |
 | `mapper-003` | Propose `data-guide-id` slugs from role+name | open | Stable slug unit tests |
-| `mapper-004` | CLI `wa-mapper crawl --url` → inventory JSON | open | Writes file |
+| `mapper-004` | CLI crawl writes `.workflow-assistant/inventory.json` | open | Path from config |
 | `mapper-005` | Merge existing `data-guide-id` without overwrite | open | Unit merge |
-| `mapper-006` | Emit draft `controls` pack fragment | open | Schema-valid fragment |
+| `mapper-006` | Update `pack/controls.json` draft + checklist entries | open | Schema-valid; no TS emit |
 
 ---
 
@@ -85,7 +86,7 @@ Status: `open` | `doing` | `done` | `blocked`.
 | `extract-002` | Static scan: React Router / route tables → screen nodes | open | Fixture repo snapshot |
 | `extract-003` | Static scan: forms + submit handlers → write candidates | open | Fixture snapshot |
 | `extract-004` | Static scan: `data-guide-id` + `notifyStepCompleted` calls | open | Merges with inventory |
-| `extract-005` | CLI `wa dag generate --src` → draft + checklist JSON | open | Gaps listed for binders |
+| `extract-005` | CLI `wa dag generate` → structured-draft.json + checklist.json in WA home | open | Gaps listed for binders |
 | `extract-006` | Never invent requires without `confidence: low` mark | open | Unit policy test |
 
 ---
@@ -101,19 +102,19 @@ Status: `open` | `doing` | `done` | `blocked`.
 | `author-005` | Env/config loader (`WA_LLM_*`); refuse to read committed secrets files | open | Unit |
 | `author-006` | Prompt builder: inventory + structured draft + redacted excerpts | open | Redaction unit tests |
 | `author-007` | Parse model JSON → pack draft; schema validate | open | Invalid JSON → checklist error |
-| `author-008` | CLI `wa pack author` writes `packs/…/draft/` + checklist | open | Docs in CONTRIBUTING |
-| `author-009` | Merge draft → pack requires `--accept` / explicit step | open | No silent overwrite |
+| `author-008` | CLI `wa pack author` writes `drafts/<id>/` + updates checklist | open | Under WA home only |
+| `author-009` | `--accept` merges draft JSON into `pack/` (no TS) | open | No silent overwrite |
 | `author-010` | Integration doc: Ollama + one cloud BYO example | open | SECURITY + CONTRIBUTING |
 
 ---
 
-## P5 — Codegen
+## P5 — Annotation assist (not TS codegen)
 
 | ID | Title | Status | Acceptance |
 |----|-------|--------|------------|
-| `codegen-001` | Emit `guideIds.ts` + controls const from pack | open | Snapshot test |
-| `codegen-002` | Emit host annotation markdown checklist | open | File contains each control id |
-| `codegen-003` | Wire `pnpm wa generate --pack demo-todo` | open | Docs in CONTRIBUTING |
+| `annotate-001` | checklist.json items for missing `data-guide-id` mounts | open | Machine-readable list |
+| `annotate-002` | Optional markdown export of checklist for PRs | open | Docs only; still no src TS emit |
+| `annotate-003` | Remove/avoid `guideIds.ts` generation from v1 scope | open | PLAN/ADR-002 aligned |
 
 ---
 

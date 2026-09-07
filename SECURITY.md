@@ -20,6 +20,7 @@
 - Do not commit keys; do not log raw API keys or full prompts that may contain secrets.
 - Redact `.env`, private keys, and obvious secret patterns before sending source excerpts to a model.
 - Prefer local Ollama when code must not leave the machine; document that cloud BYO implies data leaves the host.
+- Host **learnings/config** live under `.workflow-assistant/` (JSON). Do not store API keys there; use env or gitignored `*.local.json`.
 
 ## Reporting
 

@@ -35,19 +35,23 @@ node scripts/ci/ci_check.mjs
 | `@workflow-assistant/mapper` | Playwright control inventory |
 | `@workflow-assistant/author` | Build-time LLM pack drafts (BYO / Ollama / OpenAI-compat) |
 
-## Build-time LLM (optional)
+## Host project layout
 
-Runtime packages do not call LLMs. To draft a pack:
+After install, developers manage **one folder** (default `.workflow-assistant/`):
 
-```bash
-# after inventory + wa dag generate exist:
-export WA_LLM_PROVIDER=ollama
-export WA_LLM_BASE_URL=http://127.0.0.1:11434
-export WA_LLM_MODEL=llama3.2
-# wa pack author …   # lands in author-* slices
+```text
+.workflow-assistant/
+  config.json
+  inventory.json
+  structured-draft.json
+  checklist.json
+  pack/{manifest,flow,controls,intents,binders,corpus}.json
+  drafts/   traces/
 ```
 
-See `docs/adr/001-build-time-llm-author.md` and `SECURITY.md`.
+Scan / `dag generate` / LLM `pack author` only write JSON here (ADR-002). LLM keys stay in env, not in this folder.
+
+See `docs/adr/001-build-time-llm-author.md`, `docs/adr/002-host-config-folder.md`, and `SECURITY.md`.
 
 See `tests/README.md`. Corpus changes are required when intents change.
 
