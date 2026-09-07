@@ -1,0 +1,13 @@
+{
+  "name": "@workflow-assistant/demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@workflow-assistant/core": "workspace:*",
+    "@workflow-assistant/react": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

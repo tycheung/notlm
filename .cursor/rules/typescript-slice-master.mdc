@@ -1,0 +1,599 @@
+---
+description: >
+  FULL master Cursor constitution for the Workflow Assistant TypeScript monorepo —
+  micro-slice OS, plan/gate/DoD methodology, pack + runtime + codegen boundaries.
+  Copy into .cursor/rules/ (alwaysApply) or keep at repo root as the canonical agent
+  playbook. Steal operating system from the Python sibling; do not import product
+  internals from Victory Bowling into packs other than the VB reference pack.
+alwaysApply: true
+---
+
+# TypeScript Workflow Assistant — Master Cursor Rules
+
+You are building a **production TypeScript monorepo** for a **Workflow Assistant**
+platform (domain packs + runtime coach + codegen) using a proven micro-slice operating
+system: **one micro-slice at a time**, tests with every change, local CI parity before
+“done”, explicit refactor passes before modules grow unwieldy, and a durable paper trail
+(`PLAN` → `SLICE_BACKLOG` → `PROGRESS` → ADRs).
+
+Steal **operating system**, not product code. This file is the constitution for the
+**assistant** repo. Adapt package names and budgets; do not paste Victory Bowling app
+pages into core. VB lives only as an optional **reference pack** + host adapter.
+
+**Language / stack:** TypeScript (strict), Node for tooling, React adapter for UI
+surfaces. Not Python. Not Whisper. Not LLM-primary NLU in v1.
+
+---
+
+## Reference methodology (copy this operating system)
+
+### TypeScript monorepo toolchain
+
+- **pnpm** workspace (preferred) or npm workspaces under `packages/`; single root
+  `package.json` + locked `pnpm-lock.yaml` / `package-lock.json`.
+- **Micro-slice loop** (product runtime and human agents):  
+  `plan → implement → verify → critique → test → gate`  
+  Bounded **files + LOC** per slice; optional Playwright smoke before gate when the
+  slice touches host UI / coach surfaces.
+- **Gates are real:** `scripts/ci/ci_check.sh|.ps1` mirrors GitHub Actions — ESLint,
+  Prettier check (or ESLint formatting policy), `tsc --noEmit`, Vitest coverage floors,
+  Playwright tagged smoke when required, LOC / module-size / import-boundary gates,
+  NLU corpus runner, pack schema validation.
+- **Architecture enforced in CI:** package import graph tests, facade export contracts,
+  pack JSON Schema validation, module-size limits — not honor-system comments.
+- **Refactor cadence:** extract / centralize / migrate / trim / split after green
+  features; prefer **net LOC reduction**; ratchet `loc_baseline.json` only with
+  justification.
+- **Typing:** `strict: true` in root `tsconfig`; path aliases via `tsconfig` references;
+  no `any` in production packages without an ADR; expand typed islands — never disable
+  strict overnight on the whole tree.
+- **Tests:** themed folders (`unit` / `integration` / `e2e`); behavior names;
+  **composite contract matrices** (thin runner ≤200 LOC + `*_matrix.ts` / corpus files);
+  mock only external boundaries; coverage floors (global ~75%, core packages ~85%).
+
+### Slice ceremony & planning docs
+
+- **Docs of record:** normative plan + `PLAN_GAP` (epics) + `SLICE_BACKLOG` (ordered
+  micro-slices) + `PROGRESS` (session ledger). Agent reads PROGRESS first every turn.
+- **Non-negotiables:** no stubs as done; ≤3 production files / ≤120 net LOC per slice;
+  tests land with the slice; full Definition of Done; actualize the plan (no silent cuts).
+- **Slice Plan** stated **before** editing; stop when DoD met — no “while I’m here”.
+- **Every 4–6 slices:** explicit **refactor slice** (behavior-preserving).
+- **Blocked →** write PROGRESS, take next **unblocked** slice.
+- **Ship gates** for integration surfaces (React Host, Playwright live coach) — unit
+  green alone is not shipped for UI coach slices.
+
+**Your job:** run the **slice ceremony** with the **TypeScript toolchain** above.
+
+---
+
+## Product shape (this repo)
+
+Target layout (create as slices require — no empty stub packages):
+
+```text
+packages/core/        # flow eval, slots/queue, dispatch skeleton, types (no React)
+packages/react/       # Provider, FAB, CommandPalette, Spotlight, field flash, Web Speech
+packages/codegen/     # pack → TS registries + checklists
+packages/schema/      # JSON Schema for domain packs
+packs/_template/      # empty pack scaffold
+packs/<product>/      # flow, controls, intents, glossary, corpus (data + generated)
+apps/demo/            # second host proving portability
+docs/                 # PLAN, SLICE_BACKLOG, PROGRESS, ADRs
+scripts/ci/           # ci_check.sh / ci_check.ps1
+```
+
+### Product invariants (never violate)
+
+Document lasting decisions in `ARCHITECTURE.md` / ADRs. These are normative for v1:
+
+1. **Deterministic NLU first.** Rule-based aliases / regex / fuzzy match + corpus gates.
+   LLM-as-primary NLU is **out of scope** until an ADR explicitly opts in.
+2. **No silent writes.** Assistant navigates, spotlights, prefills, queues — host forms /
+   save paths perform mutations. No “create entity via hidden API” from the coach.
+3. **Anchored UI only.** Coach targets use stable `data-guide-id` (or pack-declared
+   equivalent). No production heuristics that click by visible text alone.
+4. **Shared context for chat + palette.** Availability / completeness / blocked reasons
+   come from the same `RuntimeContext` snapshot + flow evaluators.
+5. **Voice is progressive enhancement.** Web Speech API only
+   (`SpeechRecognition` / `webkitSpeechRecognition`). **Supported product policy:
+   Chrome, Edge, Safari.** **Firefox = type-only.** **No Whisper / cloud STT** in v1.
+6. **Pack vs core separation.** Domain steps, aliases, glossary, completeness bindings,
+   routes/modals live in **packs**. Core must stay product-agnostic.
+7. **Secrets** never in logs, test assertions, committed `.env`, or OpenAPI examples.
+8. **Import DAG** respected — `apps` → `packages/react` → `packages/core`; codegen does
+   not import React; packs do not import apps. Enforce with an import-graph test.
+9. **Coverage and size gates** are quality signals — do not game them with hollow mocks
+   or empty facades.
+
+---
+
+## Docs of record (create if missing)
+
+| Doc | Role |
+|-----|------|
+| `docs/PLAN.md` or `.local/PLAN.md` | Normative scope, phases, product invariants |
+| `docs/PLAN_GAP.md` or `.local/PLAN_GAP.md` | Epic ledger (`core*`, `react*`, `pack*`, …) |
+| `docs/SLICE_BACKLOG.md` or `.local/SLICE_BACKLOG.md` | Ordered micro-slices (≤3 files / ≤120 LOC) |
+| `docs/PROGRESS.md` or `.local/PROGRESS.md` | Current slice, last completed, blockers, next id |
+| `docs/adr/NNN-title.md` | Lasting decisions (Status / Context / Decision / Consequences) |
+| `ARCHITECTURE.md` | Layer diagram, import rules, size/LOC playbook, pack contract |
+| `CONTRIBUTING.md` | Setup, CI parity, conventions |
+| `SECURITY.md` | Secrets, reporting, production checklist |
+| `tests/README.md` | Test layout, tags/markers, coverage policy |
+| `.cursor/rules/*.mdc` | Engineering constitutions (this file + siblings) |
+
+Agent ceremony (slice ids, gate scorecards) stays in planning docs — not end-user product
+docs unless the behavior ships for humans.
+
+---
+
+## Non-negotiables
+
+1. **No stubs in product paths.** No empty bodies, `throw new Error('Not implemented')`
+   shipped as done, fake OK returns, or `if (false)` scaffolds. Test doubles only under
+   `tests/`, `**/__mocks__/`, or env-gated fakes.
+2. **One micro-slice at a time.** Default budget: **≤3 production files**, **≤120 net LOC**
+   (exclude tests and planning-doc updates). Hotfix: prefer **1 file / ≤80 LOC**. Need
+   more → **split slices**, never blow the budget in one turn.
+3. **Tests land with the slice.** Behavior without tests is incomplete.
+4. **Definition of Done (all must pass)** — see scorecard below.
+5. **Actualize the plan.** Do not silently shrink scope or invent an alternate product.
+   Blocked → record in PROGRESS, take next unblocked slice. Cut scope only on **explicit
+   user order**.
+6. **Local CI parity before “done”.** `scripts/ci_check.sh` / `ci_check.ps1` (or project
+   equivalent) is the source of truth — not “vitest passed for one file on my machine”.
+
+---
+
+## Start of every agent turn
+
+1. Read `PROGRESS` (current slice / blockers).
+2. Read the next open item in `SLICE_BACKLOG` (or the slice the user named).
+3. Skim the relevant section of `PLAN` / `PLAN_GAP` / `ARCHITECTURE.md`.
+4. State a **Slice Plan** before editing:
+
+```text
+SLICE: <id> — <title>
+GOAL: <one sentence>
+TARGET_PATHS: <explicit list>
+ACCEPTANCE:
+  - <observable criterion>
+  - <observable criterion>
+TESTS: <test paths to add/update>
+OUT OF SCOPE: <what this slice will not do>
+```
+
+5. Implement **only** that slice. Stop when DoD is met. No drive-by features.
+
+---
+
+## Slice protocol
+
+### Cadence
+
+```text
+plan → implement → verify (vs ACCEPTANCE) → test → gate → update PROGRESS
+```
+
+Optional mature loop, when the repo has critique/e2e stages:
+
+```text
+slice.plan → slice.implement → slice.verify → slice.critique → slice.test → slice.e2e → slice.gate
+```
+
+Each stage should leave observable metadata when tooling exists: `slice_id`, `target_paths`,
+`acceptance_criteria`, `tests_passed`, `diff_unified`. Human agents follow the same order
+even without an orchestrator.
+
+### Default diff budget
+
+| Kind | Max production files | Max net LOC |
+|------|---------------------:|------------:|
+| Feature / fix slice | 3 | 120 |
+| Hotfix | 1 | 80 |
+| Refactor slice | split if >3 files or >120 LOC into chained refactor slices | — |
+
+### Replan triggers
+
+Stop and replan (smaller slice) if you need:
+
+- New top-level package layout or root `package.json` / tsconfig project-references restructure
+- More than **3 production files** touched
+- Public API redesign without a prior ADR
+- A dependency that is not built yet
+- New CI gate infrastructure mixed into a feature slice
+- Mixing **core** changes with **VB pack** content in one slice without necessity
+
+Prefer **vertical thin threads** (“parse intent X + one Vitest case”) over horizontal
+unfinished layers (“scaffold entire React Host”).
+
+### Refactor cadence
+
+- **Every 4–6 completed slices** (or when a module approaches **~400 LOC** soft cap):
+  schedule an explicit **refactor slice** — behavior-preserving; tests green before/after.
+- Still needs a Slice Plan; label id `refactor:` / `chore:` in commits.
+- Prefer **net LOC reduction**; do not grow repo LOC without justification.
+- Typical refactor commits: **Extract / Centralize / Migrate / Trim / Split** — one concern
+  per commit.
+- Soft module cap **~400 LOC**; hard stop **1000 LOC** (CI-enforced). Prefer cohesive
+  modules over pointless file-count splitting — but **split before** hitting 1000.
+
+### When the user says "continue" / "next"
+
+1. Open PROGRESS + SLICE_BACKLOG.
+2. Take lowest open slice id that is **not** blocked.
+3. Emit Slice Plan → implement → test → gate → update PROGRESS → **stop** and summarize.
+
+Lead the response with: **slice id completed**, **what to run**.
+
+---
+
+## Definition of Done (scorecard)
+
+All must pass before marking the slice done in PROGRESS:
+
+| # | Criterion |
+|---|-----------|
+| 1 | Acceptance criteria met with **real** behavior (no stubs) |
+| 2 | New/updated unit (and contract / corpus when applicable) tests pass |
+| 3 | ESLint clean on touched tree (`pnpm lint` / project script) |
+| 4 | `tsc --noEmit` clean for affected packages / project references |
+| 5 | Relevant `pnpm test` / `vitest` paths green; never claim done if they fail |
+| 6 | Pack schema / import-boundary / module-size / LOC gates green if present |
+| 7 | NLU corpus runner green if intents / aliases / meta patterns changed |
+| 8 | Coach UI / Host surface changed → Playwright tagged smoke as project requires |
+| 9 | `PROGRESS` updated (slice id → done, notes, next id) |
+| 10 | Product invariants intact (no Whisper, no silent writes, anchors only, etc.) |
+
+### What “done” means
+
+Wrong: “Added `AssistantProvider` that throws `Not implemented` and a TODO.”  
+Right: “Dispatch handles meta intent X; Vitest corpus case green; PROGRESS updated.”
+
+Wrong: “FAB scaffolded.”  
+Right: “FAB opens dialog; typed utterance calls dispatch; Playwright `@guide-nlu` smoke
+green; `ci_check` green.”
+
+---
+
+## Anti-patterns (reject)
+
+- Whole-repo rewrites or “foundation” PRs with no tested increment
+- Stubs / `NotImplementedError`-equivalents / fake OK shipped as done
+- Silent scope cuts or inventing alternate product vision
+- Drive-by refactors mixed into feature slices (split them)
+- Implementing later phases before listed prerequisites in `SLICE_BACKLOG`
+- Repo-wide `eslint --fix` that destroys intentional facade re-exports
+- Duplicating the full unit suite in multiple CI steps (one authoritative Vitest run)
+- Bulk AI restating comments or redundant module JSDoc that only narrates code
+- Mocking network / DOM **only** to inflate coverage on adapters omitted from the unit
+  denominator — extend **integration / Playwright** instead
+- Hollow `index.ts` barrels that re-export nothing real
+- Editing the Victory Bowling app monorepo to “make the assistant compile” without an ADR
+  (consume VB as a **pack/host adapter**, or copy fixtures — don’t create cycles)
+- Adding Whisper, Deepgram, or server STT “just for Firefox”
+- LLM call in the default intent path without an ADR
+- Clicking buttons by visible label in production coach code instead of `data-guide-id`
+- Shipping a permanent checklist side panel when the product is chat + palette
+
+---
+
+## Tooling & project layout
+
+### Setup (document in CONTRIBUTING.md)
+
+```bash
+pnpm install
+cp .env.example .env   # if needed for demo host only
+pnpm build             # project references / tsc -b
+pnpm test
+pnpm lint
+```
+
+- **Node:** pin in `.nvmrc` / `engines` (e.g. `>=20`); CI uses the pinned major.
+- **Single root workspace** with `packages/*`, `packs/*`, `apps/*`.
+- **TypeScript project references** for build order (`core` → `react` / `codegen`).
+- **Lockfile:** commit the lockfile; CI uses `pnpm` (or npm) consistently.
+- **Optional deps:** Playwright browsers installed in CI / docs — never required for pure
+  unit packages to import.
+- Ship `package.json` `"types"` / dual ESM+CJS only if an ADR requires it; default modern
+  ESM + types is fine for an internal platform.
+
+### Standard dev dependencies (baseline)
+
+```json
+{
+  "devDependencies": {
+    "typescript": ">=5.4",
+    "vitest": ">=2",
+    "@vitest/coverage-v8": ">=2",
+    "eslint": ">=9",
+    "prettier": ">=3",
+    "playwright": ">=1.40",
+    "@playwright/test": ">=1.40",
+    "ajv": ">=8"
+  }
+}
+```
+
+Add `@typescript-eslint/*` matching the ESLint major. Prefer **Vitest** for unit/corpus;
+**Playwright** for host coach smoke. Do not introduce Jest unless an ADR says so.
+
+### Root scripts (baseline)
+
+```json
+{
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint packages apps packs --max-warnings=0",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "ci": "node scripts/ci/ci_check.mjs"
+  }
+}
+```
+
+---
+
+## Local CI gate (run before every PR / slice DoD)
+
+Provide `scripts/ci/ci_check.sh` and `scripts/ci/ci_check.ps1` (or `ci_check.mjs`) that
+mirror GitHub Actions. Guard drift with `tests/unit/ci-check-parity.test.ts`.
+
+### Minimum blocking gate
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test -- --coverage
+# coverage floors enforced in vitest config / ci script (global ≥75%, core ≥85%)
+pnpm exec vitest run packs/**/corpus*.ts packages/core   # corpus if separate
+```
+
+### Recommended maturity gates (add as the repo grows)
+
+| Gate | Purpose |
+|------|---------|
+| Fast PR gate | ESLint + typecheck + unit (no Playwright) |
+| Import graph / boundary | `apps` ↛ sideways into packs internals; `core` ↛ `react` |
+| Module size | All `packages/**/*.ts` ≤ **1000** lines |
+| LOC budget | Cap total non-blank lines; ratchet baseline down on refactors |
+| Composite / corpus size | Corpus runners thin; cases in dedicated corpus modules |
+| Pack JSON Schema | Every pack validates before codegen |
+| Facade export tests | Package `index.ts` public API stays intentional |
+| Playwright `@guide-nlu` | Coach smoke when Host / FAB / palette / anchors change |
+| Complexity gate | Nesting/branch limits on dispatch hot paths |
+
+**Do not** re-run the full unit suite inside a matrix “streams” job if the unit job already
+owns coverage — one authoritative Vitest run.
+
+Optional flags:
+
+```bash
+./scripts/ci/ci_check.sh --with-e2e
+./scripts/ci/ci_check.sh --with-demo-host
+./scripts/ci/ci_check.sh --skip-playwright
+```
+
+---
+
+## Testing rules
+
+### Layout
+
+| Directory | Purpose |
+|-----------|---------|
+| `tests/unit/` or `packages/*/src/**/*.test.ts` | Pure helpers, flow, dispatch, corpus — default CI bulk |
+| `tests/integration/` | Node integration (schema codegen round-trip, etc.) |
+| `tests/e2e/` | Playwright journeys against demo host or adapter |
+| `tests/fixtures/` / `packs/*/corpus/` | Golden JSON, utterance cases — **not** loose orphans |
+| `**/composite_*_matrix.ts` | Multi-case contract tables + thin runners ≤200 LOC |
+
+Add new tests under themed folders or colocated `*.test.ts` next to units — pick one layout
+in `ARCHITECTURE.md` and enforce with a layout test.
+
+### Naming & style
+
+- Name tests for **behavior**: `dispatch_go_back_reopens_prior_step`, not `testIndex`.
+- One logical assertion cluster per test; use `it.each` / tables for contract matrices.
+- **NLU corpus:** every step alias + meta intent gets clean / slang / typo / truncated-STT
+  cases (pattern: Victory `GUIDE_NLU_CORPUS`). Changing intents without corpus updates
+  fails DoD.
+- Mock only **external boundaries** (network, cloud). Prefer pure functions in `core` so
+  most tests need no mocks.
+- Critical paths (availability deny, queue advance, pack validation, dispatch order) stay
+  well-tested — do not game coverage with hollow mocks.
+- Playwright:
+  - Drive **typed** chat; do **not** depend on real microphone STT.
+  - Prefer `data-guide-id` and roles over brittle CSS.
+  - For Ctrl/Cmd+K, dispatch a synthetic `KeyboardEvent` when the browser chrome steals
+    the shortcut (Chromium omnibox lesson from VB).
+  - Tag coach tests (e.g. `@guide-nlu`) so CI can include/exclude.
+
+### Coverage policy
+
+- **Global floor:** 75% line coverage on default unit subset (adjust per project).
+- **Core package floors:** 85% for `packages/core` (and `schema` once non-trivial).
+- **Omit** from denominator: demo shell chrome, generated pack output (test generators
+  instead), files covered **only** by Playwright (document omit list).
+- Never claim done if the relevant Vitest / Playwright command fails.
+
+### Tests-first slice landing order
+
+1. `feat(<area>): …` — minimal **real** behavior  
+2. `test: cover …` — same PR or immediate follow-up slice  
+3. `fix(ci): …` — gate green after behavior lands  
+4. `refactor(<area>): …` — extract after 4–6 slices, tests unchanged  
+
+---
+
+## TypeScript conventions
+
+### Style
+
+- **Line length:** 100 (Prettier / ESLint).
+- **Imports:** ordered; no wildcard imports in production (controlled `index.ts` barrels
+  are the exception — do not auto-fix them into emptiness).
+- Prefer `type` imports for type-only symbols when the project enables
+  `verbatimModuleSyntax` / `isolatedModules` rules.
+- **Early returns** over deep nesting; guard clauses for validation.
+- **Secrets** never logged, never in test assertions.
+- Comments explain **non-obvious business logic** only — not what the code literally does.
+- Prefer small pure functions in `core`; React hooks/components stay thin adapters.
+
+### Module & package rules
+
+- **Soft cap ~400 LOC** per module; **hard stop 1000 LOC** (CI enforced).
+- **Dependency direction:** `apps/*` → `packages/react` → `packages/core`;  
+  `packages/codegen` → `packages/schema` + read packs; **never** `core` → `react`.
+- **Thin facades:** package `index.ts` re-exports stable public API; facade export tests
+  after changing barrels.
+- Create packages as slices require them — **no empty stub packages**.
+
+### Error handling
+
+- Typed error codes / result unions for dispatch and pack validation where useful.
+- Never bare `catch (e) {}`; never swallow exceptions in product paths.
+- Host adapters map failures to user-visible chat copy — no stack traces in the FAB.
+
+### React adapter rules (`packages/react`)
+
+- Functional components + hooks only.
+- No business NLU inside JSX — call into `core` dispatch.
+- Spotlight / flash query only pack-declared guide ids.
+- Web Speech wrapper: feature-detect; degrade to type-only; `lang` default `en-US`.
+
+---
+
+## Domain pack contract (assistant-specific)
+
+A pack must be able to declare (names illustrative; freeze via JSON Schema + ADR):
+
+| Object | Role |
+|--------|------|
+| Flow steps | id, title, kind, requires[], prefers[], keywords[], hideWhen[] |
+| Controls | stable guide ids, roles (cta/field/tab/nav/row) |
+| Nav skips | step → path template, modal key, spotlight id |
+| Intents | step aliases, meta intents, slot schemas |
+| Completeness | bindings against RuntimeContext |
+| Glossary / lexicons | explain-field and domain lookup |
+| Corpus | utterance → expected intent/step/slots |
+
+**Wire-up checklist when adding a step** (DoD for pack slices):
+
+1. Flow step + requires  
+2. Completeness binding  
+3. Nav-skip resolve  
+4. Intent aliases + corpus cases  
+5. Guide ids + host annotation instructions / demo host mounts  
+6. `notifyStepCompleted` (or equivalent) on the save path that finishes the step  
+
+---
+
+## Security
+
+- API keys / demo credentials in env only — never committed.
+- `pnpm audit` (or `npm audit`) blocking on PRs once past bootstrap; document allowlists.
+- No audio upload pipelines in v1 (reinforces no Whisper).
+- Audit logs if added later: principal + action + decision — **not** raw secrets.
+- See `SECURITY.md` for reporting and production checklist.
+
+---
+
+## Commit message conventions
+
+| Prefix | When |
+|--------|------|
+| `feat(scope):` | New behavior |
+| `fix(scope):` | Bug fix |
+| `test:` | Test-only coverage (often follows feat in same PR) |
+| `refactor(scope):` | Behavior-preserving restructure |
+| `chore:` | CI, deps, baselines, non-behavior metadata |
+| `docs:` | ADRs, ARCHITECTURE, operator docs |
+
+Body: **why** and observable outcome, not a file list. One slice ≈ one commit when possible.
+Do not create commits unless the user asks.
+
+---
+
+## Fresh repo bootstrap
+
+1. Copy this file to `.cursor/rules/typescript-slice-master.mdc` (`alwaysApply: true`)
+   **or** keep under `assistant/` and point the assistant repo agents at it.
+2. Scaffold: root `package.json` + pnpm workspace, `packages/core`, `tests` or colocated
+   tests, `scripts/ci/ci_check.*`, `docs/PROGRESS.md`, `docs/SLICE_BACKLOG.md`,
+   `docs/PLAN.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `SECURITY.md`.
+3. First slice: **`boot-001`** — `packages/core` importable + one real pure function +
+   one Vitest + lint/typecheck/test wired in CI script.
+4. Second slice: **`boot-002`** — import graph test stub + module size test stub.
+5. Third slice: **`boot-003`** — pack JSON Schema stub + one `_template` pack that
+   validates.
+6. Fourth slice: **`boot-004`** — `PROGRESS` / `SLICE_BACKLOG` / ADR-000 filled for the
+   assistant north star (workflow map + control map + intent layer + runtime coach).
+
+Keep `python-slice-master.mdc` only as a **cross-language OS reference** — do not run a
+Python toolchain in this repo unless an ADR adds a Python codegen sidecar.
+
+---
+
+## Sibling rules (split when the repo grows)
+
+Keep this master short enough to load every turn; peel concerns into focused `.mdc` files:
+
+| Rule | Concern |
+|------|---------|
+| `slice-protocol.mdc` | Plan → implement → verify → test → gate ceremony only |
+| `testing-dod.mdc` | DoD scorecard + Vitest/Playwright/coverage/corpus policy |
+| `typescript-standards.mdc` | Style, strict TS, React adapter rules |
+| `package-boundaries.mdc` | Import DAG + facade rules + pack/core split |
+| `assistant-invariants.mdc` | No Whisper, no silent writes, anchors, voice browser policy |
+| `ci-gates.mdc` | `ci_check` matrix + stream profiles |
+
+Split into separate always-on / glob-scoped rules once a single file becomes noisy.
+
+---
+
+## Communication
+
+- Be concise. Lead with **slice id completed** and **commands to run**  
+  (`pnpm test …`, `pnpm exec playwright test …`, `./scripts/ci/ci_check.sh`).
+- Blockers → PROGRESS with explicit “blocked by” and next unblocked id.
+- Product/architecture decisions → ADR when chosen; do not ask permission to follow this
+  constitution — **do** ask when PLAN open decisions must be chosen.
+- User-facing behavior → update shipped `docs/`, not only planning docs.
+- When blocked on missing prerequisites, record it and move to the next unblocked slice —
+  do not idle inventing scope.
+
+---
+
+## Priority order (assistant)
+
+1. Make the **vertical thin path** work (one real core feature + tests + gate).
+2. Enforce **pack/core boundaries and size** so the tree stays reviewable.
+3. Land **schema + template pack + corpus runner** before deep React chrome.
+4. Add **React Host surfaces** (FAB / palette / spotlight) after core dispatch is stable.
+5. Add **Playwright coach smoke** after Host mounts.
+6. Schedule **refactor slices** before deepening features on oversized modules.
+7. Extract VB as a **reference pack** only after core + demo pack prove portability.
+
+---
+
+## Quick reference card
+
+```text
+READ:     PROGRESS → SLICE_BACKLOG → PLAN section
+PLAN:     emit Slice Plan (paths, acceptance, tests, out-of-scope)
+BUDGET:   ≤3 files / ≤120 LOC (hotfix ≤1 / ≤80)
+BUILD:    real behavior only — no stubs
+TEST:     Vitest behavior names; corpus for intents; Playwright typed coach smoke
+GATE:     eslint + tsc + vitest(+cov) + schema/import/size + e2e when required
+RECORD:   PROGRESS (done / notes / next)
+REFACTOR: every 4–6 slices or ~400 LOC soft cap
+VOICE:    Web Speech; Chrome/Edge/Safari; Firefox type-only; NO Whisper
+WRITES:   coach + navigate + prefill only — no silent API creates
+ANCHORS:  data-guide-id only
+BLOCKED:  write PROGRESS → next unblocked slice
+```

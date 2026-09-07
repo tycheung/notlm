@@ -1,0 +1,24 @@
+{
+  "name": "@workflow-assistant/react",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@workflow-assistant/core": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

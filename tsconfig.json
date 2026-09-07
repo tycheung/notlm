@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/schema" },
+    { "path": "packages/react" },
+    { "path": "packages/mapper" },
+    { "path": "packages/codegen" },
+    { "path": "apps/demo" }
+  ]
+}
