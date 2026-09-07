@@ -14,10 +14,11 @@ Users want v1 support for **any credentials they bring**, including **Ollama** a
 
 1. **Runtime** (`core`, `react` Host): deterministic NLU only; **no LLM client dependency**.
 2. **Build-time** package `@workflow-assistant/author` (CLI): optional LLM drafts pack JSON from inventory + structured extract + redacted source excerpts.
-3. Providers: **Ollama**, **OpenAI-compatible HTTP** (OpenAI, Azure compat, Groq, Together, LM Studio, vLLM, LocalAI, etc.) via `baseUrl` + `apiKey?` + `model`.
-4. Credentials only from env / local user config; never committed; never logged.
-5. LLM output is always a **draft** under schema validation + checklist; accepting into a pack requires explicit merge / validate / corpus.
-6. Default unit CI uses **fixtures/mocks** for author HTTP — live LLM is optional integration.
+3. **Intent tuning (v1):** users author `scenarios.json` (utterance → expected step/meta/slots). Optional `wa intents tune` uses the same BYO/Ollama providers to propose `intents.json` / `corpus.json` updates. Acceptance requires deterministic corpus/`wa intents check` green.
+4. Providers: **Ollama**, **OpenAI-compatible HTTP** (OpenAI, Azure compat, Groq, Together, LM Studio, vLLM, LocalAI, etc.) via `baseUrl` + `apiKey?` + `model`.
+5. Credentials only from env / local user config; never committed; never logged.
+6. LLM output is always a **draft** under schema validation + checklist; accepting into a pack requires explicit merge / validate / corpus.
+7. Default unit CI uses **fixtures/mocks** for author HTTP — live LLM is optional integration. Scenario checks are **deterministic** and belong in default CI.
 
 ## Consequences
 

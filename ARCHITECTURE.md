@@ -44,6 +44,7 @@ User utterance / palette pick
 ```text
 .workflow-assistant/
   config.json
+  scenarios.json           # labeled utterances for intent tuning (ADR-001)
   inventory.json
   structured-draft.json
   checklist.json

@@ -45,6 +45,7 @@ It **is**:
 | G4 | **Mapper / generator** — Playwright-based (and later static) inventory of interactive controls → draft control map + annotation suggestions |
 | G5 | **Process authoring assist** — structured extractor + checklist; hybrid jobs/record mode into a draft flow DAG |
 | G5b | **Build-time LLM pack writing (v1)** — optional LLM drafts pack **JSON** from inventory + source excerpts; **never** used at runtime; BYO credentials; Ollama / OpenAI-compatible / common cloud providers |
+| G5c | **Build-time intent tuning** — users supply scenario prompts → expected step/meta/slots; LLM proposes `intents.json` / `corpus.json` updates; deterministic parser + corpus runner remain the runtime gate |
 | G6 | **Parity path** — extract VB Director Guide as a reference pack proving no core edits for domain specifics |
 | G7 | **Quality gates** — Vitest + NLU corpus + Playwright typed coach smoke; CI parity scripts; LLM drafts must pass schema + corpus gates before “done” |
 | G8 | **Toggleable surfaces** — Host config: `{ chat: true/false, palette: true/false, spotlight: true/false, voice: true/false }` |
@@ -158,7 +159,8 @@ G. Validate                         → schema + Vitest corpus + Playwright coac
 | Allowed | Forbidden |
 |---------|-----------|
 | CLI / IDE “author” package at **pack build** time | Any LLM call inside `@workflow-assistant/core` or Host runtime dispatch |
-| Drafting `flow` / `controls` links / `intents` aliases / glossary / corpus *seeds* | Replacing deterministic `parseUtterance` / `dispatchUserUtterance` |
+| Drafting `flow` / `controls` / `intents` / glossary / **corpus from user scenarios** | Replacing deterministic `parseUtterance` / `dispatchUserUtterance` at runtime |
+| Tuning aliases so labeled scenarios pass the corpus runner | Calling an LLM on each end-user chat message |
 | User-supplied credentials and base URLs | Shipping our keys; logging prompts that contain secrets |
 
 ### Provider model (BYO)
@@ -192,8 +194,54 @@ wa init                              # creates .workflow-assistant/config.json +
 wa inventory crawl --url http://localhost:5173
 wa dag generate --src ./src          # → structured-draft.json + checklist.json
 wa pack author --provider ollama     # → drafts/<ts>/ then merge with --accept
-wa pack validate                     # validates .workflow-assistant/pack
+wa intents tune                      # scenarios.json → draft intents + corpus (LLM assist)
+wa pack validate                     # validates .workflow-assistant/pack + corpus
 ```
+
+### Intent tuning from user scenarios (v1 — normative)
+
+Users (or QA) provide labeled examples of what people will type/say and what should happen. That is the primary way to **tune** deterministic NLU without putting an LLM in the runtime path.
+
+**Input** (JSON under WA home):
+
+```json
+// .workflow-assistant/scenarios.json
+[
+  {
+    "id": "tourn-typo",
+    "utterance": "creat a tornament",
+    "expect": { "stepId": "create_tournament" }
+  },
+  {
+    "id": "whats-next",
+    "utterance": "what should I do next?",
+    "expect": { "rawIntent": "whats_next" }
+  },
+  {
+    "id": "named-event",
+    "utterance": "add event named Scratch Singles",
+    "expect": { "stepId": "create_event", "slots": { "name": "Scratch Singles" } }
+  }
+]
+```
+
+**Build-time flow:**
+
+```text
+scenarios.json
+  → (optional) wa intents tune --provider ollama
+       proposes aliases / keywords / slot hints / extra corpus paraphrases
+       writes drafts/<id>/intents.json + corpus.json + checklist diffs
+  → --accept into pack/
+  → wa pack validate / corpus runner
+       EVERY scenario must pass deterministic parseUtterance (or be marked xfail)
+```
+
+Rules:
+1. Scenarios are **source of truth for acceptance**; LLM suggestions are drafts.
+2. Runtime never reads `scenarios.json` for live chat — only `intents.json` + fuzzy/rules.
+3. Users can also hand-edit `corpus.json` / `intents.json` without LLM.
+4. `wa intents check` (no LLM) runs scenarios against current pack and prints failures — default CI gate.
 
 Default paths (overridable in `config.json`):
 
@@ -202,12 +250,13 @@ Default paths (overridable in `config.json`):
 | `.workflow-assistant/config.json` | Features, `guideAttr`, home paths, author defaults (no secrets) |
 | `.workflow-assistant/inventory.json` | Last control crawl |
 | `.workflow-assistant/structured-draft.json` | Mechanical DAG/control draft |
-| `.workflow-assistant/checklist.json` | Gaps to close (binders, annotations, low-confidence edges) |
+| `.workflow-assistant/checklist.json` | Gaps to close (binders, annotations, low-confidence edges, failing scenarios) |
+| `.workflow-assistant/scenarios.json` | User-labeled utterances → expected step/intent/slots (intent tuning input) |
 | `.workflow-assistant/pack/flow.json` | Steps + requires/prefers/keywords/kind |
 | `.workflow-assistant/pack/controls.json` | Guide ids, roles, nav/spotlight hints |
-| `.workflow-assistant/pack/intents.json` | Aliases, meta, slots |
+| `.workflow-assistant/pack/intents.json` | Aliases, meta, slots (**tuned** from scenarios) |
 | `.workflow-assistant/pack/binders.json` | Declarative completeness (JSON DSL, not TS) |
-| `.workflow-assistant/pack/corpus.json` | NLU cases |
+| `.workflow-assistant/pack/corpus.json` | NLU cases (includes accepted scenarios + paraphrases) |
 | `.workflow-assistant/pack/glossary.json` | Optional |
 | `.workflow-assistant/pack/manifest.json` | Pack id/version/title + feature flags |
 

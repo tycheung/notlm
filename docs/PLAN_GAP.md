@@ -11,7 +11,7 @@ Open decisions and epics. Slice ids live in `SLICE_BACKLOG.md`. Update status he
 | `pack-template*` | `_template` + `demo-todo` as folder JSON shape | planned | Mirror host layout |
 | `mapper*` | Playwright DOM/a11y inventory → `inventory.json` | planned | Writes WA home only |
 | `extract*` | Static `wa dag generate` → structured-draft + checklist | planned | JSON only |
-| `author*` | Build-time LLM → `drafts/` then `--accept` into `pack/` | planned | **v1**; never runtime; JSON only |
+| `author*` | Build-time LLM → drafts + **intent tune from scenarios** | planned | **v1**; never runtime; JSON only |
 | `codegen*` | **Deprecated for TS emit** — checklist/annotation JSON only | planned | No `guideIds.ts` in v1 |
 | `process*` | Jobs authoring + record-mode traces under `traces/` | planned | Hybrid |
 | `corpus*` | Corpus runner over `pack/corpus.json` | planned | Mandatory gate |

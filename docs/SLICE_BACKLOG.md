@@ -105,6 +105,11 @@ Status: `open` | `doing` | `done` | `blocked`.
 | `author-008` | CLI `wa pack author` writes `drafts/<id>/` + updates checklist | open | Under WA home only |
 | `author-009` | `--accept` merges draft JSON into `pack/` (no TS) | open | No silent overwrite |
 | `author-010` | Integration doc: Ollama + one cloud BYO example | open | SECURITY + CONTRIBUTING |
+| `author-011` | Schema for `scenarios.json` (utterance → expect) | open | Ajv + fixture |
+| `author-012` | `wa intents check` — run scenarios against pack (no LLM) | open | Non-zero exit on fail; CI-ready |
+| `author-013` | `wa intents tune` — LLM proposes intents/corpus from scenarios | open | Writes drafts/ only |
+| `author-014` | Merge tuned intents/corpus with `--accept`; re-run check | open | All scenarios green or xfail listed |
+| `author-015` | Support negative scenarios (`expect: { stepId: null }`) | open | Unit |
 
 ---
 

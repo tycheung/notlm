@@ -42,12 +42,15 @@ After install, developers manage **one folder** (default `.workflow-assistant/`)
 ```text
 .workflow-assistant/
   config.json
+  scenarios.json    # utterance → expected step/intent (intent tuning)
   inventory.json
   structured-draft.json
   checklist.json
   pack/{manifest,flow,controls,intents,binders,corpus}.json
   drafts/   traces/
 ```
+
+Intent tuning: add scenarios, run `wa intents check` (deterministic CI). Optionally `wa intents tune` (LLM) to propose aliases/corpus, then `--accept` when check is green.
 
 Scan / `dag generate` / LLM `pack author` only write JSON here (ADR-002). LLM keys stay in env, not in this folder.
 
