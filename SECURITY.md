@@ -8,9 +8,10 @@
 
 ## Assistant safety
 
-- **No silent writes** from the coach. Navigation + coaching + prefill only; host save paths mutate data.
+- **UI-actions only (ADR-003):** Always press/simulate real user controls. **Never** call host product APIs from the coach to create/update/delete domain entities.
+- Mutations occur only through the host UI’s normal handlers (forms, buttons, confirms).
 - **No audio upload** / Whisper / cloud STT in v1 — reduces exfiltration surface.
-- Coach may only highlight elements with declared guide ids.
+- Coach may only highlight/activate elements with declared guide ids.
 
 ## Build-time LLM authoring
 

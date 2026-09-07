@@ -26,6 +26,7 @@
 ## Notes
 
 - Prefer `typescript-slice-master.mdc` as the constitution for this repo.
+- **ADR-003:** UI-actions only — always press/simulate real controls; never call host product APIs from the coach.
 - **ADR-001:** BYO / Ollama / OpenAI-compatible for pack author **and** `intents tune` from `scenarios.json`; never in runtime NLU.
 - **ADR-002:** all host learnings/config in `.workflow-assistant/` as JSON only (no generated TS pack code).
 - Mapper thesis: inventory ≠ process DAG; structured extract + checklist + optional LLM author (build-time).

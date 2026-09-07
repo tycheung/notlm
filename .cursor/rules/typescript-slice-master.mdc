@@ -91,10 +91,13 @@ Document lasting decisions in `ARCHITECTURE.md` / ADRs. These are normative for 
 1. **Deterministic NLU first (runtime).** Rule-based aliases / regex / fuzzy match + corpus gates.
    LLM-as-runtime NLU is **forbidden**. Build-time LLM pack drafting lives only in the
    `author` package / CLI (ADR-001).
-2. **No silent writes.** Assistant navigates, spotlights, prefills, queues — host forms /
-   save paths perform mutations. No “create entity via hidden API” from the coach.
+2. **No silent writes / no host product APIs.** The coach **ALWAYS** simulates real user
+   actions: navigate, spotlight/flash, fill visible fields, activate annotated controls.
+   Mutations happen only because the **host UI** ran. Never call host REST/GraphQL/SDK
+   domain clients from the coach (ADR-003). No “create entity via hidden API.”
 3. **Anchored UI only.** Coach targets use stable `data-guide-id` (or pack-declared
-   equivalent). No production heuristics that click by visible text alone.
+   equivalent). No production heuristics that click by visible text alone — and no API
+   substitutes for those clicks.
 4. **Shared context for chat + palette.** Availability / completeness / blocked reasons
    come from the same `RuntimeContext` snapshot + flow evaluators.
 5. **Voice is progressive enhancement.** Web Speech API only
@@ -248,7 +251,7 @@ All must pass before marking the slice done in PROGRESS:
 | 7 | NLU corpus runner green if intents / aliases / meta patterns changed |
 | 8 | Coach UI / Host surface changed → Playwright tagged smoke as project requires |
 | 9 | `PROGRESS` updated (slice id → done, notes, next id) |
-| 10 | Product invariants intact (no Whisper, no silent writes, anchors only, etc.) |
+| 10 | Product invariants intact (no Whisper, no silent API writes, **UI-actions only**, anchors, JSON pack folder, etc.) |
 
 ### What “done” means
 
@@ -598,8 +601,8 @@ RECORD:   PROGRESS (done / notes / next)
 REFACTOR: every 4–6 slices or ~400 LOC soft cap
 VOICE:    Web Speech; Chrome/Edge/Safari; Firefox type-only; NO Whisper
 LLM:      build-time author only (BYO/Ollama/compat); NEVER runtime dispatch
+WRITES:   UI-actions only — click/fill real controls; NEVER host product APIs
 CONFIG:   .workflow-assistant/*.json only — no generated TS learnings
-WRITES:   coach + navigate + prefill only — no silent API creates
 ANCHORS:  data-guide-id only
 BLOCKED:  write PROGRESS → next unblocked slice
 ```

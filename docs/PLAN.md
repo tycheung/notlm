@@ -2,7 +2,7 @@
 
 **Status:** Active  
 **Repo:** standalone npm-publishable TypeScript monorepo  
-**North star:** A plug-and-play **assistant generator + runtime** that hosts can install, enable **chat FAB** and/or **command palette**, and progressively generate a **domain pack** (workflow + controls + intents) from their codebase — starting from DOM/action inventory, ending in a corpus-gated coach.
+**North star:** A plug-and-play **assistant generator + runtime** that coaches operators by **pressing the same buttons and filling the same forms a user would** — never by calling host product APIs. Hosts install chat FAB and/or command palette, keep pack learnings as JSON under `.workflow-assistant/`, and generate packs via scan + optional build-time LLM.
 
 Reference implementation (do not couple core to it): Victory Bowling `react-frontend/src/features/director-guide/`.
 
@@ -14,14 +14,17 @@ The assistant is a **deterministic, context-aware coach** for operator workflows
 
 It is **not**:
 - an LLM-driven **runtime** coach (v1 runtime NLU stays deterministic)
-- a silent automation bot that mutates data without the host’s normal save paths
+- a bot that **calls host product APIs** to mutate data (ADR-003)
+- a silent automation path that skips visible UI confirmations/saves
 - a permanent checklist side panel
 
 It **is**:
 1. **Workflow map** — typed DAG of steps; completeness/availability vs live `RuntimeContext`
 2. **Control map** — stable DOM anchors (`data-guide-id`) + nav/modal/spotlight resolvers
-3. **Intent detection (runtime)** — rule-based NLU → navigate → coach → optional slot fill → queue advance on `notifyStepCompleted`
+3. **Intent detection (runtime)** — rule-based NLU → navigate → coach → optional field prefill → **UI control activation** → queue advance when the host UI signals `notifyStepCompleted`
 4. **Pack builder (build-time)** — structured extractors + checklist **and** optional **LLM-assisted pack writing** (never on the hot path)
+
+**UI-action invariant (non-negotiable):** Always simulate what a user can do (open screens, focus fields, click annotated buttons). **Do not** interface with the host’s domain HTTP/SDK APIs from the coach runtime.
 
 **Primary surfaces (feature flags on the Host):**
 - Floating chat FAB (typed + optional Web Speech)
@@ -49,6 +52,7 @@ It **is**:
 | G6 | **Parity path** — extract VB Director Guide as a reference pack proving no core edits for domain specifics |
 | G7 | **Quality gates** — Vitest + NLU corpus + Playwright typed coach smoke; CI parity scripts; LLM drafts must pass schema + corpus gates before “done” |
 | G8 | **Toggleable surfaces** — Host config: `{ chat: true/false, palette: true/false, spotlight: true/false, voice: true/false }` |
+| G9 | **UI-actions only** — coach always presses/simulates real user controls; never calls host product APIs to mutate domain state (ADR-003) |
 
 ---
 
@@ -59,8 +63,9 @@ It **is**:
 | NG1 | Whisper / cloud STT / audio upload | Privacy, keys, latency; Web Speech enough |
 | NG2 | Firefox voice support | No reliable Web Speech recognition; type-only |
 | NG3 | LLM as **runtime** NLU / dispatch | Non-deterministic; cannot corpus-gate; build-time LLM is allowed (G5b) |
-| NG4 | Silent API creates / writes | Safety; coach + navigate + prefill only |
-| NG5 | Auto-click unannotated UI | Only `data-guide-id` (or pack-declared) targets |
+| NG4 | Silent / direct API creates or writes from the coach | **UI-actions only** (ADR-003); mutations only via host UI handlers |
+| NG5 | Auto-click **unannotated** UI | Only `data-guide-id` (or pack-declared) targets — still DOM, not API |
+| NG5b | Coach importing or calling host `*API` / axios domain clients | Same as NG4; navigate + click only |
 | NG6 | Fully automatic process DAG from DOM alone with no review | Mechanical + LLM drafts still require validate + human/CI accept |
 | NG7 | Replacing host product UX | Overlay coach only |
 | NG8 | Permanent checklist side panel | Chat + palette only |
@@ -352,6 +357,7 @@ Host implements:
 9. Mic works or cleanly degrades; no Whisper dependency  
 10. No silent creates; Firefox users never blocked from typed assist  
 11. Consumer can `npm i @workflow-assistant/react`, run `wa init`, and toggle chat/palette  
+12. Coach paths proven via **UI clicks** (not direct host API writes) in demos/e2e (ADR-003)  
 
 ---
 

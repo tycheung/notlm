@@ -113,6 +113,16 @@ Status: `open` | `doing` | `done` | `blocked`.
 
 ---
 
+## P5b — UI-actions-only enforcement (ADR-003)
+
+| ID | Title | Status | Acceptance |
+|----|-------|--------|------------|
+| `ui-001` | Document invariant in Provider/executeStep JSDoc | open | No API client imports in react/core |
+| `ui-002` | Architecture test: react/core must not import host api paths | open | Grep/boundary test |
+| `ui-003` | Demo e2e creates entity only via button click after coach nav | open | No fetch stub as coach write path |
+
+---
+
 ## P5 — Annotation assist (not TS codegen)
 
 | ID | Title | Status | Acceptance |

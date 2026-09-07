@@ -78,10 +78,14 @@ User utterance / palette pick
 
 Core evaluates these against `RuntimeContext.data` from the host’s `getContext()`.
 
-## Coaching DOM
+## Coaching DOM / actions
 
 Default attribute: `data-guide-id="<id>"` (set in `config.json` → `guideAttr`).  
 Spotlight and flash **only** query this contract.
+
+**UI-actions only (ADR-003):** `executeStep` resolves to path / modal / spotlight / prefill.
+The coach must not import host `*API` clients or issue domain HTTP. Playwright demos
+**click** annotated controls.
 
 ## Voice
 
