@@ -15,9 +15,10 @@ Teams also want help **generating** packs from existing apps. DOM/Playwright sca
 1. Build a **TypeScript monorepo** published as npm packages (`@workflow-assistant/*` working name).
 2. Boundaries: **Core** (generic) · **React Host adapter** (generic UI) · **Pack** (per product) · **Mapper/Codegen** (tooling).
 3. Runtime NLU remains **deterministic** (aliases/regex/fuzzy). No Whisper. No silent writes. Anchors only.
-4. Mapper **drafts control inventories and pack stubs**; process/flow authoring is **hybrid** (jobs input + optional record mode + human/agent refinement).
-5. Feature-flag **chat** and **palette** (and spotlight/voice) independently on the Host.
-6. Engineering follows `typescript-slice-master.mdc` micro-slices + docs of record.
+4. **Build-time** LLM pack authoring is in v1 via a separate author package (see ADR-001): BYO credentials, Ollama, OpenAI-compatible self-host — never on the runtime hot path.
+5. Mapper **drafts control inventories and pack stubs**; process/flow authoring is **hybrid** (structured extract + checklist + optional LLM draft + human/CI accept).
+6. Feature-flag **chat** and **palette** (and spotlight/voice) independently on the Host.
+7. Engineering follows `typescript-slice-master.mdc` micro-slices + docs of record.
 
 ## Consequences
 

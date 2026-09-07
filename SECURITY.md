@@ -12,6 +12,15 @@
 - **No audio upload** / Whisper / cloud STT in v1 — reduces exfiltration surface.
 - Coach may only highlight elements with declared guide ids.
 
+## Build-time LLM authoring
+
+- Allowed **only** in `@workflow-assistant/author` / CLI — never in runtime `core` / Host dispatch.
+- **BYO credentials:** `WA_LLM_API_KEY`, `WA_LLM_BASE_URL`, `WA_LLM_MODEL`, `WA_LLM_PROVIDER` (or local config file gitignored).
+- Support **Ollama** and **OpenAI-compatible** self-host endpoints (LM Studio, vLLM, LocalAI, etc.).
+- Do not commit keys; do not log raw API keys or full prompts that may contain secrets.
+- Redact `.env`, private keys, and obvious secret patterns before sending source excerpts to a model.
+- Prefer local Ollama when code must not leave the machine; document that cloud BYO implies data leaves the host.
+
 ## Reporting
 
 Report vulnerabilities privately to the repo maintainers. Do not file public issues with exploit details until a fix is available.

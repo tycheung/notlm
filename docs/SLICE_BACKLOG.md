@@ -77,6 +77,36 @@ Status: `open` | `doing` | `done` | `blocked`.
 
 ---
 
+## P4b — Structured extractor + checklist
+
+| ID | Title | Status | Acceptance |
+|----|-------|--------|------------|
+| `extract-001` | Types: StructuredDraft, ChecklistItem, confidence | open | Types + doc |
+| `extract-002` | Static scan: React Router / route tables → screen nodes | open | Fixture repo snapshot |
+| `extract-003` | Static scan: forms + submit handlers → write candidates | open | Fixture snapshot |
+| `extract-004` | Static scan: `data-guide-id` + `notifyStepCompleted` calls | open | Merges with inventory |
+| `extract-005` | CLI `wa dag generate --src` → draft + checklist JSON | open | Gaps listed for binders |
+| `extract-006` | Never invent requires without `confidence: low` mark | open | Unit policy test |
+
+---
+
+## P4c — Build-time LLM author (v1)
+
+| ID | Title | Status | Acceptance |
+|----|-------|--------|------------|
+| `author-001` | Package `@workflow-assistant/author` scaffold (no runtime dep from core) | open | core package.json has no author/llm dep |
+| `author-002` | Provider interface: `completeChat({ messages })` | open | Unit with mock |
+| `author-003` | Ollama adapter (`/api/chat` or OpenAI-compat mode) | open | Fixture HTTP |
+| `author-004` | OpenAI-compatible adapter (baseUrl + apiKey + model) | open | Fixture HTTP |
+| `author-005` | Env/config loader (`WA_LLM_*`); refuse to read committed secrets files | open | Unit |
+| `author-006` | Prompt builder: inventory + structured draft + redacted excerpts | open | Redaction unit tests |
+| `author-007` | Parse model JSON → pack draft; schema validate | open | Invalid JSON → checklist error |
+| `author-008` | CLI `wa pack author` writes `packs/…/draft/` + checklist | open | Docs in CONTRIBUTING |
+| `author-009` | Merge draft → pack requires `--accept` / explicit step | open | No silent overwrite |
+| `author-010` | Integration doc: Ollama + one cloud BYO example | open | SECURITY + CONTRIBUTING |
+
+---
+
 ## P5 — Codegen
 
 | ID | Title | Status | Acceptance |

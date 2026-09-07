@@ -1,6 +1,6 @@
 # Workflow Assistant
 
-Plug-and-play **workflow coach** for SPAs: deterministic NLU, `data-guide-id` coaching, optional **chat FAB** + **command palette**, plus a Playwright **mapper** that inventories controls to help generate domain packs.
+Plug-and-play **workflow coach** for SPAs: deterministic **runtime** NLU, `data-guide-id` coaching, optional **chat FAB** + **command palette**, plus build tooling — Playwright inventory, structured `dag generate`, and **optional LLM-assisted pack authoring** (BYO keys / Ollama; never on the runtime hot path).
 
 See `docs/PLAN.md` for goals / non-goals and `ARCHITECTURE.md` for bundle boundaries.
 

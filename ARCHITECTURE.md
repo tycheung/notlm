@@ -7,6 +7,7 @@ apps/demo                  → consumes react + demo-todo pack
 packages/react             → UI Host adapter (depends on core)
 packages/core              → pure TS runtime (no React, no DOM optional split)
 packages/mapper            → Playwright crawl (Node; may depend on core types only)
+packages/author            → Build-time LLM pack drafting (BYO / Ollama / OpenAI-compat); never imported by core/react runtime
 packages/codegen           → pack → TS emit (depends on schema)
 packages/schema            → JSON Schema + validate helpers
 packs/*                    → data + generated registries (no imports into core)
@@ -14,11 +15,11 @@ packs/*                    → data + generated registries (no imports into core
 
 ### Import rules (enforced later by `boot-003` / `ci`)
 
-- `core` must not import `react`, `mapper`, `apps`, or any `packs/*` implementation code at runtime (packs are data loaded by host).
-- `react` may import `core` only among workspace packages.
-- `mapper` / `codegen` may import `core` types + `schema`.
+- `core` must not import `react`, `mapper`, `author`, `apps`, or any `packs/*` implementation code at runtime (packs are data loaded by host).
+- `react` may import `core` only among workspace packages — **never** `author`.
+- `mapper` / `codegen` / `author` may import `core` types + `schema`.
 - `apps/*` may import `react`, `core`, and a chosen pack.
-
+- Default unit CI must not require a live LLM; author tests use fixtures.
 ## Size budgets
 
 | Soft | Hard |

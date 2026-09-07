@@ -21,7 +21,8 @@ Steal **operating system**, not product code. This file is the constitution for 
 pages into core. VB lives only as an optional **reference pack** + host adapter.
 
 **Language / stack:** TypeScript (strict), Node for tooling, React adapter for UI
-surfaces. Not Python. Not Whisper. Not LLM-primary NLU in v1.
+surfaces. Not Python. Not Whisper. **Not LLM-primary runtime NLU** — build-time LLM
+pack authoring is allowed only in `@workflow-assistant/author` (see ADR-001).
 
 ---
 
@@ -87,8 +88,9 @@ scripts/ci/           # ci_check.sh / ci_check.ps1
 
 Document lasting decisions in `ARCHITECTURE.md` / ADRs. These are normative for v1:
 
-1. **Deterministic NLU first.** Rule-based aliases / regex / fuzzy match + corpus gates.
-   LLM-as-primary NLU is **out of scope** until an ADR explicitly opts in.
+1. **Deterministic NLU first (runtime).** Rule-based aliases / regex / fuzzy match + corpus gates.
+   LLM-as-runtime NLU is **forbidden**. Build-time LLM pack drafting lives only in the
+   `author` package / CLI (ADR-001).
 2. **No silent writes.** Assistant navigates, spotlights, prefills, queues — host forms /
    save paths perform mutations. No “create entity via hidden API” from the coach.
 3. **Anchored UI only.** Coach targets use stable `data-guide-id` (or pack-declared
@@ -99,10 +101,12 @@ Document lasting decisions in `ARCHITECTURE.md` / ADRs. These are normative for 
    (`SpeechRecognition` / `webkitSpeechRecognition`). **Supported product policy:
    Chrome, Edge, Safari.** **Firefox = type-only.** **No Whisper / cloud STT** in v1.
 6. **Pack vs core separation.** Domain steps, aliases, glossary, completeness bindings,
-   routes/modals live in **packs**. Core must stay product-agnostic.
+   routes/modals live in **packs**. Core must stay product-agnostic and **LLM-free**.
 7. **Secrets** never in logs, test assertions, committed `.env`, or OpenAPI examples.
-8. **Import DAG** respected — `apps` → `packages/react` → `packages/core`; codegen does
-   not import React; packs do not import apps. Enforce with an import-graph test.
+   BYO LLM keys only via env/local config for the author CLI.
+8. **Import DAG** respected — `apps` → `packages/react` → `packages/core`; codegen/author
+   do not import React; `react`/`core` must not import `author`. Packs do not import apps.
+   Enforce with an import-graph test.
 9. **Coverage and size gates** are quality signals — do not game them with hollow mocks
    or empty facades.
 
@@ -273,7 +277,7 @@ green; `ci_check` green.”
 - Editing the Victory Bowling app monorepo to “make the assistant compile” without an ADR
   (consume VB as a **pack/host adapter**, or copy fixtures — don’t create cycles)
 - Adding Whisper, Deepgram, or server STT “just for Firefox”
-- LLM call in the default intent path without an ADR
+- LLM call in the **runtime** intent / dispatch path (build-time `author` package is the only LLM home)
 - Clicking buttons by visible label in production coach code instead of `data-guide-id`
 - Shipping a permanent checklist side panel when the product is chat + palette
 
@@ -593,6 +597,7 @@ GATE:     eslint + tsc + vitest(+cov) + schema/import/size + e2e when required
 RECORD:   PROGRESS (done / notes / next)
 REFACTOR: every 4–6 slices or ~400 LOC soft cap
 VOICE:    Web Speech; Chrome/Edge/Safari; Firefox type-only; NO Whisper
+LLM:      build-time author only (BYO/Ollama/compat); NEVER runtime dispatch
 WRITES:   coach + navigate + prefill only — no silent API creates
 ANCHORS:  data-guide-id only
 BLOCKED:  write PROGRESS → next unblocked slice
