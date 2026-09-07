@@ -24,5 +24,6 @@
 
 ## Notes
 
-- Python master retained as OS reference only.
+- Prefer `typescript-slice-master.mdc` as the constitution for this repo.
 - Mapper thesis documented in PLAN §5: inventory ≠ process DAG.
+- Voice policy: Web Speech; Chrome/Edge/Safari; Firefox type-only; no Whisper.
