@@ -22,6 +22,18 @@ const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
     patterns: [/\bexplain\b/i, /\bwhat (?:is|does)\b.+\bmean\b/i, /\bhelp with this field\b/i],
   },
   {
+    intent: 'help',
+    patterns: [
+      /\bwhat can you do\b/i,
+      /\bwhat do you support\b/i,
+      /\bwhat are you able to do\b/i,
+      /\bshow me what you can do\b/i,
+      /\bcapabilities\b/i,
+      /^\s*help\s*[?.!]?\s*$/i,
+      /\bhelp me (?:out|please)?\b/i,
+    ],
+  },
+  {
     intent: 'skip_side_actions',
     patterns: [
       /\bskip side actions?\b/i,
@@ -165,6 +177,7 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
     goBack ||
     meta === 'whats_next' ||
     meta === 'explain_field' ||
+    meta === 'help' ||
     meta === 'skip_side_actions' ||
     meta === 'lookup_participant';
 
@@ -188,6 +201,7 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
   if (goBack) rawIntent = 'go_back';
   else if (meta === 'whats_next') rawIntent = 'whats_next';
   else if (meta === 'explain_field') rawIntent = 'explain_field';
+  else if (meta === 'help') rawIntent = 'help';
   else if (meta === 'skip_side_actions') rawIntent = 'skip_side_actions';
   else if (meta === 'lookup_participant') rawIntent = 'lookup_participant';
   else if (candidates && candidates.length >= 2) rawIntent = 'ambiguous';

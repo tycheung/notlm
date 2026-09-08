@@ -29,6 +29,8 @@ export type NavResolve = {
   spotlight?: string;
   coachMessage?: string;
   prefill?: SlotBag;
+  /** Guide ids the user must fill — coach tours them (cannot type for the user). */
+  userFill?: string[];
 };
 
 export type RuntimeContextBase = {
@@ -79,6 +81,39 @@ export type FaqEntry = {
   stepId?: StepId;
 };
 
+/** Pack-declared entity lookup against host-published RuntimeContext.data arrays. */
+export type LookupDef = {
+  id: string;
+  /** Dot path under `ctx.data` to an array of entities. */
+  dataPath: string;
+  nameKey?: string;
+  idKey?: string;
+  utteranceHints?: string[];
+  entityWords?: string[];
+  /** Template with `{{id}}` → guide id for spotlight/flash. */
+  guideIdTemplate?: string;
+  /** Optional nav step after a hit. */
+  stepId?: StepId;
+};
+
+export type LookupEntityHit = {
+  id: string;
+  name: string;
+  guideId?: string;
+  stepId?: StepId;
+};
+
+export type LookupMatchResult =
+  | { kind: 'none' }
+  | { kind: 'miss'; lookupId: string; query: string }
+  | { kind: 'hit'; lookupId: string; query: string; entity: LookupEntityHit }
+  | {
+      kind: 'ambiguous';
+      lookupId: string;
+      query: string;
+      candidates: LookupEntityHit[];
+    };
+
 export type ParseUtteranceResult = {
   stepId: StepId | null;
   /** Near-tied step matches when the utterance is ambiguous across contexts. */
@@ -127,6 +162,7 @@ export type PackRuntime = {
   unavailableReason?: (stepId: StepId, ctx: RuntimeContextBase) => string | null;
   glossary?: GlossaryEntry[];
   faq?: FaqEntry[];
+  lookups?: LookupDef[];
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -144,6 +180,8 @@ export type ControlDef = {
   spotlight?: string;
   coachMessage?: string;
   prefill?: SlotBag;
+  /** Fields the coach cannot fill — sequential blink tour on step launch. */
+  userFill?: string[];
 };
 
 export type IntentConfig = {
@@ -176,6 +214,7 @@ export type PackJsonInput = {
   binders: Record<string, BinderPredicate>;
   glossary?: GlossaryEntry[];
   faq?: FaqEntry[];
+  lookups?: LookupDef[];
 };
 
 export type IntentParsePack = {

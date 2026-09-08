@@ -13,7 +13,10 @@ export function parsePackedUtterance(raw: string, pack: IntentParsePack): Packed
 
   const single = parseUtterance(text, pack);
   const metaOnly =
-    single.goBack || single.rawIntent === 'whats_next' || single.rawIntent === 'explain_field';
+    single.goBack ||
+    single.rawIntent === 'whats_next' ||
+    single.rawIntent === 'explain_field' ||
+    single.rawIntent === 'help';
   if (metaOnly) return { actions: [], meta: single };
 
   const segments = text.split(PACK_SPLIT_RE).map((s) => s.trim()).filter(Boolean);

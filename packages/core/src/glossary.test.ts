@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchFaqEntry, matchGlossaryEntry } from './glossary.js';
+import { matchFaqEntry, matchGlossaryEntry, mergeFaqEntries } from './glossary.js';
 
 describe('matchGlossaryEntry', () => {
   const glossary = [
@@ -37,5 +37,18 @@ describe('matchFaqEntry', () => {
       },
     ];
     expect(matchFaqEntry(faq, 'is this app free to use')?.id).toBe('local_only');
+  });
+});
+
+describe('mergeFaqEntries', () => {
+  it('lets overlay win on the same id and keeps unique base entries', () => {
+    const base = [
+      { id: 'greeting', aliases: ['hello'], text: 'Base hi' },
+      { id: 'thanks', aliases: ['thanks'], text: 'Base thanks' },
+    ];
+    const overlay = [{ id: 'greeting', aliases: ['hello'], text: 'Product hi' }];
+    const merged = mergeFaqEntries(base, overlay);
+    expect(merged?.find((e) => e.id === 'greeting')?.text).toBe('Product hi');
+    expect(merged?.find((e) => e.id === 'thanks')?.text).toBe('Base thanks');
   });
 });

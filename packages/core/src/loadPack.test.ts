@@ -31,6 +31,7 @@ describe('loadPackFromJson', () => {
           path: '/lists/new',
           spotlight: 'create-list-btn',
           coachMessage: 'Create your list here.',
+          userFill: ['guide-list-name'],
         },
       ],
       intents: {
@@ -52,6 +53,7 @@ describe('loadPackFromJson', () => {
     ).toMatchObject({
       path: '/lists/new',
       spotlight: 'create-list-btn',
+      userFill: ['guide-list-name'],
     });
     expect(pack.resolveNav('add_item', { pathname: '/', data: {} })).toBeNull();
   });

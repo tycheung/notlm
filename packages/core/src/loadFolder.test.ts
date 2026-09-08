@@ -53,6 +53,8 @@ describe('loadUipilotHomeFromDir', () => {
     expect(pack.resolveNav('create_list', { pathname: '/', data: {} })).toMatchObject({
       spotlight: expect.any(String),
     });
+    expect(pack.faq?.some((e) => e.id === 'greeting')).toBe(true);
+    expect(pack.faq?.some((e) => e.id === 'local_only')).toBe(true);
   });
 
   it('loadPackJsonFromUipilotHome requires pack pieces', () => {

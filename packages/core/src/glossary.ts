@@ -60,3 +60,19 @@ export function matchGlossaryEntry(
 export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | null {
   return matchAliasCatalog(faq, normalizeAsk(utterance));
 }
+
+/**
+ * Merge base + product FAQ. Overlay wins on the same `id`; other base entries are kept.
+ */
+export function mergeFaqEntries(
+  base: FaqEntry[] | undefined,
+  overlay: FaqEntry[] | undefined
+): FaqEntry[] | undefined {
+  if (!base?.length && !overlay?.length) return undefined;
+  if (!base?.length) return overlay?.length ? [...overlay] : undefined;
+  if (!overlay?.length) return [...base];
+  const byId = new Map<string, FaqEntry>();
+  for (const entry of base) byId.set(entry.id, entry);
+  for (const entry of overlay) byId.set(entry.id, entry);
+  return [...byId.values()];
+}

@@ -33,7 +33,7 @@ const pack = loadPackFromJson({
       create_list: ['make a list'],
       add_item: ['add todo'],
     },
-    meta: ['go_back', 'whats_next', 'explain_field'],
+    meta: ['go_back', 'whats_next', 'explain_field', 'help'],
   },
   binders: {
     create_list: { path: 'data.listCount', op: 'gte', value: 1 },
@@ -518,6 +518,17 @@ describe('dispatchUserUtterance', () => {
     expect(calls.assistant[0]).toMatch(/which field/i);
   });
 
+  it('lists available steps for help / what can you do', () => {
+    const calls = runDispatch('what can you do', emptySession(), {
+      pathname: '/',
+      data: {},
+    });
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toMatch(/available now/i);
+    expect(calls.assistant[0]).toMatch(/Create list/i);
+    expect(calls.choices[0]?.some((c) => c.id === 'create_list')).toBe(true);
+  });
+
   it('answers faq product questions before unintelligible fallback', () => {
     const withFaq = loadPackFromJson({
       manifest: { id: 'demo' },
@@ -555,5 +566,48 @@ describe('dispatchUserUtterance', () => {
     expect(calls.executed).toEqual([]);
     expect(calls.assistant[0]).toContain('Local demo');
     expect(calls.choices[0]?.[0]?.id).toBe('create_list');
+  });
+
+  it('looks up a named list from RuntimeContext and flashes its row', () => {
+    const withLookups = loadPackFromJson({
+      manifest: { id: 'demo' },
+      flow,
+      controls: [
+        { id: 'nav-create', stepId: 'create_list', path: '/lists/new' },
+        { id: 'nav-add', stepId: 'add_item', path: '/lists/items/new' },
+      ],
+      intents: {
+        aliases: {
+          create_list: ['make a list'],
+          add_item: ['add todo'],
+        },
+        meta: ['go_back', 'whats_next', 'explain_field', 'help'],
+      },
+      binders: {
+        create_list: { path: 'data.listCount', op: 'gte', value: 1 },
+        add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
+      },
+      lookups: [
+        {
+          id: 'lists',
+          dataPath: 'lists',
+          utteranceHints: ['show me', 'open', 'find'],
+          entityWords: ['list', 'lists'],
+          guideIdTemplate: 'guide-list-row-{{id}}',
+        },
+      ],
+    });
+    const calls = runDispatch(
+      'show me the Shopping list',
+      emptySession(),
+      {
+        pathname: '/',
+        data: { lists: [{ id: 'list-1', name: 'Shopping' }] },
+      },
+      withLookups
+    );
+    expect(calls.assistant[0]).toMatch(/Found .*Shopping/i);
+    expect(calls.flashed).toEqual(['guide-list-row-list-1']);
+    expect(calls.executed).toEqual([]);
   });
 });

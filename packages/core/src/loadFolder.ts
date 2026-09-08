@@ -4,8 +4,9 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { mergeFaqEntries } from './glossary.js';
 import { loadPackFromJson } from './loadPack.js';
-import type { BinderPredicate, LoadedPack, PackJsonInput } from './types.js';
+import type { BinderPredicate, FaqEntry, LoadedPack, LookupDef, PackJsonInput } from './types.js';
 
 export const UIPILOT_DIRNAME = '.uipilot';
 
@@ -53,6 +54,28 @@ export function normalizeBindersMap(raw: unknown): Record<string, BinderPredicat
   return out;
 }
 
+/** Walk up from `start` looking for `packs/_base-en/faq.json`, or use UIPILOT_BASE_FAQ. */
+export function resolveBaseFaqPath(start: string): string | null {
+  const fromEnv = process.env.UIPILOT_BASE_FAQ?.trim();
+  if (fromEnv && existsSync(fromEnv)) return fromEnv;
+  let dir = resolve(start);
+  for (let i = 0; i < 8; i += 1) {
+    const candidate = join(dir, 'packs', '_base-en', 'faq.json');
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+function readBaseFaq(projectRoot: string): FaqEntry[] | undefined {
+  const path = resolveBaseFaqPath(projectRoot);
+  if (!path) return undefined;
+  const raw = readJsonFile(path);
+  return Array.isArray(raw) ? (raw as FaqEntry[]) : undefined;
+}
+
 export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const pack = join(home, 'pack');
   const pieces: Record<string, unknown> = {};
@@ -67,7 +90,10 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const glossaryPath = join(pack, 'glossary.json');
   const glossary = existsSync(glossaryPath) ? readJsonFile(glossaryPath) : undefined;
   const faqPath = join(pack, 'faq.json');
-  const faq = existsSync(faqPath) ? readJsonFile(faqPath) : undefined;
+  const productFaq = existsSync(faqPath) ? readJsonFile(faqPath) : undefined;
+  const baseFaq = readBaseFaq(dirname(home));
+  const lookupsPath = join(pack, 'lookups.json');
+  const lookups = existsSync(lookupsPath) ? readJsonFile(lookupsPath) : undefined;
 
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
@@ -81,7 +107,11 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     intents: pieces.intents as PackJsonInput['intents'],
     binders: normalizeBindersMap(pieces.binders),
     glossary: Array.isArray(glossary) ? (glossary as PackJsonInput['glossary']) : undefined,
-    faq: Array.isArray(faq) ? (faq as PackJsonInput['faq']) : undefined,
+    faq: mergeFaqEntries(
+      baseFaq,
+      Array.isArray(productFaq) ? (productFaq as FaqEntry[]) : undefined
+    ),
+    lookups: Array.isArray(lookups) ? (lookups as LookupDef[]) : undefined,
   };
 }
 

@@ -1,0 +1,51 @@
+[
+  {
+    "id": "greeting",
+    "aliases": [
+      "hello",
+      "hi",
+      "hey",
+      "hi there",
+      "hello there",
+      "good morning",
+      "good afternoon",
+      "good evening",
+      "howdy"
+    ],
+    "text": "Hi — I am your UI coach. Ask for a workflow step, say what’s next, or ask what I can do."
+  },
+  {
+    "id": "who_are_you",
+    "aliases": [
+      "who are you",
+      "what are you",
+      "are you a bot",
+      "are you an assistant"
+    ],
+    "text": "I am UiPilot — a coach that guides you through this app by highlighting and clicking real on-screen controls. I do not call hidden APIs."
+  },
+  {
+    "id": "how_to_talk",
+    "aliases": [
+      "how do i talk to you",
+      "how do i use you",
+      "what should i say",
+      "how does this work"
+    ],
+    "text": "Type naturally: name a step (for example create list), ask what’s next, say go back, or ask me to explain a field. You can also open the command palette with Ctrl/Cmd+K."
+  },
+  {
+    "id": "thanks",
+    "aliases": ["thanks", "thank you", "thx", "ty"],
+    "text": "You’re welcome. Say what’s next whenever you want another step."
+  },
+  {
+    "id": "hello_capabilities",
+    "aliases": [
+      "hello what can you do for me today",
+      "hi what can you do for me today",
+      "what can you do for me today"
+    ],
+    "text": "I can walk you through this app’s annotated workflows — navigate, spotlight fields, and click the same buttons you would. Ask “what can you do” for the steps available right now."
+  }
+]

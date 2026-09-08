@@ -1,4 +1,5 @@
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
+import { matchEntityLookup } from './entityLookup.js';
 import { matchFaqEntry, matchGlossaryEntry } from './glossary.js';
 import { parseUtterance } from './intents.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
@@ -277,6 +278,49 @@ function dispatchParsed(
       return;
     }
     pushAssistant('Tell me which field you want explained.');
+    return;
+  }
+
+  if (parsed.rawIntent === 'help') {
+    const options = suggestNextStepOptions(pack, ctx, session);
+    if (options.length === 0) {
+      pushAssistant(
+        'I guide you through this app’s annotated steps. You’re caught up right now — ask again after something changes.'
+      );
+      return;
+    }
+    const labels = options.map((s) => `“${s.title}”`).join(', ');
+    pushAssistant(
+      `I can help with the steps available now: ${labels}. Pick one, or ask what’s next.`,
+      { choices: stepChoices(pack, options.map((o) => o.id)) }
+    );
+    return;
+  }
+
+  // Prefer entity name-match over weak step keyword hits ("… list").
+  const lookup = matchEntityLookup(trimmed, pack.lookups, ctx);
+  if (lookup.kind === 'hit') {
+    const { entity } = lookup;
+    pushAssistant(`Found “${entity.name}”.`);
+    if (entity.guideId) flashField?.(entity.guideId);
+    if (entity.stepId) executeStep(entity.stepId);
+    return;
+  }
+  if (lookup.kind === 'ambiguous') {
+    pushAssistant(`I found a few matches for “${lookup.query}”. Which one did you mean?`, {
+      choices: lookup.candidates.map((c) => ({
+        id: c.guideId ?? c.id,
+        label: c.name,
+      })),
+    });
+    return;
+  }
+  if (lookup.kind === 'miss') {
+    pushAssistant(
+      lookup.query
+        ? `I couldn’t find “${lookup.query}” in the current list.`
+        : 'Tell me which item to open (for example: show me the Shopping list).'
+    );
     return;
   }
 

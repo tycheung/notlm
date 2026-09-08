@@ -26,7 +26,7 @@ const pack: IntentParsePack = {
     create_list: ['make a list', 'creat list'],
     add_item: ['add todo'],
   },
-  meta: ['go_back', 'whats_next', 'explain_field'],
+  meta: ['go_back', 'whats_next', 'explain_field', 'help'],
 };
 
 describe('parseUtterance', () => {
@@ -44,6 +44,8 @@ describe('parseUtterance', () => {
     });
     expect(parseUtterance("what's next", pack).rawIntent).toBe('whats_next');
     expect(parseUtterance('explain tournament name', pack).rawIntent).toBe('explain_field');
+    expect(parseUtterance('what can you do', pack).rawIntent).toBe('help');
+    expect(parseUtterance('help', pack).rawIntent).toBe('help');
   });
 
   it('flags corrections without strong step phrase', () => {
