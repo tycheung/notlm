@@ -2,7 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@uipilot/core';
 import { UiPilotHost, useUiPilot } from '@uipilot/react';
 import {
-  createJsonHybridParser,
+  createHybridUtteranceParser,
+  createRankerSession,
   isOnnxRankerEnabled,
   type RankerModelJson,
 } from '@uipilot/ranker';
@@ -164,13 +165,14 @@ export function App() {
       (import.meta as { env?: { VITE_UIPILOT_ONNX_RANKER?: string } }).env
         ?.VITE_UIPILOT_ONNX_RANKER === '1',
   });
-  const parseUtteranceFn = useMemo(
-    () =>
-      onnxRanker
-        ? createJsonHybridParser(rankerJson as RankerModelJson, { minProbability: 0.35 })
-        : undefined,
-    [onnxRanker]
-  );
+  const parseUtteranceFn = useMemo(() => {
+    if (!onnxRanker) return undefined;
+    // preferOnnx: try ORT when installed; always falls back to JSON infer.
+    const session = createRankerSession(rankerJson as RankerModelJson, {
+      preferOnnx: true,
+    });
+    return createHybridUtteranceParser(session, { minProbability: 0.35 });
+  }, [onnxRanker]);
 
   const getContext = useCallback((): RuntimeContextBase => {
     return { pathname: '/', data: { ...bagRef.current } };

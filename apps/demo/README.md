@@ -1,9 +1,12 @@
 # @uipilot/demo
 
-Bootstrap placeholder. Interactive Vite hosts:
+Third-host proof (`demo-hello` pack). Minimal Vite host wiring `UiPilotHost` +
+`data-guide-id` + `notifyStepCompleted` — same pattern as demo-todo / demo-crm.
 
-- [`../demo-todo`](../demo-todo) — todo lists (`packs/demo-todo/.uipilot`)
-- [`../demo-crm`](../demo-crm) — contacts (`packs/demo-crm/.uipilot`)
+```bash
+npm run build -w @uipilot/core -w @uipilot/react
+npm run dev -w @uipilot/demo
+```
 
-Both prove **UI-actions only**: coach clicks `data-guide-id` buttons; never product APIs.
-CRM also demonstrates pack `openModal` via `useGuideModal`.
+Pack: `packs/demo-hello/.uipilot/`. Coach telemetry: `onCoachEvent` is wired in
+`App.tsx` for host debugging.

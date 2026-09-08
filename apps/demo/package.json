@@ -3,11 +3,21 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.app.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.app.json --pretty false",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "@uipilot/core": "*",
-    "@uipilot/react": "*"
+    "@uipilot/react": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
-  "scripts": {
-    "build": "tsc -b"
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.7.2"
   }
 }
