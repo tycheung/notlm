@@ -1,0 +1,16 @@
+[
+  {
+    "id": "add_contact",
+    "title": "Add contact",
+    "keywords": ["contact", "add", "new contact"],
+    "kind": "hard",
+    "requires": []
+  },
+  {
+    "id": "save_contact",
+    "title": "Save contact",
+    "keywords": ["save", "submit"],
+    "kind": "hard",
+    "requires": ["add_contact"]
+  }
+]

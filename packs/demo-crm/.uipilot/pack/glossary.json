@@ -1,0 +1,14 @@
+[
+  {
+    "id": "contact_name",
+    "aliases": ["name", "contact name"],
+    "text": "Name is the contact’s display name in the draft form.",
+    "guideId": "guide-contact-name"
+  },
+  {
+    "id": "contact_email",
+    "aliases": ["email", "contact email"],
+    "text": "Email is the contact’s address saved with the draft.",
+    "guideId": "guide-contact-email"
+  }
+]

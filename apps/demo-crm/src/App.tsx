@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@uipilot/core';
-import { UiPilotHost, useUiPilot } from '@uipilot/react';
+import { UiPilotHost, useGuideModal, useUiPilot } from '@uipilot/react';
 import { loadDemoCrmPack } from './loadDemoPack';
 import { clickGuideByPath } from './navigateClick';
 
@@ -13,7 +13,15 @@ function nextId() {
   return `contact-${idSeq}`;
 }
 
-function CrmWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }) {
+function CrmWorkspace({
+  bagRef,
+  pendingModal,
+  clearModal,
+}: {
+  bagRef: React.MutableRefObject<ContextBag>;
+  pendingModal: string | null;
+  clearModal: () => void;
+}) {
   const { notifyStepCompleted } = useUiPilot();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [draftOpen, setDraftOpen] = useState(false);
@@ -23,6 +31,13 @@ function CrmWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }
   const syncBag = (nextContacts: Contact[], open: boolean) => {
     bagRef.current = { contactCount: nextContacts.length, draftOpen: open };
   };
+
+  useEffect(() => {
+    if (pendingModal !== 'contact_draft') return;
+    setDraftOpen(true);
+    bagRef.current = { ...bagRef.current, draftOpen: true };
+    clearModal();
+  }, [pendingModal, clearModal, bagRef]);
 
   const addContact = () => {
     setDraftOpen(true);
@@ -107,6 +122,7 @@ function CrmWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }
 export function App() {
   const pack = useMemo(() => loadDemoCrmPack(), []);
   const bagRef = useRef<ContextBag>({ contactCount: 0, draftOpen: false });
+  const { pendingModal, openModal, clearModal } = useGuideModal();
 
   const getContext = useCallback((): RuntimeContextBase => {
     return { pathname: '/', data: { ...bagRef.current } };
@@ -121,6 +137,7 @@ export function App() {
       pack={pack}
       getContext={getContext}
       navigate={navigate}
+      openModal={openModal}
       features={{ chat: true, palette: true, spotlight: true, voice: true }}
       appearance={{
         accent: '#b45309',
@@ -131,7 +148,7 @@ export function App() {
       }}
       className="demo-crm-coach"
     >
-      <CrmWorkspace bagRef={bagRef} />
+      <CrmWorkspace bagRef={bagRef} pendingModal={pendingModal} clearModal={clearModal} />
     </UiPilotHost>
   );
 }

@@ -8,7 +8,7 @@ Reference packs in this repo:
 | Pack | Role |
 |------|------|
 | `packs/demo-todo/.uipilot/` | Smallest end-to-end example (start here) |
-| `packs/demo-crm/.uipilot/` | Second host; same shapes |
+| `packs/demo-crm/.uipilot/` | Second host; same folder pack shapes |
 | `packs/vb-director/.uipilot/` | Larger real-world DAG / corpus |
 | `packs/_template/` | Empty schema fixture |
 | `packs/_base-en/faq.json` | Shared English greetings / soft conversational FAQ (merged under product FAQ) |

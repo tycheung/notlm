@@ -1,0 +1,17 @@
+[
+  {
+    "id": "guide-add-contact",
+    "stepId": "add_contact",
+    "path": "guide-add-contact",
+    "spotlight": "guide-add-contact",
+    "openModal": "contact_draft",
+    "coachMessage": "Click Add contact — coach only presses UI (no CRM API)."
+  },
+  {
+    "id": "guide-save-contact",
+    "stepId": "save_contact",
+    "path": "guide-save-contact",
+    "spotlight": "guide-save-contact",
+    "coachMessage": "Click Save contact to commit the draft via the form button."
+  }
+]

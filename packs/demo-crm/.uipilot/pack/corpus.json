@@ -1,0 +1,7 @@
+[
+  { "utterance": "add contact", "expect": { "stepId": "add_contact" } },
+  { "utterance": "new contact", "expect": { "stepId": "add_contact" } },
+  { "utterance": "save contact", "expect": { "stepId": "save_contact" } },
+  { "utterance": "what's next", "expect": { "rawIntent": "whats_next" } },
+  { "utterance": "asdf qwer zxcv", "expect": { "stepId": null } }
+]

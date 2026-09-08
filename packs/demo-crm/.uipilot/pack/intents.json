@@ -1,0 +1,7 @@
+{
+  "aliases": {
+    "add_contact": ["add contact", "new contact", "create contact"],
+    "save_contact": ["save contact", "save", "submit contact"]
+  },
+  "meta": ["whats_next", "go_back", "explain_field"]
+}

@@ -10,7 +10,7 @@ The coach **never POSTs** and never calls product APIs. Steps resolve to `.click
 
 ## Run
 
-From the `assistant/` workspace root:
+From the workspace root:
 
 ```bash
 npm run build -w @uipilot/core
@@ -18,4 +18,4 @@ npm run build -w @uipilot/react
 npm run dev -w @uipilot/demo-crm
 ```
 
-Or from this folder: `npm run dev`.
+Pack: `packs/demo-crm/.uipilot/` (validated in CI). Host uses `openModal` + `useGuideModal` for `contact_draft`.

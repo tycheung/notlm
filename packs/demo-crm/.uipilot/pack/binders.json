@@ -1,0 +1,4 @@
+[
+  { "stepId": "add_contact", "path": "data.draftOpen", "op": "truthy" },
+  { "stepId": "save_contact", "path": "data.contactCount", "op": "gte", "value": 1 }
+]

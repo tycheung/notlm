@@ -1,0 +1,4 @@
+{
+  "guideAttr": "data-guide-id",
+  "features": { "chat": true, "palette": true, "spotlight": true, "voice": true }
+}

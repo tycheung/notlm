@@ -1,64 +1,45 @@
+import type {
+  BinderPredicate,
+  FlowStepDef,
+  GlossaryEntry,
+  IntentConfig,
+} from '@uipilot/core';
 import { loadPackFromJson } from '@uipilot/core';
+
+import bindersJson from '../../../packs/demo-crm/.uipilot/pack/binders.json';
+import controlsJson from '../../../packs/demo-crm/.uipilot/pack/controls.json';
+import flowJson from '../../../packs/demo-crm/.uipilot/pack/flow.json';
+import glossaryJson from '../../../packs/demo-crm/.uipilot/pack/glossary.json';
+import intentsJson from '../../../packs/demo-crm/.uipilot/pack/intents.json';
+import manifestJson from '../../../packs/demo-crm/.uipilot/pack/manifest.json';
+
+type BinderRow = BinderPredicate & { stepId: string };
+
+function bindersArrayToRecord(rows: BinderRow[]): Record<string, BinderPredicate> {
+  const out: Record<string, BinderPredicate> = {};
+  for (const row of rows) {
+    const { stepId, ...pred } = row;
+    out[stepId] = pred as BinderPredicate;
+  }
+  return out;
+}
 
 export function loadDemoCrmPack() {
   return loadPackFromJson({
-    manifest: { id: 'demo-crm' },
-    flow: [
-      {
-        id: 'add_contact',
-        title: 'Add contact',
-        keywords: ['contact', 'add', 'new contact'],
-        kind: 'hard',
-        requires: [],
-      },
-      {
-        id: 'save_contact',
-        title: 'Save contact',
-        keywords: ['save', 'submit'],
-        kind: 'hard',
-        requires: ['add_contact'],
-      },
-    ],
-    controls: [
-      {
-        id: 'guide-add-contact',
-        stepId: 'add_contact',
-        path: 'guide-add-contact',
-        spotlight: 'guide-add-contact',
-        coachMessage: 'Click Add contact — coach only presses UI (no CRM API).',
-      },
-      {
-        id: 'guide-save-contact',
-        stepId: 'save_contact',
-        path: 'guide-save-contact',
-        spotlight: 'guide-save-contact',
-        coachMessage: 'Click Save contact to commit the draft via the form button.',
-      },
-    ],
-    intents: {
-      aliases: {
-        add_contact: ['add contact', 'new contact', 'create contact'],
-        save_contact: ['save contact', 'save', 'submit contact'],
-      },
-      meta: ['whats_next', 'go_back', 'explain_field'],
-    },
-    binders: {
-      add_contact: { path: 'data.draftOpen', op: 'truthy' },
-      save_contact: { path: 'data.contactCount', op: 'gte', value: 1 },
-    },
-    glossary: [
-      {
-        id: 'contact_name',
-        aliases: ['name', 'contact name'],
-        text: 'Name is the contact’s display name in the draft form.',
-        guideId: 'guide-contact-name',
-      },
-      {
-        id: 'contact_email',
-        aliases: ['email', 'contact email'],
-        text: 'Email is the contact’s address saved with the draft.',
-        guideId: 'guide-contact-email',
-      },
-    ],
+    manifest: manifestJson as { id: string },
+    flow: flowJson as FlowStepDef[],
+    controls: controlsJson as Array<{
+      id: string;
+      stepId: string;
+      path?: string;
+      spotlight?: string;
+      coachMessage?: string;
+      openModal?: string;
+      prefill?: Record<string, unknown>;
+      userFill?: string[];
+    }>,
+    intents: intentsJson as IntentConfig,
+    binders: bindersArrayToRecord(bindersJson as BinderRow[]),
+    glossary: glossaryJson as GlossaryEntry[],
   });
 }
