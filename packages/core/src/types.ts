@@ -70,6 +70,15 @@ export type GlossaryEntry = {
   guideId?: string;
 };
 
+/** Product Q&A (blurb-led) — answered without navigating a flow step. */
+export type FaqEntry = {
+  id: string;
+  aliases: string[];
+  text: string;
+  /** Optional: offer to take the user to this step after answering. */
+  stepId?: StepId;
+};
+
 export type ParseUtteranceResult = {
   stepId: StepId | null;
   /** Near-tied step matches when the utterance is ambiguous across contexts. */
@@ -101,6 +110,11 @@ export type AssistantFeatures = {
   palette?: boolean;
   spotlight?: boolean;
   voice?: boolean;
+  /**
+   * When true (or UIPILOT_ONNX_RANKER=1), prefer the corpus-trained ONNX/JSON
+   * intent+slot ranker instead of rules-only parseUtterance.
+   */
+  onnxRanker?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
@@ -112,6 +126,7 @@ export type PackRuntime = {
   resolveNav: (stepId: StepId, ctx: RuntimeContextBase) => NavResolve | null;
   unavailableReason?: (stepId: StepId, ctx: RuntimeContextBase) => string | null;
   glossary?: GlossaryEntry[];
+  faq?: FaqEntry[];
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -143,6 +158,7 @@ export type ScenarioCase = {
     rawIntent?: string | null;
     goBack?: boolean;
     isCorrection?: boolean;
+    slots?: SlotBag;
   };
 };
 
@@ -159,6 +175,7 @@ export type PackJsonInput = {
   intents: IntentConfig;
   binders: Record<string, BinderPredicate>;
   glossary?: GlossaryEntry[];
+  faq?: FaqEntry[];
 };
 
 export type IntentParsePack = {

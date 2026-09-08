@@ -14,6 +14,7 @@
     "@uipilot/codegen": "*",
     "@uipilot/core": "*",
     "@uipilot/mapper": "*",
+    "@uipilot/ranker": "*",
     "@uipilot/schema": "*"
   },
   "scripts": {

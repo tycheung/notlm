@@ -73,6 +73,7 @@ export {
 export {
   buildScenarioGeneratePrompt,
   buildSoftLabelPrompt,
+  type ScenarioGenerateMode,
 } from './saturation/generatePrompt.js';
 export {
   generateScenarioCandidates,
@@ -80,6 +81,7 @@ export {
 } from './saturation/generateCandidates.js';
 export {
   softLabelCandidates,
+  faqDraftFromSoftLabels,
   type SoftLabelResult,
   type SoftLabeledScenario,
 } from './saturation/softLabel.js';

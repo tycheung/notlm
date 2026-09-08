@@ -1,8 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@uipilot/core';
 import { UiPilotHost, useUiPilot } from '@uipilot/react';
+import {
+  createJsonHybridParser,
+  isOnnxRankerEnabled,
+  type RankerModelJson,
+} from '@uipilot/ranker';
 import { loadDemoTodoPack } from './loadDemoPack';
 import { clickGuideByPath } from './navigateClick';
+import rankerJson from '../../../packs/demo-todo/.uipilot/pack/ranker.json';
 
 type TodoList = { id: string; name: string };
 type TodoItem = { id: string; listId: string; text: string; done: boolean };
@@ -138,6 +144,20 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
 export function App() {
   const pack = useMemo(() => loadDemoTodoPack(), []);
   const bagRef = useRef<ContextBag>({ listCount: 0, itemCount: 0, completedCount: 0 });
+  const onnxRanker = isOnnxRankerEnabled({
+    onnxRanker:
+      typeof import.meta !== 'undefined' &&
+      // Vite: set VITE_UIPILOT_ONNX_RANKER=1 to prefer corpus ranker
+      (import.meta as { env?: { VITE_UIPILOT_ONNX_RANKER?: string } }).env
+        ?.VITE_UIPILOT_ONNX_RANKER === '1',
+  });
+  const parseUtteranceFn = useMemo(
+    () =>
+      onnxRanker
+        ? createJsonHybridParser(rankerJson as RankerModelJson, { minProbability: 0.35 })
+        : undefined,
+    [onnxRanker]
+  );
 
   const getContext = useCallback((): RuntimeContextBase => {
     return { pathname: '/', data: { ...bagRef.current } };
@@ -152,7 +172,14 @@ export function App() {
       pack={pack}
       getContext={getContext}
       navigate={navigate}
-      features={{ chat: true, palette: true, spotlight: true, voice: true }}
+      parseUtteranceFn={parseUtteranceFn}
+      features={{
+        chat: true,
+        palette: true,
+        spotlight: true,
+        voice: true,
+        onnxRanker,
+      }}
       appearance={{
         accent: '#0f766e',
         accentSoft: '#5eead4',

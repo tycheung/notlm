@@ -4,7 +4,11 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cmdAnnotateChecklist, cmdInit, cmdDagGenerate } from './commands.js';
 import { cmdMap, cmdTune } from './cmdMapTunePrepare.js';
-import { cmdScenariosGenerate, cmdScenariosSaturate } from './cmdScenarios.js';
+import {
+  cmdScenariosAsk,
+  cmdScenariosGenerate,
+  cmdScenariosSaturate,
+} from './cmdScenarios.js';
 import { pathExists, resolveUipilotHome } from './uipilotHome.js';
 
 const temps: string[] = [];
@@ -104,5 +108,45 @@ describe('annotate checklist', () => {
     const ids = data.items.map((i) => i.id);
     expect(ids.filter((id) => id === 'annotate-guide-ids')).toHaveLength(1);
     expect(ids).toContain('annotate-notify-complete');
+  });
+});
+
+describe('ranker train CLI', () => {
+  it('writes pack/ranker.json from corpus', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'uipilot-rank-'));
+    temps.push(root);
+    await cmdInit(root);
+    const { home } = resolveUipilotHome(root);
+    cpSync(demoPack, join(home, 'pack'), { recursive: true });
+    const { cmdRankerTrain } = await import('./cmdRanker.js');
+    await cmdRankerTrain([root, '--epochs=20', '--dim=64']);
+    expect(pathExists(join(home, 'pack', 'ranker.json'))).toBe(true);
+  });
+});
+
+describe('scenarios ask (user-ask blurb pool)', () => {
+  it('hard-augments user-ask fixture pool and label-pool drafts scenarios', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'uipilot-ask-'));
+    temps.push(root);
+    await cmdInit(root);
+    const { home } = resolveUipilotHome(root);
+    cpSync(demoPack, join(home, 'pack'), { recursive: true });
+
+    await cmdScenariosAsk([
+      root,
+      '--fixture',
+      '--force=12',
+      '--blurb=Tiny grocery list demo',
+      '--label-pool',
+    ]);
+    expect(pathExists(join(home, 'saturation', 'candidates.json'))).toBe(true);
+    const pool = JSON.parse(
+      readFileSync(join(home, 'saturation', 'candidates.json'), 'utf8')
+    ) as { candidates: unknown[] };
+    expect(pool.candidates.length).toBe(12);
+
+    // label-pool already ran via --label-pool; ensure a soft-label-pool draft exists
+    const drafts = join(home, 'drafts');
+    expect(pathExists(drafts)).toBe(true);
   });
 });

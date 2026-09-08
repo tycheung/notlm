@@ -1,0 +1,28 @@
+{
+  "name": "@uipilot/ranker",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@uipilot/core": "*"
+  },
+  "peerDependencies": {
+    "onnxruntime-node": ">=1.17.0",
+    "onnxruntime-web": ">=1.17.0"
+  },
+  "peerDependenciesMeta": {
+    "onnxruntime-node": { "optional": true },
+    "onnxruntime-web": { "optional": true }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

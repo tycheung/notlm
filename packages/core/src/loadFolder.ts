@@ -66,6 +66,8 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
 
   const glossaryPath = join(pack, 'glossary.json');
   const glossary = existsSync(glossaryPath) ? readJsonFile(glossaryPath) : undefined;
+  const faqPath = join(pack, 'faq.json');
+  const faq = existsSync(faqPath) ? readJsonFile(faqPath) : undefined;
 
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
@@ -79,6 +81,7 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     intents: pieces.intents as PackJsonInput['intents'],
     binders: normalizeBindersMap(pieces.binders),
     glossary: Array.isArray(glossary) ? (glossary as PackJsonInput['glossary']) : undefined,
+    faq: Array.isArray(faq) ? (faq as PackJsonInput['faq']) : undefined,
   };
 }
 

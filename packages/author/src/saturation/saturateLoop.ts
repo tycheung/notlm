@@ -199,6 +199,8 @@ export function llmBatchGenerator(input: {
   intents?: unknown;
   inventory?: unknown;
   structuredDraft?: unknown;
+  productBlurb?: string;
+  mode?: import('./generatePrompt.js').ScenarioGenerateMode;
 }): BatchGenerator {
   return async (ctx) => {
     const result = await generateScenarioCandidates({
@@ -209,6 +211,8 @@ export function llmBatchGenerator(input: {
       inventory: input.inventory,
       structuredDraft: input.structuredDraft,
       priorUtterances: ctx.priorUtterances,
+      productBlurb: input.productBlurb,
+      mode: input.mode,
     });
     if (!result.ok) {
       throw new Error(result.errors.join('; '));

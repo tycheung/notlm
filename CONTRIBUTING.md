@@ -65,6 +65,7 @@ Tip: npm may strip `--flags`; prefer `--force=10000` / `--batch=100` form.
 | `@uipilot/codegen` | Emit TS from packs |
 | `@uipilot/mapper` | Playwright control inventory |
 | `@uipilot/author` | Build-time LLM pack drafts (BYO / Ollama / OpenAI-compat) |
+| `@uipilot/ranker` | Optional corpus-trained intent+slot ranker (JSON / lazy ONNX) |
 
 ## Pack cookbook (start here for hosts)
 

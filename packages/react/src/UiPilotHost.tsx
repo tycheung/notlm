@@ -27,6 +27,7 @@ export function UiPilotHost({
   getContext,
   navigate,
   features,
+  parseUtteranceFn,
   appearance,
   className,
   classNames,
@@ -40,6 +41,7 @@ export function UiPilotHost({
       getContext={getContext}
       navigate={navigate}
       features={features}
+      parseUtteranceFn={parseUtteranceFn}
       appearance={appearance}
       className={className}
       classNames={classNames}

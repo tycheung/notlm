@@ -8,6 +8,7 @@ export {
   corpusSchema,
   flowSchema,
   glossarySchema,
+  faqSchema,
   intentsSchema,
   manifestSchema,
   PACK_PIECE_SCHEMAS,

@@ -16,7 +16,13 @@ import {
   cmdValidate,
 } from './commands.js';
 import { cmdMap, cmdPrepare, cmdTune } from './cmdMapTunePrepare.js';
-import { cmdScenariosGenerate, cmdScenariosSaturate } from './cmdScenarios.js';
+import {
+  cmdScenariosAsk,
+  cmdScenariosGenerate,
+  cmdScenariosLabelPool,
+  cmdScenariosSaturate,
+} from './cmdScenarios.js';
+import { cmdRankerTrain } from './cmdRanker.js';
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -114,6 +120,10 @@ async function main(): Promise<void> {
           await cmdScenariosGenerate(rest);
         } else if (sub === 'saturate') {
           await cmdScenariosSaturate(rest);
+        } else if (sub === 'label-pool') {
+          await cmdScenariosLabelPool(rest);
+        } else if (sub === 'ask') {
+          await cmdScenariosAsk(rest);
         } else {
           usage();
           process.exitCode = 1;
@@ -127,6 +137,14 @@ async function main(): Promise<void> {
         break;
       case 'prepare':
         await cmdPrepare([sub, ...rest].filter((x) => x !== undefined) as string[]);
+        break;
+      case 'ranker':
+        if (sub === 'train') {
+          await cmdRankerTrain(rest);
+        } else {
+          usage();
+          process.exitCode = 1;
+        }
         break;
       case 'help':
       case '--help':
@@ -154,11 +172,15 @@ function usage(): void {
   uipilotCLI prepare [dir] [--llm] [--fixture]
 
   Saturation:
-  uipilotCLI scenarios generate [dir] --batch=N [--fixture] [--force=N]
-  uipilotCLI scenarios saturate [dir] [--batch=100] [--max-batches=N] [--fixture] [--force=N] [--label]
+  uipilotCLI scenarios generate [dir] --batch=N [--fixture] [--force=N] [--mode=flow|user-ask] [--blurb="..."]
+  uipilotCLI scenarios saturate [dir] [--batch=100] [--max-batches=N] [--fixture] [--force=N] [--mode=user-ask] [--blurb="..."] [--label]
+  uipilotCLI scenarios ask [dir] --force=5000..10000 --blurb="..." [--label-pool] [--fixture]
+  uipilotCLI scenarios label-pool [dir] [--chunk=50] [--fixture]
   Tip: npm may strip --flags; prefer --batch=100 / --force=10000 or UIPILOT_SATURATE_FIXTURE=1
   No-lift stop: 5 consecutive passes of 100 with no parse-signature lift (even if wording looks diverse)
   --force=N / --hard=N: hard-add exactly N (ignore similarity / plateau)
+  --mode=user-ask + --blurb: invent 5k–10k naturalistic questions from a 30s app description (not DAG aliases)
+  label-pool: map the whole candidate pool → scenarios + faq drafts for intents tune
 
   Atomic:
   uipilotCLI init [dir]
@@ -175,6 +197,7 @@ function usage(): void {
   uipilotCLI intents check [dir]
   uipilotCLI intents tune [dir]
   uipilotCLI pack accept <draftId> [dir]
+  uipilotCLI ranker train [dir] [--epochs=40] [--dim=128]
 `);
 }
 

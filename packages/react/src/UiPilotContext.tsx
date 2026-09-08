@@ -11,6 +11,7 @@ import {
   type ChatMessage,
   type LoadedPack,
   type PackRuntime,
+  type ParseUtteranceFn,
   type RuntimeContextBase,
   type SessionSlots,
   type SlotBag,
@@ -95,6 +96,8 @@ export type UiPilotProviderProps = {
   getContext: () => RuntimeContextBase;
   navigate: NavigateFn;
   features?: AssistantFeatures;
+  /** Optional hybrid / ONNX ranker parser (feature-flagged by host). */
+  parseUtteranceFn?: ParseUtteranceFn;
   children: ReactNode;
 } & UiPilotChromeConfig;
 
@@ -103,6 +106,7 @@ export function UiPilotProvider({
   getContext,
   navigate,
   features: featuresProp,
+  parseUtteranceFn,
   appearance,
   className,
   classNames,
@@ -240,9 +244,10 @@ export function UiPilotProvider({
         flashField: (guideId) => {
           flashGuideField(guideId);
         },
+        parseUtteranceFn,
       });
     },
-    [getContext, pack, pushAssistant]
+    [getContext, pack, parseUtteranceFn, pushAssistant]
   );
 
   const value = useMemo<UiPilotContextValue>(

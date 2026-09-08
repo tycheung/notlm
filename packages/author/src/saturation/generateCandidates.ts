@@ -1,6 +1,9 @@
 import type { LlmProvider } from '../types.js';
 import { extractJsonText } from '../parseModelJson.js';
-import { buildScenarioGeneratePrompt } from './generatePrompt.js';
+import {
+  buildScenarioGeneratePrompt,
+  type ScenarioGenerateMode,
+} from './generatePrompt.js';
 
 export type GenerateCandidatesResult =
   | {
@@ -18,6 +21,8 @@ export async function generateScenarioCandidates(input: {
   inventory?: unknown;
   structuredDraft?: unknown;
   priorUtterances?: string[];
+  productBlurb?: string;
+  mode?: ScenarioGenerateMode;
 }): Promise<GenerateCandidatesResult> {
   const prompt = buildScenarioGeneratePrompt({
     batchSize: input.batchSize,
@@ -26,6 +31,8 @@ export async function generateScenarioCandidates(input: {
     inventory: input.inventory,
     structuredDraft: input.structuredDraft,
     priorUtterances: input.priorUtterances ?? [],
+    productBlurb: input.productBlurb,
+    mode: input.mode,
   });
 
   const text = await input.provider.completeChat({

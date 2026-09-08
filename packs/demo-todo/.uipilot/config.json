@@ -9,6 +9,8 @@
   },
   "author": {
     "provider": null,
-    "note": "Set UIPILOT_LLM_* in env; do not put API keys in this file"
+    "productBlurb": "demo-todo is a tiny local shopping-list coach demo: create a list, add items, mark one done — all via on-screen buttons, no cloud.",
+    "note": "Set UIPILOT_LLM_* in env; do not put API keys in this file. Use productBlurb with scenarios ask --mode=user-ask.",
+    "onnxRanker": false
   }
 }

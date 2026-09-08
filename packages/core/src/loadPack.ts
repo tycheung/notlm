@@ -2,7 +2,7 @@ import { bindersToCompleteness } from './binders.js';
 import type { LoadedPack, PackJsonInput, RuntimeContextBase, StepId } from './types.js';
 
 export function loadPackFromJson(input: PackJsonInput): LoadedPack {
-  const { manifest, flow, controls, intents, binders, glossary } = input;
+  const { manifest, flow, controls, intents, binders, glossary, faq } = input;
   const controlByStep = new Map<StepId, (typeof controls)[number]>();
   for (const control of controls) {
     controlByStep.set(control.stepId, control);
@@ -26,5 +26,6 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     aliases: intents.aliases,
     meta: intents.meta,
     glossary: glossary?.length ? glossary : undefined,
+    faq: faq?.length ? faq : undefined,
   };
 }

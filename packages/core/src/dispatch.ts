@@ -1,5 +1,5 @@
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
-import { matchGlossaryEntry } from './glossary.js';
+import { matchFaqEntry, matchGlossaryEntry } from './glossary.js';
 import { parseUtterance } from './intents.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
 import { pathMatchesStep } from './pageContext.js';
@@ -13,11 +13,18 @@ import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
 import type {
   ChatChoice,
   GuideAction,
+  IntentParsePack,
   LoadedPack,
+  ParseUtteranceResult,
   SessionSlots,
   StepId,
   StepStatus,
 } from './types.js';
+
+export type ParseUtteranceFn = (
+  text: string,
+  pack: IntentParsePack
+) => ParseUtteranceResult | Promise<ParseUtteranceResult>;
 
 export type DispatchDeps = {
   text: string;
@@ -29,6 +36,11 @@ export type DispatchDeps = {
   setSession: (updater: (session: SessionSlots) => SessionSlots) => void;
   /** Optional: flash a glossary field guide id (DOM). */
   flashField?: (guideId: string) => void;
+  /**
+   * Optional utterance parser (e.g. ONNX/JSON ranker hybrid).
+   * Defaults to rule-based parseUtterance.
+   */
+  parseUtteranceFn?: ParseUtteranceFn;
 };
 
 const MAX_SUGGESTED_NEXT = 4;
@@ -172,14 +184,32 @@ function launchStep(
   executeStep(targetStep, { prefill: slots, skipCoach: true });
 }
 
-export function dispatchUserUtterance(deps: DispatchDeps): void {
-  const { text, pack, session, ctx, pushAssistant, executeStep, setSession, flashField } =
-    deps;
-  const trimmed = text.trim();
+export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> {
+  const trimmed = deps.text.trim();
   if (!trimmed) return;
 
-  const intentPack = { steps: pack.steps, aliases: pack.aliases, meta: pack.meta };
-  const parsed = parseUtterance(trimmed, intentPack);
+  const intentPack: IntentParsePack = {
+    steps: deps.pack.steps,
+    aliases: deps.pack.aliases,
+    meta: deps.pack.meta,
+  };
+  const parseFn = deps.parseUtteranceFn ?? parseUtterance;
+  const parsedOrPromise = parseFn(trimmed, intentPack);
+  if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
+    return (parsedOrPromise as Promise<ParseUtteranceResult>).then((parsed) => {
+      dispatchParsed(deps, intentPack, parsed);
+    });
+  }
+  dispatchParsed(deps, intentPack, parsedOrPromise as ParseUtteranceResult);
+}
+
+function dispatchParsed(
+  deps: DispatchDeps,
+  intentPack: IntentParsePack,
+  parsed: ParseUtteranceResult
+): void {
+  const { pack, session, ctx, pushAssistant, executeStep, setSession, flashField } = deps;
+  const trimmed = deps.text.trim();
 
   if (parsed.goBack || parsed.rawIntent === 'go_back') {
     const prevStep = resolveGoBackStep(session);
@@ -254,6 +284,16 @@ export function dispatchUserUtterance(deps: DispatchDeps): void {
   const targetStep = singleAction?.stepId ?? parsed.stepId;
 
   if (!targetStep) {
+    const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
+    if (faqHit) {
+      const offer = faqHit.stepId
+        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
+        : '';
+      pushAssistant(`${faqHit.text}${offer}`, {
+        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+      });
+      return;
+    }
     const options = suggestNextStepOptions(pack, ctx, session);
     if (session.actionQueue.length > 0) {
       const head = session.actionQueue[0]!;

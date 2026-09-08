@@ -1,0 +1,2 @@
+declare module 'onnxruntime-node';
+declare module 'onnxruntime-web';

@@ -11,6 +11,7 @@
     { "path": "../schema" },
     { "path": "../author" },
     { "path": "../mapper" },
-    { "path": "../codegen" }
+    { "path": "../codegen" },
+    { "path": "../ranker" }
   ]
 }

@@ -517,4 +517,43 @@ describe('dispatchUserUtterance', () => {
     const calls = runDispatch('explain purple elephant');
     expect(calls.assistant[0]).toMatch(/which field/i);
   });
+
+  it('answers faq product questions before unintelligible fallback', () => {
+    const withFaq = loadPackFromJson({
+      manifest: { id: 'demo' },
+      flow,
+      controls: [
+        { id: 'nav-create', stepId: 'create_list', path: '/lists/new' },
+        { id: 'nav-add', stepId: 'add_item', path: '/lists/items/new' },
+      ],
+      intents: {
+        aliases: {
+          create_list: ['make a list'],
+          add_item: ['add todo'],
+        },
+        meta: ['go_back', 'whats_next', 'explain_field'],
+      },
+      binders: {
+        create_list: { path: 'data.listCount', op: 'gte', value: 1 },
+        add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
+      },
+      faq: [
+        {
+          id: 'local_only',
+          aliases: ['is this free', 'is this app free to use'],
+          text: 'Local demo — no fees.',
+          stepId: 'create_list',
+        },
+      ],
+    });
+    const calls = runDispatch(
+      'is this app free to use',
+      emptySession(),
+      { pathname: '/', data: {} },
+      withFaq
+    );
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toContain('Local demo');
+    expect(calls.choices[0]?.[0]?.id).toBe('create_list');
+  });
 });

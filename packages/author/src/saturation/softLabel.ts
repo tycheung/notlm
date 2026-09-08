@@ -10,6 +10,9 @@ export type SoftLabeledScenario = {
     rawIntent?: string | null;
     goBack?: boolean;
     isCorrection?: boolean;
+    /** Product Q&A — draft into pack/faq.json after review. */
+    faqId?: string | null;
+    answer?: string;
   };
 };
 
@@ -22,11 +25,15 @@ export async function softLabelCandidates(input: {
   candidates: Array<{ id?: string; utterance: string }>;
   flowSteps: unknown;
   intents?: unknown;
+  faq?: unknown;
+  productBlurb?: string;
 }): Promise<SoftLabelResult> {
   const prompt = buildSoftLabelPrompt({
     candidates: input.candidates,
     flowSteps: input.flowSteps,
     intents: input.intents,
+    faq: input.faq,
+    productBlurb: input.productBlurb,
   });
 
   const text = await input.provider.completeChat({
@@ -98,4 +105,29 @@ export async function softLabelCandidates(input: {
   }
 
   return { ok: true, scenarios, raw };
+}
+
+/** Collapse soft-label FAQ answers into draft faq.json entries. */
+export function faqDraftFromSoftLabels(
+  scenarios: SoftLabeledScenario[]
+): Array<{ id: string; aliases: string[]; text: string }> {
+  const byId = new Map<string, { id: string; aliases: Set<string>; text: string }>();
+  for (const s of scenarios) {
+    const faqId = s.expect.faqId?.trim();
+    const answer = s.expect.answer?.trim();
+    if (!faqId || !answer) continue;
+    if (s.expect.rawIntent && s.expect.rawIntent !== 'faq') continue;
+    let row = byId.get(faqId);
+    if (!row) {
+      row = { id: faqId, aliases: new Set<string>(), text: answer };
+      byId.set(faqId, row);
+    }
+    row.aliases.add(s.utterance.toLowerCase());
+    if (answer.length > row.text.length) row.text = answer;
+  }
+  return [...byId.values()].map((r) => ({
+    id: r.id,
+    aliases: [...r.aliases],
+    text: r.text,
+  }));
 }

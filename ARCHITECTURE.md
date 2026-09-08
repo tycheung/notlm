@@ -96,7 +96,26 @@ Pack JSON does not store brand colors. Dispatch and guide-id coaching stay uncha
 Assistant chat may attach **choice chips** (`ChatMessage.choices`) for ambiguous
 utterances and unintelligible next-up offers. Prefill applies to annotated inputs
 via `data-guide-id` (slot key / `guide-*` candidates). Optional `glossary.json`
-powers `explain_field`.
+powers `explain_field`. Optional `faq.json` answers blurb-led product questions
+before the “didn’t catch that” fallback.
+
+**User-ask saturation:** `uipilotCLI scenarios ask --force=5000..10000 --blurb="…"`
+generates naturalistic questions from a 30s description (not DAG aliases);
+`scenarios label-pool` soft-labels the whole pool into scenarios + FAQ drafts for
+`intents tune` / `pack accept`.
+
+### Optional ONNX intent+slot ranker
+
+Default NLU remains rule-based (`parseUtterance`). Hosts may opt into a
+corpus-trained tiny hashed-ngram ranker:
+
+1. `uipilotCLI ranker train ./app` → `pack/ranker.json` (+ `ranker.onnx`)
+2. Enable with `features.onnxRanker: true` or `UIPILOT_ONNX_RANKER=1`
+3. Pass `parseUtteranceFn` from `@uipilot/ranker` (`createJsonHybridParser` /
+   `createHybridUtteranceParser` with lazy ONNX runtime)
+
+`onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
+back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
 ## Voice
 

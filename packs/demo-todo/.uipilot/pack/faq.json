@@ -1,0 +1,31 @@
+[
+  {
+    "id": "local_only",
+    "aliases": [
+      "is this free",
+      "does it cost money",
+      "is this app free to use",
+      "do i need an account"
+    ],
+    "text": "demo-todo is a local demo — everything stays in this browser tab. No account, no cloud sync, no fees.",
+    "stepId": "create_list"
+  },
+  {
+    "id": "share_lists",
+    "aliases": [
+      "how do i share my list",
+      "can i share with my partner",
+      "share shopping list"
+    ],
+    "text": "This demo does not support sharing. Create a list here for yourself; a real host would wire share behind its own UI."
+  },
+  {
+    "id": "offline",
+    "aliases": [
+      "can i use this offline",
+      "does it work offline",
+      "offline on my phone"
+    ],
+    "text": "Yes for this demo — state is in-page only. Closing the tab clears it unless the host adds persistence."
+  }
+]

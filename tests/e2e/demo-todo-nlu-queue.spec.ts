@@ -35,6 +35,14 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     await expect(dialog.getByText(/List name is the title/i)).toBeVisible();
   });
 
+  test('faq answers product questions from the blurb pack', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'is this app free to use');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/local demo/i)).toBeVisible();
+  });
+
   test('packed queue blocks on DAG gap then injects and resumes', async ({ page }) => {
     await page.goto('/');
     await openChat(page);

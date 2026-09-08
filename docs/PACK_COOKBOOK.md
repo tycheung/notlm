@@ -336,6 +336,36 @@ Record mode never auto-merges into `pack/`.
 
 ---
 
+## User-ask corpus (blurb → 5k–10k questions → intents/FAQ)
+
+Flow saturation teaches checklist phrasing. **User-ask** invents what real people type after a 30-second product pitch — pricing, sharing, offline, “can I…”, frustrated typos — then maps those into step aliases **or** `pack/faq.json` answers so chat feels like a product assistant, not a bare NLU unit.
+
+1. Put a blurb in `.uipilot/config.json` → `author.productBlurb`, or pass `--blurb="..."`.
+2. Generate at scale (hard augment, ignore novelty plateau):
+
+```bash
+# 5000–10000 naturalistic questions (LLM). Default force=5000.
+uipilotCLI scenarios ask ./my-app --force=8000 --blurb="Your 30s app description…"
+# or fixture / CI smoke:
+uipilotCLI scenarios ask packs/demo-todo --force=12 --fixture --label-pool
+```
+
+3. Soft-label the **entire** pool (chunked LLM calls):
+
+```bash
+uipilotCLI scenarios label-pool ./my-app --chunk=50
+```
+
+Drafts land under `.uipilot/drafts/scenarios-pool-*/` with `scenarios.json` plus optional `faq.json` (product Q&A).
+
+4. Review: merge labeled scenarios into `.uipilot/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
+5. `uipilotCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
+6. Optional: `uipilotCLI ranker train ./my-app` then enable `features.onnxRanker` / `UIPILOT_ONNX_RANKER=1` for a corpus-trained intent+slot ranker (lazy ONNX, rules fallback).
+
+Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
+
+---
+
 ## Related docs
 
 | Doc | Role |

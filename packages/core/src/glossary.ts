@@ -1,4 +1,4 @@
-import type { GlossaryEntry } from './types.js';
+import type { FaqEntry, GlossaryEntry } from './types.js';
 
 function stripExplainLead(utterance: string): string {
   return utterance
@@ -12,18 +12,26 @@ function stripExplainLead(utterance: string): string {
     .trim();
 }
 
-/** Best glossary hit by alias containment / exact id match. */
-export function matchGlossaryEntry(
-  glossary: GlossaryEntry[],
-  utterance: string
-): GlossaryEntry | null {
-  if (!glossary.length) return null;
-  const needle = stripExplainLead(utterance);
-  if (!needle) return null;
+function normalizeAsk(utterance: string): string {
+  return utterance
+    .trim()
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/[^a-z0-9'\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  let best: GlossaryEntry | null = null;
+type AliasCatalog = { id: string; aliases: string[] };
+
+function matchAliasCatalog<T extends AliasCatalog>(
+  catalog: T[],
+  needle: string
+): T | null {
+  if (!catalog.length || !needle) return null;
+  let best: T | null = null;
   let bestScore = 0;
-  for (const entry of glossary) {
+  for (const entry of catalog) {
     const labels = [entry.id, ...entry.aliases].map((a) => a.toLowerCase().trim());
     for (const label of labels) {
       if (!label) continue;
@@ -38,4 +46,17 @@ export function matchGlossaryEntry(
     }
   }
   return best;
+}
+
+/** Best glossary hit by alias containment / exact id match. */
+export function matchGlossaryEntry(
+  glossary: GlossaryEntry[],
+  utterance: string
+): GlossaryEntry | null {
+  return matchAliasCatalog(glossary, stripExplainLead(utterance));
+}
+
+/** Product FAQ match against full utterance (blurb-led Q&A). */
+export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | null {
+  return matchAliasCatalog(faq, normalizeAsk(utterance));
 }
