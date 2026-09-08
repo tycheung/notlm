@@ -8,6 +8,7 @@ describe('react facade exports (chrome / G10)', () => {
     expect(typeof react.UiPilotHost).toBe('function');
     expect(typeof react.UiPilotProvider).toBe('function');
     expect(typeof react.UiPilotFab).toBe('function');
+    expect(typeof react.useGuideModal).toBe('function');
     expect(typeof react.applyPrefill).toBe('function');
     expect(react).not.toHaveProperty('stubParseUtterance');
     expect(react).not.toHaveProperty('stubHandleUserUtterance');

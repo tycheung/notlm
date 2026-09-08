@@ -31,7 +31,9 @@ export {
   type UiPilotContextValue,
   type UiPilotProviderProps,
   type ExecuteStepOpts,
+  type OpenModalFn,
 } from './UiPilotContext.js';
+export { useGuideModal } from './useGuideModal.js';
 export { CommandPalette } from './CommandPalette.js';
 export { UiPilotFab } from './UiPilotFab.js';
 export { SpotlightOverlay } from './SpotlightOverlay.js';

@@ -26,6 +26,7 @@ export function UiPilotHost({
   pack,
   getContext,
   navigate,
+  openModal,
   features,
   parseUtteranceFn,
   appearance,
@@ -40,6 +41,7 @@ export function UiPilotHost({
       pack={pack}
       getContext={getContext}
       navigate={navigate}
+      openModal={openModal}
       features={features}
       parseUtteranceFn={parseUtteranceFn}
       appearance={appearance}

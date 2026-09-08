@@ -35,6 +35,8 @@ import { appearanceToCssVars } from './uipilot.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
+/** Host opens a pack-declared modal key (UI-actions only — no product APIs). */
+export type OpenModalFn = (modalKey: string) => void;
 
 export type ExecuteStepOpts = {
   prefill?: SlotBag;
@@ -95,6 +97,8 @@ export type UiPilotProviderProps = {
   pack: PackRuntime;
   getContext: () => RuntimeContextBase;
   navigate: NavigateFn;
+  /** Optional: open host modal by key from controls.json `openModal`. */
+  openModal?: OpenModalFn;
   features?: AssistantFeatures;
   /** Optional hybrid / ONNX ranker parser (feature-flagged by host). */
   parseUtteranceFn?: ParseUtteranceFn;
@@ -105,6 +109,7 @@ export function UiPilotProvider({
   pack,
   getContext,
   navigate,
+  openModal,
   features: featuresProp,
   parseUtteranceFn,
   appearance,
@@ -181,6 +186,7 @@ export function UiPilotProvider({
       });
 
       if (nav.path) navigate(nav.path, nav.search ? { search: nav.search } : undefined);
+      if (nav.openModal) openModal?.(nav.openModal);
       if (!opts?.skipCoach && nav.coachMessage) pushAssistant(nav.coachMessage);
       if (nav.spotlight && features.spotlight !== false) {
         showSpotlight(nav.spotlight, nav.coachMessage ?? `Focus: ${stepId}`);
@@ -204,7 +210,7 @@ export function UiPilotProvider({
         });
       }
     },
-    [features.spotlight, getContext, navigate, pack, pushAssistant, showSpotlight]
+    [features.spotlight, getContext, navigate, openModal, pack, pushAssistant, showSpotlight]
   );
 
   const executeStepRef = useRef(executeStep);
