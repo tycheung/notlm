@@ -66,13 +66,31 @@ export function UiPilotFab() {
   const messagesNode = (
     <div ref={listRef} className={cx('uipilot-chat-messages', classNames?.chatMessages)}>
       {messages.map((m) => (
-        <div
-          key={m.id}
-          className={`uipilot-chat-bubble ${
-            m.role === 'user' ? 'uipilot-chat-bubble-user' : 'uipilot-chat-bubble-assistant'
-          }`}
-        >
-          {m.text}
+        <div key={m.id} className="uipilot-chat-turn">
+          <div
+            className={`uipilot-chat-bubble ${
+              m.role === 'user' ? 'uipilot-chat-bubble-user' : 'uipilot-chat-bubble-assistant'
+            }`}
+          >
+            {m.text}
+          </div>
+          {m.role === 'assistant' && m.choices && m.choices.length > 0 && (
+            <div className="uipilot-chat-choices" role="group" aria-label="Suggested steps">
+              {m.choices.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className="uipilot-chat-choice"
+                  data-testid={`uipilot-choice-${c.id}`}
+                  onClick={() => {
+                    handleUserUtterance(c.label);
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>

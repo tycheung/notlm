@@ -59,6 +59,7 @@ const PACK_FOLDER_KEYS: PackPieceName[] = [
   'corpus',
   'scenarios',
   'config',
+  'glossary',
 ];
 
 /**

@@ -18,7 +18,7 @@ test.describe('@guide-nlu demo-crm nlu + queue', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(dialog.getByText(/didn.?t catch that/i)).toBeVisible();
-    await expect(dialog.getByText(/Add contact/i)).toBeVisible();
+    await expect(page.getByTestId('uipilot-choice-add_contact')).toBeVisible();
   });
 
   test('save is blocked until add, then packed queue auto-advances', async ({ page }) => {

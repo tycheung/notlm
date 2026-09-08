@@ -80,6 +80,7 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
             value={draftName}
             onChange={(e) => setDraftName(e.target.value)}
             aria-label="New list name"
+            data-guide-id="guide-list-name"
           />
           <button type="button" data-guide-id="guide-create-list" onClick={createList}>
             Create list
@@ -100,6 +101,7 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
             value={draftItem}
             onChange={(e) => setDraftItem(e.target.value)}
             aria-label="New todo text"
+            data-guide-id="guide-item-text"
             disabled={!activeListId}
           />
           <button

@@ -1,9 +1,10 @@
-import type { BinderPredicate, FlowStepDef, IntentConfig } from '@uipilot/core';
+import type { BinderPredicate, FlowStepDef, GlossaryEntry, IntentConfig } from '@uipilot/core';
 import { loadPackFromJson } from '@uipilot/core';
 
 import bindersJson from '../../../packs/demo-todo/.uipilot/pack/binders.json';
 import controlsJson from '../../../packs/demo-todo/.uipilot/pack/controls.json';
 import flowJson from '../../../packs/demo-todo/.uipilot/pack/flow.json';
+import glossaryJson from '../../../packs/demo-todo/.uipilot/pack/glossary.json';
 import intentsJson from '../../../packs/demo-todo/.uipilot/pack/intents.json';
 import manifestJson from '../../../packs/demo-todo/.uipilot/pack/manifest.json';
 
@@ -28,9 +29,11 @@ export function loadDemoTodoPack() {
     spotlight?: string;
     coachMessage?: string;
     openModal?: string;
+    prefill?: Record<string, unknown>;
   }>;
   const intents = intentsJson as IntentConfig;
   const binders = bindersArrayToRecord(bindersJson as BinderRow[]);
+  const glossary = glossaryJson as GlossaryEntry[];
 
   return loadPackFromJson({
     manifest,
@@ -38,5 +41,6 @@ export function loadDemoTodoPack() {
     controls,
     intents,
     binders,
+    glossary,
   });
 }

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "list_name",
+    "aliases": ["list name", "list title", "name"],
+    "text": "List name is the title shown for a new todo list before you click Create list.",
+    "guideId": "guide-list-name"
+  },
+  {
+    "id": "item_text",
+    "aliases": ["item text", "todo text", "todo"],
+    "text": "Item text is the todo body added to the active list via Add item.",
+    "guideId": "guide-item-text"
+  }
+]

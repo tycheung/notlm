@@ -7,6 +7,7 @@ export {
   controlsSchema,
   corpusSchema,
   flowSchema,
+  glossarySchema,
   intentsSchema,
   manifestSchema,
   PACK_PIECE_SCHEMAS,

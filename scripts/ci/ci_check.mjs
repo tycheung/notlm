@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 function run(cmd, args, env) {
   const r = spawnSync(cmd, args, {
@@ -11,13 +13,26 @@ function run(cmd, args, env) {
 
 const pm = process.env.UIPILOT_PM || 'npm';
 const withSaturation = process.argv.includes('--with-saturation');
+const withE2e =
+  process.argv.includes('--with-e2e') ||
+  process.env.CI === 'true' ||
+  process.env.UIPILOT_CI_E2E === '1';
+const skipE2e = process.argv.includes('--skip-e2e');
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 run(pm, ['run', 'lint']);
 run(pm, ['run', 'typecheck']);
-run(pm, ['run', 'test']);
+run(pm, ['run', 'test:coverage']);
+
+// Demo pack intent regression (no live LLM).
+run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', join(root, 'packs/demo-todo')]);
+
+if (withE2e && !skipE2e) {
+  run(pm, ['run', 'test:e2e:demo']);
+}
 
 if (withSaturation) {
-  // Fixture saturate against demo-todo (no live LLM). Prefer env — npm strips --flags.
   run(
     pm,
     ['run', 'uipilotCLI', '--', 'scenarios', 'saturate', 'packs/demo-todo', '5', '3'],
@@ -26,4 +41,10 @@ if (withSaturation) {
   run(pm, ['run', 'test:e2e:demo', '--', '--grep', '@guide-saturate']);
 }
 
-console.log(withSaturation ? 'ci_check: ok (with saturation)' : 'ci_check: ok');
+console.log(
+  withSaturation
+    ? 'ci_check: ok (with saturation)'
+    : withE2e && !skipE2e
+      ? 'ci_check: ok (with e2e)'
+      : 'ci_check: ok'
+);

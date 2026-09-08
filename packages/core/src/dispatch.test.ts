@@ -52,16 +52,19 @@ function runDispatch(
 ) {
   const calls = {
     assistant: [] as string[],
+    choices: [] as Array<Array<{ id: string; label: string }> | undefined>,
     executed: [] as string[],
     sessions: [] as SessionSlots[],
+    flashed: [] as string[],
   };
   dispatchUserUtterance({
     text,
     pack: packOverride,
     session,
     ctx,
-    pushAssistant: (msg) => {
+    pushAssistant: (msg, opts) => {
       calls.assistant.push(msg);
+      calls.choices.push(opts?.choices);
     },
     executeStep: (stepId) => {
       calls.executed.push(stepId);
@@ -70,6 +73,9 @@ function runDispatch(
       const next = updater(session);
       calls.sessions.push(next);
       session = next;
+    },
+    flashField: (id) => {
+      calls.flashed.push(id);
     },
   });
   return calls;
@@ -146,6 +152,7 @@ describe('dispatchUserUtterance', () => {
     expect(calls.assistant[0]).toMatch(/Could mean|Which one/i);
     expect(calls.assistant[0]).toContain('Create list');
     expect(calls.assistant[0]).toContain('Create event');
+    expect(calls.choices[0]?.map((c) => c.id).sort()).toEqual(['create_event', 'create_list']);
   });
 
   it('resolves a keyword collision using pathname context', () => {
@@ -465,5 +472,49 @@ describe('dispatchUserUtterance', () => {
     expect(calls.assistant[0]).toContain('Create list');
     expect(calls.assistant[0]).toContain('Create event');
     expect(calls.assistant[0]).toContain('Create note');
+  });
+
+  it('explains a glossary field and flashes its guide id', () => {
+    const withGlossary = loadPackFromJson({
+      manifest: { id: 'demo' },
+      flow,
+      controls: [
+        { id: 'nav-create', stepId: 'create_list', path: '/lists/new' },
+        { id: 'nav-add', stepId: 'add_item', path: '/lists/items/new' },
+      ],
+      intents: {
+        aliases: {
+          create_list: ['make a list'],
+          add_item: ['add todo'],
+        },
+        meta: ['go_back', 'whats_next', 'explain_field'],
+      },
+      binders: {
+        create_list: { path: 'data.listCount', op: 'gte', value: 1 },
+        add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
+      },
+      glossary: [
+        {
+          id: 'list_name',
+          aliases: ['list name'],
+          text: 'List name is the title of a list.',
+          guideId: 'guide-list-name',
+        },
+      ],
+    });
+    const calls = runDispatch(
+      'explain list name',
+      emptySession(),
+      { pathname: '/', data: {} },
+      withGlossary
+    );
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toContain('List name is the title');
+    expect(calls.flashed).toEqual(['guide-list-name']);
+  });
+
+  it('asks for a field when explain_field has no glossary hit', () => {
+    const calls = runDispatch('explain purple elephant');
+    expect(calls.assistant[0]).toMatch(/which field/i);
   });
 });

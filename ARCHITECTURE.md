@@ -93,6 +93,11 @@ The coach must not import host `*API` clients or issue domain HTTP. Playwright d
 (`appearance` prop), stable `uipilot-*` classes, and optional `components` slots.
 Pack JSON does not store brand colors. Dispatch and guide-id coaching stay unchanged.
 
+Assistant chat may attach **choice chips** (`ChatMessage.choices`) for ambiguous
+utterances and unintelligible next-up offers. Prefill applies to annotated inputs
+via `data-guide-id` (slot key / `guide-*` candidates). Optional `glossary.json`
+powers `explain_field`.
+
 ## Voice
 
 `packages/react` Web Speech wrapper only. Product policy: Chrome / Edge / Safari; Firefox type-only; no cloud STT.

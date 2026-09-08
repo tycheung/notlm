@@ -10,6 +10,7 @@ describe('UIPILOT_CSS tokens', () => {
     expect(UIPILOT_CSS).toMatch(/--uipilot-accent:/);
     expect(UIPILOT_CSS).toMatch(/var\(--uipilot-accent\)/);
     expect(UIPILOT_CSS).toMatch(/uipilot-chat-panel/);
+    expect(UIPILOT_CSS).toMatch(/uipilot-chat-choice/);
     expect(UIPILOT_CSS).toMatch(/uipilot-fab-btn/);
   });
 

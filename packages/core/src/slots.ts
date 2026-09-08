@@ -60,3 +60,10 @@ export function goBackToStep(session: SessionSlots, stepId: StepId, staleDepende
     stale: [...new Set([...session.stale, ...staleDependents])],
   };
 }
+
+/** Record navigation/focus for go_back; avoids duplicate consecutive history entries. */
+export function markActiveStep(session: SessionSlots, stepId: StepId): SessionSlots {
+  const last = session.history[session.history.length - 1];
+  const history = last === stepId ? session.history : [...session.history, stepId];
+  return { ...session, activeStep: stepId, history };
+}

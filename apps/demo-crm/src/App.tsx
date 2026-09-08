@@ -73,6 +73,7 @@ function CrmWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 aria-label="Contact name"
+                data-guide-id="guide-contact-name"
               />
             </label>
             <label>
@@ -81,6 +82,7 @@ function CrmWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 aria-label="Contact email"
+                data-guide-id="guide-contact-email"
               />
             </label>
             <button type="button" data-guide-id="guide-save-contact" onClick={saveContact}>

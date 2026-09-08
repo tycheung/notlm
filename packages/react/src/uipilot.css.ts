@@ -8,6 +8,7 @@ import { DEFAULT_FLASH_CLASS } from './fieldFlash.js';
  * - uipilot-host-root, uipilot-fab-root, uipilot-fab-btn
  * - uipilot-chat-panel, uipilot-chat-header, uipilot-chat-close
  * - uipilot-chat-messages, uipilot-chat-bubble, uipilot-chat-bubble-user|assistant
+ * - uipilot-chat-turn, uipilot-chat-choices, uipilot-chat-choice
  * - uipilot-chat-input-row, uipilot-chat-input, uipilot-chat-btn, uipilot-chat-btn-primary|listening
  * - uipilot-palette-backdrop|scrim|panel|input|list|item|item-active
  * - uipilot-spotlight-root|scrim|ring|card
@@ -51,6 +52,12 @@ export const UIPILOT_CSS = `
 .uipilot-chat-bubble { border-radius: var(--uipilot-radius-sm); padding: 0.375rem 0.625rem; max-width: 95%; white-space: pre-wrap; font-size: 0.8125rem; margin-bottom: 0.5rem; }
 .uipilot-chat-bubble-user { margin-left: auto; background: var(--uipilot-accent); color: #fff; }
 .uipilot-chat-bubble-assistant { margin-right: auto; background: var(--uipilot-surface-hover); color: var(--uipilot-text); }
+.uipilot-chat-turn { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 0.5rem; width: 100%; }
+.uipilot-chat-turn .uipilot-chat-bubble { margin-bottom: 0.25rem; }
+.uipilot-chat-turn .uipilot-chat-bubble-user { align-self: flex-end; }
+.uipilot-chat-choices { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0 0 0.25rem; max-width: 95%; }
+.uipilot-chat-choice { border-radius: var(--uipilot-radius-sm); border: 1px solid var(--uipilot-accent); background: var(--uipilot-surface); color: var(--uipilot-accent); padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer; }
+.uipilot-chat-choice:hover { background: var(--uipilot-accent-soft); color: var(--uipilot-text); }
 .uipilot-chat-input-row { display: flex; gap: 0.25rem; align-items: flex-end; padding: 0.5rem; border-top: 1px solid var(--uipilot-border-muted); }
 .uipilot-chat-input { flex: 1; resize: none; border-radius: var(--uipilot-radius-sm); border: 1px solid var(--uipilot-border); padding: 0.375rem 0.5rem; font-size: 0.8125rem; background: var(--uipilot-surface); color: var(--uipilot-text); }
 .uipilot-chat-btn { border-radius: var(--uipilot-radius-sm); border: 1px solid var(--uipilot-border); padding: 0.375rem 0.625rem; cursor: pointer; background: var(--uipilot-surface-muted); color: var(--uipilot-text); }

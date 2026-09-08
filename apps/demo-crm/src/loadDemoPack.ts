@@ -40,11 +40,25 @@ export function loadDemoCrmPack() {
         add_contact: ['add contact', 'new contact', 'create contact'],
         save_contact: ['save contact', 'save', 'submit contact'],
       },
-      meta: ['whats_next', 'go_back'],
+      meta: ['whats_next', 'go_back', 'explain_field'],
     },
     binders: {
       add_contact: { path: 'data.draftOpen', op: 'truthy' },
       save_contact: { path: 'data.contactCount', op: 'gte', value: 1 },
     },
+    glossary: [
+      {
+        id: 'contact_name',
+        aliases: ['name', 'contact name'],
+        text: 'Name is the contact’s display name in the draft form.',
+        guideId: 'guide-contact-name',
+      },
+      {
+        id: 'contact_email',
+        aliases: ['email', 'contact email'],
+        text: 'Email is the contact’s address saved with the draft.',
+        guideId: 'guide-contact-email',
+      },
+    ],
   });
 }

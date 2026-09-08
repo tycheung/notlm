@@ -5,12 +5,15 @@ import {
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
   listMissingRequires,
+  markActiveStep,
   type AssistantFeatures,
+  type ChatChoice,
   type ChatMessage,
   type LoadedPack,
   type PackRuntime,
   type RuntimeContextBase,
   type SessionSlots,
+  type SlotBag,
   type StepId,
   type StepStatus,
 } from '@uipilot/core';
@@ -26,10 +29,16 @@ import {
 } from 'react';
 import type { UiPilotChromeConfig } from './chromeTypes.js';
 import { DEFAULT_GUIDE_ATTR, flashGuideField } from './fieldFlash.js';
+import { applyPrefill } from './fieldPrefill.js';
 import { appearanceToCssVars } from './uipilot.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
+
+export type ExecuteStepOpts = {
+  prefill?: SlotBag;
+  skipCoach?: boolean;
+};
 
 function asLoadedPack(pack: PackRuntime): LoadedPack {
   const withIntents = pack as PackRuntime & {
@@ -55,7 +64,7 @@ export type UiPilotContextValue = {
   paletteOpen: boolean;
   spotlight: SpotlightState;
   handleUserUtterance: (text: string) => void;
-  executeStep: (stepId: StepId) => void;
+  executeStep: (stepId: StepId, opts?: ExecuteStepOpts) => void;
   notifyStepCompleted: (stepId: StepId) => void;
   setPanelOpen: (open: boolean) => void;
   setPaletteOpen: (open: boolean) => void;
@@ -67,12 +76,17 @@ export type UiPilotContextValue = {
 
 const UiPilotContext = createContext<UiPilotContextValue | null>(null);
 
-function newMessage(role: ChatMessage['role'], text: string): ChatMessage {
+function newMessage(
+  role: ChatMessage['role'],
+  text: string,
+  choices?: ChatChoice[]
+): ChatMessage {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     role,
     text,
     at: Date.now(),
+    ...(choices?.length ? { choices } : {}),
   };
 }
 
@@ -138,12 +152,12 @@ export function UiPilotProvider({
     [pack, ctx, session.stale]
   );
 
-  const pushAssistant = useCallback((text: string) => {
-    setMessages((prev) => [...prev, newMessage('assistant', text)]);
+  const pushAssistant = useCallback((text: string, opts?: { choices?: ChatChoice[] }) => {
+    setMessages((prev) => [...prev, newMessage('assistant', text, opts?.choices)]);
   }, []);
 
   const executeStep = useCallback(
-    (stepId: StepId) => {
+    (stepId: StepId, opts?: ExecuteStepOpts) => {
       const loaded = asLoadedPack(pack);
       const liveCtx = getContext();
       const missing = listMissingRequires(loaded, stepId, liveCtx, sessionRef.current.stale);
@@ -156,13 +170,23 @@ export function UiPilotProvider({
         pushAssistant('I could not find where to go for that step.');
         return;
       }
+      setSession((prev) => {
+        const next = markActiveStep(prev, stepId);
+        sessionRef.current = next;
+        return next;
+      });
+
       if (nav.path) navigate(nav.path, nav.search ? { search: nav.search } : undefined);
-      if (nav.coachMessage) pushAssistant(nav.coachMessage);
+      if (!opts?.skipCoach && nav.coachMessage) pushAssistant(nav.coachMessage);
       if (nav.spotlight && features.spotlight !== false) {
         showSpotlight(nav.spotlight, nav.coachMessage ?? `Focus: ${stepId}`);
       }
       if (nav.spotlight) {
         flashGuideField(nav.spotlight);
+      }
+      const mergedPrefill = { ...(nav.prefill ?? {}), ...(opts?.prefill ?? {}) };
+      if (Object.keys(mergedPrefill).length > 0) {
+        queueMicrotask(() => applyPrefill(mergedPrefill));
       }
     },
     [features.spotlight, getContext, navigate, pack, pushAssistant, showSpotlight]
@@ -186,7 +210,7 @@ export function UiPilotProvider({
       if (result.executeNext) {
         const next = result.executeNext;
         queueMicrotask(() => {
-          executeStepRef.current(next.stepId);
+          executeStepRef.current(next.stepId, { prefill: next.slots });
         });
       }
     },
@@ -212,6 +236,9 @@ export function UiPilotProvider({
             sessionRef.current = next;
             return next;
           });
+        },
+        flashField: (guideId) => {
+          flashGuideField(guideId);
         },
       });
     },

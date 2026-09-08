@@ -3,6 +3,7 @@ export {
   DEFAULT_FLASH_CLASS,
   DEFAULT_GUIDE_ATTR,
 } from './fieldFlash.js';
+export { applyPrefill } from './fieldPrefill.js';
 export { getSpeechRecognitionCtor, isWebSpeechSupported } from './speech.js';
 export { useWebSpeechInput } from './useWebSpeechInput.js';
 export { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
@@ -26,6 +27,7 @@ export {
   useUiPilot,
   type UiPilotContextValue,
   type UiPilotProviderProps,
+  type ExecuteStepOpts,
 } from './UiPilotContext.js';
 export { CommandPalette } from './CommandPalette.js';
 export { UiPilotFab } from './UiPilotFab.js';

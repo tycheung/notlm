@@ -48,11 +48,26 @@ export type StepStatus = {
   stale: boolean;
 };
 
+/** Clickable reply options (disambiguation / next-up). */
+export type ChatChoice = {
+  id: StepId;
+  label: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: 'assistant' | 'user' | 'system';
   text: string;
   at: number;
+  choices?: ChatChoice[];
+};
+
+/** Optional pack glossary for explain_field. */
+export type GlossaryEntry = {
+  id: string;
+  aliases: string[];
+  text: string;
+  guideId?: string;
 };
 
 export type ParseUtteranceResult = {
@@ -96,6 +111,7 @@ export type PackRuntime = {
   isComplete: Record<StepId, CompletenessFn>;
   resolveNav: (stepId: StepId, ctx: RuntimeContextBase) => NavResolve | null;
   unavailableReason?: (stepId: StepId, ctx: RuntimeContextBase) => string | null;
+  glossary?: GlossaryEntry[];
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -112,6 +128,7 @@ export type ControlDef = {
   openModal?: string;
   spotlight?: string;
   coachMessage?: string;
+  prefill?: SlotBag;
 };
 
 export type IntentConfig = {
@@ -141,6 +158,7 @@ export type PackJsonInput = {
   controls: ControlDef[];
   intents: IntentConfig;
   binders: Record<string, BinderPredicate>;
+  glossary?: GlossaryEntry[];
 };
 
 export type IntentParsePack = {

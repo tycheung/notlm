@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {
+  cmdAnnotateChecklist,
   cmdChecklistMd,
   cmdDagGenerate,
   cmdExtractStatic,
@@ -11,6 +12,7 @@ import {
   cmdPackAccept,
   cmdPackAuthor,
   cmdTraceIngest,
+  cmdTraceNew,
   cmdValidate,
 } from './commands.js';
 import { cmdMap, cmdPrepare, cmdTune } from './cmdMapTunePrepare.js';
@@ -45,12 +47,23 @@ async function main(): Promise<void> {
         await cmdExtractStatic(rest);
         break;
       case 'trace':
-        if (sub !== 'ingest') {
+        if (sub === 'ingest') {
+          await cmdTraceIngest(rest);
+        } else if (sub === 'new') {
+          await cmdTraceNew(rest);
+        } else {
           usage();
           process.exitCode = 1;
           return;
         }
-        await cmdTraceIngest(rest);
+        break;
+      case 'annotate':
+        if (sub !== 'checklist') {
+          usage();
+          process.exitCode = 1;
+          return;
+        }
+        await cmdAnnotateChecklist(rest);
         break;
       case 'jobs':
         if (sub !== 'import') {
@@ -152,6 +165,8 @@ function usage(): void {
   uipilotCLI validate [dir]
   uipilotCLI inventory crawl --html <file> | --url <url> [dir]
   uipilotCLI extract static [dir] --src <path>
+  uipilotCLI annotate checklist [dir]
+  uipilotCLI trace new [dir]
   uipilotCLI trace ingest <trace.json> [dir]
   uipilotCLI jobs import <jobs.yaml|json> [dir]
   uipilotCLI checklist md [dir] [--write [CHECKLIST.md]]

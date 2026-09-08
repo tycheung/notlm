@@ -5,7 +5,8 @@
     "stepId": "create_list",
     "path": "guide-create-list",
     "spotlight": "guide-create-list",
-    "coachMessage": "Click Create list — the coach only presses this button (no API)."
+    "coachMessage": "Click Create list — the coach only presses this button (no API).",
+    "prefill": { "list_name": "Shopping" }
   },
   {
     "id": "guide-add-item",
@@ -13,7 +14,8 @@
     "stepId": "add_item",
     "path": "guide-add-item",
     "spotlight": "guide-add-item",
-    "coachMessage": "Click Add item to append a todo via the host UI."
+    "coachMessage": "Click Add item to append a todo via the host UI.",
+    "prefill": { "item_text": "Milk" }
   },
   {
     "id": "guide-complete-item",

@@ -39,6 +39,97 @@ import {
   writeJsonFile,
 } from './uipilotHome.js';
 
+/**
+ * `uipilotCLI annotate checklist [dir]`
+ * Merges host annotation DoD items into checklist.json (idempotent by id).
+ */
+export async function cmdAnnotateChecklist(args: string[]): Promise<void> {
+  const dir = args.find((a) => !a.startsWith('-'));
+  const { home } = resolveUipilotHome(dir);
+  if (!pathExists(home)) {
+    console.error(`Missing UiPilot home: ${home} (run uipilotCLI init)`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const items: Array<Record<string, unknown>> = [
+    {
+      id: 'annotate-guide-ids',
+      kind: 'annotate',
+      message: 'Add data-guide-id on every CTA/field named in controls.json',
+      checked: false,
+    },
+    {
+      id: 'annotate-get-context',
+      kind: 'annotate',
+      message: 'Wire getContext().data keys to match binders.json paths',
+      checked: false,
+    },
+    {
+      id: 'annotate-navigate-click',
+      kind: 'annotate',
+      message: 'navigate() must click/focus [data-guide-id] (UI-actions only)',
+      checked: false,
+    },
+    {
+      id: 'annotate-notify-complete',
+      kind: 'annotate',
+      message: 'Call notifyStepCompleted(stepId) after host save that finishes a step',
+      checked: false,
+    },
+    {
+      id: 'annotate-field-prefill',
+      kind: 'annotate',
+      message: 'Annotate fillable inputs with guide ids matching control prefill keys',
+      checked: false,
+    },
+    {
+      id: 'annotate-intents-check',
+      kind: 'annotate',
+      message: 'Run uipilotCLI intents check until green before accepting drafts',
+      checked: false,
+    },
+  ];
+
+  const path = join(home, 'checklist.json');
+  const current = pathExists(path)
+    ? readJsonFile<{ items?: Array<{ id?: string }> }>(path)
+    : { items: [] };
+  const list = Array.isArray(current.items) ? [...current.items] : [];
+  const have = new Set(list.map((i) => i.id).filter(Boolean));
+  let added = 0;
+  for (const item of items) {
+    if (have.has(item.id as string)) continue;
+    list.push(item);
+    added += 1;
+  }
+  writeJsonFile(path, { items: list });
+  console.log(`Annotation checklist: ${path} (+${added} items, ${list.length} total)`);
+}
+
+/**
+ * `uipilotCLI trace new [dir]` — empty click trace under traces/ for record mode.
+ */
+export async function cmdTraceNew(args: string[]): Promise<void> {
+  const dir = args.find((a) => !a.startsWith('-'));
+  const { home } = resolveUipilotHome(dir);
+  if (!pathExists(home)) {
+    console.error(`Missing UiPilot home: ${home} (run uipilotCLI init)`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const trace: ClickTrace = {
+    recordedAt: new Date().toISOString(),
+    baseUrl: '',
+    events: [],
+  };
+  const saved = writeTraceFile(home, trace, `trace-recording-${stamp}`);
+  console.log(`Started empty trace at ${saved}`);
+  console.log('Append click/navigate events, then: uipilotCLI trace ingest <file> [dir]');
+}
+
 export async function cmdInit(dir?: string): Promise<void> {
   const { home } = resolveUipilotHome(dir);
   if (pathExists(home)) {

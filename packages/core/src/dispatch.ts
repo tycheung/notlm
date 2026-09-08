@@ -1,4 +1,5 @@
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
+import { matchGlossaryEntry } from './glossary.js';
 import { parseUtterance } from './intents.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
 import { pathMatchesStep } from './pageContext.js';
@@ -9,22 +10,35 @@ import {
   planResumeQueue,
 } from './queueAdvance.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
-import type { GuideAction, LoadedPack, SessionSlots, StepId, StepStatus } from './types.js';
+import type {
+  ChatChoice,
+  GuideAction,
+  LoadedPack,
+  SessionSlots,
+  StepId,
+  StepStatus,
+} from './types.js';
 
 export type DispatchDeps = {
   text: string;
   pack: LoadedPack;
   session: SessionSlots;
   ctx: { pathname: string; data: Record<string, unknown> };
-  pushAssistant: (text: string) => void;
+  pushAssistant: (text: string, opts?: { choices?: ChatChoice[] }) => void;
   executeStep: (stepId: StepId, opts?: Record<string, unknown>) => void;
   setSession: (updater: (session: SessionSlots) => SessionSlots) => void;
+  /** Optional: flash a glossary field guide id (DOM). */
+  flashField?: (guideId: string) => void;
 };
 
 const MAX_SUGGESTED_NEXT = 4;
 
 function stepTitle(pack: LoadedPack, stepId: StepId): string {
   return pack.steps.find((s) => s.id === stepId)?.title ?? stepId;
+}
+
+function stepChoices(pack: LoadedPack, stepIds: StepId[]): ChatChoice[] {
+  return stepIds.map((id) => ({ id, label: stepTitle(pack, id) }));
 }
 
 function resolveGoBackStep(session: SessionSlots): StepId | null {
@@ -89,7 +103,11 @@ function suggestNextStepOptions(
     .slice(0, MAX_SUGGESTED_NEXT);
 }
 
-function unintelligiblePrompt(pack: LoadedPack, options: StepStatus[], session: SessionSlots): string {
+function unintelligiblePrompt(
+  pack: LoadedPack,
+  options: StepStatus[],
+  session: SessionSlots
+): string {
   if (session.actionQueue.length > 0) {
     const head = session.actionQueue[0]!;
     return (
@@ -155,7 +173,8 @@ function launchStep(
 }
 
 export function dispatchUserUtterance(deps: DispatchDeps): void {
-  const { text, pack, session, ctx, pushAssistant, executeStep, setSession } = deps;
+  const { text, pack, session, ctx, pushAssistant, executeStep, setSession, flashField } =
+    deps;
   const trimmed = text.trim();
   if (!trimmed) return;
 
@@ -194,7 +213,9 @@ export function dispatchUserUtterance(deps: DispatchDeps): void {
       launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection);
       return;
     }
-    pushAssistant(disambiguationPrompt(pack, parsed.candidates));
+    pushAssistant(disambiguationPrompt(pack, parsed.candidates), {
+      choices: stepChoices(pack, parsed.candidates),
+    });
     return;
   }
 
@@ -219,6 +240,12 @@ export function dispatchUserUtterance(deps: DispatchDeps): void {
   }
 
   if (parsed.rawIntent === 'explain_field') {
+    const hit = matchGlossaryEntry(pack.glossary ?? [], trimmed);
+    if (hit) {
+      pushAssistant(hit.text);
+      if (hit.guideId) flashField?.(hit.guideId);
+      return;
+    }
     pushAssistant('Tell me which field you want explained.');
     return;
   }
@@ -238,7 +265,9 @@ export function dispatchUserUtterance(deps: DispatchDeps): void {
         return;
       }
     }
-    pushAssistant(unintelligiblePrompt(pack, options, session));
+    pushAssistant(unintelligiblePrompt(pack, options, session), {
+      choices: options.length ? stepChoices(pack, options.map((o) => o.id)) : undefined,
+    });
     return;
   }
 

@@ -18,8 +18,21 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(dialog.getByText(/didn.?t catch that/i)).toBeVisible();
-    await expect(dialog.getByText(/Create list/i)).toBeVisible();
+    await expect(page.getByTestId('uipilot-choice-create_list')).toBeVisible();
     await expect(page.getByText('No lists yet')).toBeVisible();
+
+    await page.getByTestId('uipilot-choice-create_list').click();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
+  test('explain_field uses glossary', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'explain list name');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/List name is the title/i)).toBeVisible();
   });
 
   test('packed queue blocks on DAG gap then injects and resumes', async ({ page }) => {

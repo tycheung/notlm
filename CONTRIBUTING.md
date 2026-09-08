@@ -18,9 +18,14 @@ Requires Node ≥ 20. Prefer **pnpm** when available (`pnpm-workspace.yaml` is p
 pnpm ci
 # or
 node scripts/ci/ci_check.mjs
+# PR / CI (includes Playwright demo smoke):
+node scripts/ci/ci_check.mjs --with-e2e
 # optional saturation fixture + @guide-saturate e2e:
 node scripts/ci/ci_check.mjs --with-saturation
 ```
+
+Default local gate: lint + typecheck + unit + `intents check` (demo-todo).
+`--with-e2e` (or `CI=true`) also runs demo Playwright projects.
 
 ### Saturation stop rule (when to stop generating)
 

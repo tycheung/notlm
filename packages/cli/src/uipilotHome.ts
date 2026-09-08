@@ -70,6 +70,7 @@ export const PACK_PIECES = [
   'intents.json',
   'binders.json',
   'corpus.json',
+  'glossary.json',
 ] as const;
 
 export function loadPackFolderJson(home: string): Record<string, unknown> {

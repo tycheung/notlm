@@ -2,7 +2,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cmdInit, cmdDagGenerate } from './commands.js';
+import { cmdAnnotateChecklist, cmdInit, cmdDagGenerate } from './commands.js';
 import { cmdMap, cmdTune } from './cmdMapTunePrepare.js';
 import { cmdScenariosGenerate, cmdScenariosSaturate } from './cmdScenarios.js';
 import { pathExists, resolveUipilotHome } from './uipilotHome.js';
@@ -87,5 +87,22 @@ describe('map / tune façade', () => {
     expect(data.candidates.length).toBe(12);
     expect(report.stopReason).toBe('force');
     expect(report.forcedCount).toBe(12);
+  });
+});
+
+describe('annotate checklist', () => {
+  it('merges host annotation DoD items idempotently', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'uipilot-ann-'));
+    temps.push(root);
+    await cmdInit(root);
+    const { home } = resolveUipilotHome(root);
+    await cmdAnnotateChecklist([root]);
+    await cmdAnnotateChecklist([root]);
+    const data = JSON.parse(readFileSync(join(home, 'checklist.json'), 'utf8')) as {
+      items: Array<{ id: string }>;
+    };
+    const ids = data.items.map((i) => i.id);
+    expect(ids.filter((id) => id === 'annotate-guide-ids')).toHaveLength(1);
+    expect(ids).toContain('annotate-notify-complete');
   });
 });

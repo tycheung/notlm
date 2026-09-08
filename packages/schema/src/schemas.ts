@@ -172,6 +172,22 @@ export const scenariosSchema = {
   },
 } as const;
 
+export const glossarySchema = {
+  $id: 'https://uipilot.dev/schemas/glossary.json',
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['id', 'aliases', 'text'],
+    properties: {
+      id: { type: 'string', minLength: 1 },
+      aliases: { type: 'array', items: { type: 'string' } },
+      text: { type: 'string', minLength: 1 },
+      guideId: { type: 'string' },
+    },
+  },
+} as const;
+
 export const configSchema = {
   $id: 'https://uipilot.dev/schemas/config.json',
   type: 'object',
@@ -193,6 +209,7 @@ export const PACK_PIECE_SCHEMAS = {
   corpus: corpusSchema,
   scenarios: scenariosSchema,
   config: configSchema,
+  glossary: glossarySchema,
 } as const;
 
 export type PackPieceName = keyof typeof PACK_PIECE_SCHEMAS;

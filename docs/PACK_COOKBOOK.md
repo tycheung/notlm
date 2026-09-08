@@ -314,11 +314,25 @@ CLI never auto-merges into `pack/` without an explicit accept path. That is inte
 [ ] intents: clean aliases for each step; meta listed if used
 [ ] binders: each hard step has a predicate on getContext().data
 [ ] corpus: clean + at least one reject case
+[ ] glossary (optional): explain_field entries with guideId
 [ ] Host: Provider/Host mounted; getContext; navigate clicks guides
 [ ] Host: notifyStepCompleted on finishing saves (if using queue)
+[ ] Host: field inputs annotated for prefill / explain flash
+[ ] uipilotCLI annotate checklist  # merges host DoD into checklist.json
 [ ] uipilotCLI intents check green
 [ ] Manual chat/palette smoke on the happy path
 ```
+
+---
+
+## Record mode (happy-path → draft DAG)
+
+1. `uipilotCLI trace new ./my-app` — creates an empty JSON under `.uipilot/traces/`.
+2. Append click/navigate events (`guideId`, `url`, optional `text`) while walking the job.
+3. `uipilotCLI trace ingest <trace.json> ./my-app` — writes a **low-confidence** flow/intents/corpus draft under `drafts/`.
+4. Review requires edges; run `intents check`; accept only when green.
+
+Record mode never auto-merges into `pack/`.
 
 ---
 

@@ -64,6 +64,9 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     pieces[key] = readJsonFile(path);
   }
 
+  const glossaryPath = join(pack, 'glossary.json');
+  const glossary = existsSync(glossaryPath) ? readJsonFile(glossaryPath) : undefined;
+
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
     throw new Error('pack/manifest.json must include string id');
@@ -75,6 +78,7 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     controls: (pieces.controls as PackJsonInput['controls']) ?? [],
     intents: pieces.intents as PackJsonInput['intents'],
     binders: normalizeBindersMap(pieces.binders),
+    glossary: Array.isArray(glossary) ? (glossary as PackJsonInput['glossary']) : undefined,
   };
 }
 
