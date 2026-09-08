@@ -34,7 +34,8 @@ function getValidator(piece: PackPieceName): ValidateFunction {
 function formatErrors(prefix: string, errors: ErrorObject[] | null | undefined): string[] {
   if (!errors?.length) return [`${prefix}: invalid`];
   return errors.map((e) => {
-    const path = e.instancePath || '/';
+    const err = e as ErrorObject & { dataPath?: string };
+    const path = err.instancePath || err.dataPath || '/';
     return `${prefix}${path} ${e.message ?? 'invalid'}`.trim();
   });
 }

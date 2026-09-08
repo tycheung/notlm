@@ -1,9 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+
+function shellQuote(arg) {
+  if (arg.length === 0) return '""';
+  if (!/[\s"&<>|^]/.test(arg)) return arg;
+  return `"${arg.replace(/"/g, '\\"')}"`;
+}
 
 function run(cmd, args, env) {
-  const r = spawnSync(cmd, args, {
+  const r = spawnSync(cmd, args.map(shellQuote), {
     stdio: 'inherit',
     shell: true,
     env: env ? { ...process.env, ...env } : process.env,
@@ -19,14 +23,12 @@ const withE2e =
   process.env.UIPILOT_CI_E2E === '1';
 const skipE2e = process.argv.includes('--skip-e2e');
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
-
 run(pm, ['run', 'lint']);
 run(pm, ['run', 'typecheck']);
 run(pm, ['run', 'test:coverage']);
 
 // Demo pack intent regression (no live LLM).
-run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', join(root, 'packs/demo-todo')]);
+run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', 'packs/demo-todo']);
 
 if (withE2e && !skipE2e) {
   run(pm, ['run', 'test:e2e:demo']);
