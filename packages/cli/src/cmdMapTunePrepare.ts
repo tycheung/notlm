@@ -3,10 +3,8 @@ import {
   cmdExtractStatic,
   cmdPackAuthor,
 } from './commands.js';
-import {
-  cmdScenariosSaturate,
-  runIntentsTuneIfPossible,
-} from './cmdScenarios.js';
+import { cmdScenariosSaturate } from './cmdScenarios.js';
+import { runIntentsTuneIfPossible } from './cmdScenariosAsk.js';
 import { pathExists, resolveUipilotHome } from './uipilotHome.js';
 
 function hasFlag(args: string[], name: string): boolean {
@@ -104,3 +102,4 @@ export async function cmdPrepare(args: string[]): Promise<void> {
   const tuneArgs = stripFlags(args, ['--llm']);
   await cmdTune(tuneArgs);
 }
+

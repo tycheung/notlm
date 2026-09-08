@@ -4,12 +4,10 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cmdAnnotateChecklist, cmdInit, cmdDagGenerate } from './commands.js';
 import { cmdMap, cmdTune } from './cmdMapTunePrepare.js';
-import {
-  cmdScenariosAsk,
-  cmdScenariosGenerate,
-  cmdScenariosSaturate,
-} from './cmdScenarios.js';
+import { cmdScenariosGenerate, cmdScenariosSaturate } from './cmdScenarios.js';
+import { cmdScenariosAsk, cmdScenariosLabelPool } from './cmdScenariosAsk.js';
 import { pathExists, resolveUipilotHome } from './uipilotHome.js';
+import { cmdRankerTrain } from './cmdRanker.js';
 
 const temps: string[] = [];
 const demoPack = join(process.cwd(), 'packs/demo-todo/.uipilot/pack');

@@ -7,6 +7,7 @@ import {
   cmdInit,
   cmdIntentsCheck,
   cmdIntentsTune,
+  cmdInventoryAttach,
   cmdInventoryCrawl,
   cmdJobsImport,
   cmdPackAccept,
@@ -17,11 +18,13 @@ import {
 } from './commands.js';
 import { cmdMap, cmdPrepare, cmdTune } from './cmdMapTunePrepare.js';
 import {
-  cmdScenariosAsk,
   cmdScenariosGenerate,
-  cmdScenariosLabelPool,
   cmdScenariosSaturate,
 } from './cmdScenarios.js';
+import {
+  cmdScenariosAsk,
+  cmdScenariosLabelPool,
+} from './cmdScenariosAsk.js';
 import { cmdRankerTrain } from './cmdRanker.js';
 
 async function main(): Promise<void> {
@@ -37,12 +40,15 @@ async function main(): Promise<void> {
         await cmdValidate(sub);
         break;
       case 'inventory':
-        if (sub !== 'crawl') {
+        if (sub === 'crawl') {
+          await cmdInventoryCrawl(rest);
+        } else if (sub === 'attach') {
+          await cmdInventoryAttach(rest);
+        } else {
           usage();
           process.exitCode = 1;
           return;
         }
-        await cmdInventoryCrawl(rest);
         break;
       case 'extract':
         if (sub !== 'static') {
@@ -186,6 +192,7 @@ function usage(): void {
   uipilotCLI init [dir]
   uipilotCLI validate [dir]
   uipilotCLI inventory crawl --html <file> | --url <url> [dir]
+  uipilotCLI inventory attach [dir] [--map <file>]
   uipilotCLI extract static [dir] --src <path>
   uipilotCLI annotate checklist [dir]
   uipilotCLI trace new [dir]
