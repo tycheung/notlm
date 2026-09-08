@@ -48,5 +48,20 @@
     "id": "s10-check-off",
     "utterance": "check off the task",
     "expect": { "stepId": "complete_item" }
+  },
+  {
+    "id": "s11-stt-create-lis",
+    "utterance": "create lis",
+    "expect": { "stepId": "create_list" }
+  },
+  {
+    "id": "s12-stt-add-ite",
+    "utterance": "add ite",
+    "expect": { "stepId": "add_item" }
+  },
+  {
+    "id": "s13-stt-complete-ite",
+    "utterance": "complete ite",
+    "expect": { "stepId": "complete_item" }
   }
 ]

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "say_hello",
+    "title": "Say hello",
+    "keywords": ["hello", "greet", "hi"],
+    "kind": "hard",
+    "requires": []
+  }
+]

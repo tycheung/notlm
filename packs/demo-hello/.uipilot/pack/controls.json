@@ -1,0 +1,9 @@
+[
+  {
+    "id": "guide-hello",
+    "stepId": "say_hello",
+    "path": "guide-hello",
+    "spotlight": "guide-hello",
+    "coachMessage": "Tap Say hello when you’re ready."
+  }
+]

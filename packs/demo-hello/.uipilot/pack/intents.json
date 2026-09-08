@@ -1,0 +1,6 @@
+{
+  "aliases": {
+    "say_hello": ["say hello", "hello", "greet me", "hi there"]
+  },
+  "meta": ["whats_next", "help"]
+}

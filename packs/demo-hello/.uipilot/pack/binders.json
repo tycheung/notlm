@@ -1,0 +1,3 @@
+[
+  { "stepId": "say_hello", "path": "data.helloCount", "op": "gte", "value": 1 }
+]

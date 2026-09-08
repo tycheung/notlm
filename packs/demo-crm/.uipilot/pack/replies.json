@@ -11,5 +11,9 @@
   ],
   "ask_slot": ["{{prompt}}"],
   "cancel": ["Okay, cancelled."],
-  "affirm_skip": ["Alright — say when you’re ready."]
+  "affirm_skip": ["Alright — say when you’re ready."],
+  "repair.blocked": ["{{message}}"],
+  "repair.ambiguous": ["{{message}}"],
+  "repair.unknown": ["{{message}}"],
+  "repair.low_confidence": ["Did you mean “{{title}}”? Say yes to continue."]
 }

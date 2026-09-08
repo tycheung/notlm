@@ -1,0 +1,7 @@
+{
+  "launch": ["Opening “{{title}}”."],
+  "repair.unknown": ["{{message}}"],
+  "repair.ambiguous": ["{{message}}"],
+  "repair.blocked": ["{{message}}"],
+  "repair.low_confidence": ["Did you mean “{{title}}”?"]
+}

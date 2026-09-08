@@ -1,0 +1,37 @@
+[
+  {
+    "id": "c1-add",
+    "utterance": "add contact",
+    "expect": { "stepId": "add_contact" }
+  },
+  {
+    "id": "c2-new",
+    "utterance": "new contact",
+    "expect": { "stepId": "add_contact" }
+  },
+  {
+    "id": "c3-save",
+    "utterance": "save contact",
+    "expect": { "stepId": "save_contact" }
+  },
+  {
+    "id": "c4-stt-add",
+    "utterance": "add contac",
+    "expect": { "stepId": "add_contact" }
+  },
+  {
+    "id": "c5-stt-save",
+    "utterance": "save contac",
+    "expect": { "stepId": "save_contact" }
+  },
+  {
+    "id": "c6-whats-next",
+    "utterance": "what's next",
+    "expect": { "rawIntent": "whats_next" }
+  },
+  {
+    "id": "c7-negative",
+    "utterance": "asdf qwer zxcv",
+    "expect": { "stepId": null }
+  }
+]

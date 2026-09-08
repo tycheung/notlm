@@ -1,0 +1,27 @@
+[
+  {
+    "id": "h1-hello",
+    "utterance": "say hello",
+    "expect": { "stepId": "say_hello" }
+  },
+  {
+    "id": "h2-hi",
+    "utterance": "hello",
+    "expect": { "stepId": "say_hello" }
+  },
+  {
+    "id": "h3-stt",
+    "utterance": "say hell",
+    "expect": { "stepId": "say_hello" }
+  },
+  {
+    "id": "h4-whats-next",
+    "utterance": "what's next",
+    "expect": { "rawIntent": "whats_next" }
+  },
+  {
+    "id": "h5-negative",
+    "utterance": "zzzz",
+    "expect": { "stepId": null }
+  }
+]
