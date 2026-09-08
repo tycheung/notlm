@@ -4,7 +4,16 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = join(process.cwd());
 const HARD_MAX = 1000;
-const SCAN_DIRS = ['packages/core/src', 'packages/react/src'];
+const SCAN_DIRS = [
+  'packages/core/src',
+  'packages/react/src',
+  'packages/cli/src',
+  'packages/author/src',
+  'packages/mapper/src',
+  'packages/schema/src',
+  'packages/codegen/src',
+  'packages/ranker/src',
+];
 
 function collectTsFiles(dir: string, out: string[] = []): string[] {
   let entries: string[];

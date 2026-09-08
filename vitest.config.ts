@@ -9,10 +9,11 @@ export default defineConfig({
       reporter: ['text', 'json-summary'],
       include: ['packages/core/src/**/*.ts'],
       exclude: ['**/*.test.ts', '**/index.ts', '**/loadFolder.ts', '**/types.ts'],
+      // PLAN / ci-002: core package floors ≥85% (coverage include is packages/core only).
       thresholds: {
-        lines: 75,
-        functions: 70,
-        statements: 75,
+        lines: 85,
+        functions: 85,
+        statements: 85,
       },
     },
   },

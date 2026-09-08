@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 function shellQuote(arg) {
   if (arg.length === 0) return '""';
@@ -15,6 +17,10 @@ function run(cmd, args, env) {
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
+function existsPack(rel) {
+  return existsSync(join(process.cwd(), rel, '.uipilot', 'pack', 'manifest.json'));
+}
+
 const pm = process.env.UIPILOT_PM || 'npm';
 const withSaturation = process.argv.includes('--with-saturation');
 const withE2e =
@@ -27,8 +33,12 @@ run(pm, ['run', 'lint']);
 run(pm, ['run', 'typecheck']);
 run(pm, ['run', 'test:coverage']);
 
-// Demo pack intent regression (no live LLM).
+// Pack schema gate (ci-004) + demo intent regression (no live LLM).
+run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-todo']);
 run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', 'packs/demo-todo']);
+if (existsPack('packs/demo-crm')) {
+  run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-crm']);
+}
 
 if (withE2e && !skipE2e) {
   run(pm, ['run', 'test:e2e:demo']);
