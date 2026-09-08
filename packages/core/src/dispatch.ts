@@ -1,6 +1,7 @@
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { parseUtterance } from './intents.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
+import { pathMatchesStep } from './pageContext.js';
 import {
   formatBlockedQueueMessage,
   injectBeforeDeferred,
@@ -33,19 +34,6 @@ function resolveGoBackStep(session: SessionSlots): StepId | null {
     if (idx > 0) return hist[idx - 1] ?? null;
   }
   return hist.length >= 2 ? (hist[hist.length - 2] ?? null) : null;
-}
-
-function pathMatchesStep(pathname: string, stepId: StepId): boolean {
-  const path = pathname.toLowerCase();
-  const id = stepId.toLowerCase();
-  if (path.includes(id)) return true;
-  const dashed = id.replace(/_/g, '-');
-  if (dashed !== id && path.includes(dashed)) return true;
-  const slashed = id.replace(/_/g, '/');
-  if (slashed !== id && path.includes(slashed)) return true;
-  const generic = new Set(['create', 'add', 'new', 'edit', 'update', 'set', 'get', 'open']);
-  const tokens = id.split('_').filter((t) => t.length >= 3 && !generic.has(t));
-  return tokens.some((t) => path.includes(t));
 }
 
 /** Prefer pathname, then a single available incomplete step among near-ties. */
