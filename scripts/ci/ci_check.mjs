@@ -23,6 +23,7 @@ function existsPack(rel) {
 
 const pm = process.env.UIPILOT_PM || 'npm';
 const withSaturation = process.argv.includes('--with-saturation');
+const withDx = process.argv.includes('--with-dx');
 const withE2e =
   process.argv.includes('--with-e2e') ||
   process.env.CI === 'true' ||
@@ -38,6 +39,15 @@ run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-todo']);
 run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', 'packs/demo-todo']);
 if (existsPack('packs/demo-crm')) {
   run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-crm']);
+}
+
+if (withDx) {
+  // Operator DX golden path: validate + intents check on all demo packs.
+  for (const pack of ['packs/demo-todo', 'packs/demo-crm', 'packs/demo-hello']) {
+    if (!existsPack(pack)) continue;
+    run(pm, ['run', 'uipilotCLI', '--', 'validate', pack]);
+    run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', pack]);
+  }
 }
 
 if (withE2e && !skipE2e) {
@@ -56,7 +66,9 @@ if (withSaturation) {
 console.log(
   withSaturation
     ? 'ci_check: ok (with saturation)'
-    : withE2e && !skipE2e
-      ? 'ci_check: ok (with e2e)'
-      : 'ci_check: ok'
+    : withDx
+      ? 'ci_check: ok (with dx)'
+      : withE2e && !skipE2e
+        ? 'ci_check: ok (with e2e)'
+        : 'ci_check: ok'
 );

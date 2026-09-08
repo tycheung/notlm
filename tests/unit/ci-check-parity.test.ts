@@ -13,6 +13,8 @@ describe('ci_check parity', () => {
     expect(src).toContain('intents');
     expect(src).toContain('check');
     expect(src).toContain('--with-e2e');
+    expect(src).toContain('--with-dx');
     expect(src).toContain('test:e2e:demo');
+    expect(src).toContain('demo-hello');
   });
 });

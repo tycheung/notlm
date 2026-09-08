@@ -2,8 +2,10 @@ import { defineConfig, devices } from '@playwright/test';
 
 const demoTodoPort = 5173;
 const demoCrmPort = 5174;
+const demoHelloPort = 5175;
 const demoTodoBaseURL = `http://127.0.0.1:${demoTodoPort}`;
 const demoCrmBaseURL = `http://127.0.0.1:${demoCrmPort}`;
+const demoHelloBaseURL = `http://127.0.0.1:${demoHelloPort}`;
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -34,6 +36,22 @@ export default defineConfig({
         baseURL: demoCrmBaseURL,
       },
     },
+    {
+      name: 'demo-hello',
+      testMatch: /demo-hello.*\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: demoHelloBaseURL,
+      },
+    },
+    {
+      name: 'demo-todo-firefox',
+      testMatch: /demo-todo-coach\.spec\.ts/,
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: demoTodoBaseURL,
+      },
+    },
   ],
   webServer: [
     {
@@ -45,6 +63,12 @@ export default defineConfig({
     {
       command: 'npm run dev -w @uipilot/demo-crm',
       url: demoCrmBaseURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+    {
+      command: 'npm run dev -w @uipilot/demo',
+      url: demoHelloBaseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
     },

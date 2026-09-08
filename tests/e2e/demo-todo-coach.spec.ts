@@ -49,4 +49,19 @@ test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
       page.getByRole('dialog', { name: 'Workflow command palette' })
     ).toBeVisible();
   });
+
+  test('Firefox voice degrades to type-only', async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'demo-todo-firefox',
+      'Firefox-only type-only smoke'
+    );
+    await page.goto('/');
+    await openChat(page);
+    await expect(page.getByTestId('uipilot-chat-input')).toBeVisible();
+    await expect(page.getByText(/Voice unavailable — type instead/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /voice input/i })).toHaveAttribute(
+      'title',
+      /Voice unavailable/i
+    );
+  });
 });
