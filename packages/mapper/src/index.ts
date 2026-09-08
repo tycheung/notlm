@@ -39,4 +39,11 @@ export {
   type CorpusSeedCase,
 } from './recordTrace.js';
 
+export {
+  attachInventoryToSteps,
+  type AttachControlMapResult,
+  type ControlStepMap,
+  type NavControlStub,
+} from './attachControlMap.js';
+
 export const MAPPER_STATUS = 'ready' as const;
