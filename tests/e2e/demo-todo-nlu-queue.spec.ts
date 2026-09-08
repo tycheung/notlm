@@ -43,6 +43,48 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     await expect(dialog.getByText(/local demo/i)).toBeVisible();
   });
 
+  test('base greeting faq answers hello', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'Hello, what can you do for me today?');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/UI coach|annotated workflows|what can you do/i)).toBeVisible();
+  });
+
+  test('help lists available steps', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'what can you do');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/available now/i)).toBeVisible();
+    await expect(page.getByTestId('uipilot-choice-create_list')).toBeVisible();
+  });
+
+  test('entity lookup finds a list by name and flashes its row', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'create list');
+    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible({
+      timeout: 10_000,
+    });
+
+    await sendUtterance(page, 'show me the Shopping list');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/Found .*Shopping/i)).toBeVisible();
+    await expect(page.locator('[data-guide-id^="guide-list-row-"]').first()).toBeVisible();
+  });
+
+  test('userFill fields get a coach prompt on create list', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'create list');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/fill in the highlighted field|fill in these/i)).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.locator('[data-guide-id="guide-list-name"]')).toBeVisible();
+  });
+
   test('packed queue blocks on DAG gap then injects and resumes', async ({ page }) => {
     await page.goto('/');
     await openChat(page);

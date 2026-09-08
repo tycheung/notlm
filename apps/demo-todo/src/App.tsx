@@ -12,7 +12,12 @@ import rankerJson from '../../../packs/demo-todo/.uipilot/pack/ranker.json';
 
 type TodoList = { id: string; name: string };
 type TodoItem = { id: string; listId: string; text: string; done: boolean };
-type ContextBag = { listCount: number; itemCount: number; completedCount: number };
+type ContextBag = {
+  listCount: number;
+  itemCount: number;
+  completedCount: number;
+  lists: Array<{ id: string; name: string }>;
+};
 
 let idSeq = 0;
 function nextId(prefix: string) {
@@ -32,6 +37,7 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
       listCount: nextLists.length,
       itemCount: nextItems.length,
       completedCount: nextItems.filter((i) => i.done).length,
+      lists: nextLists.map((l) => ({ id: l.id, name: l.name })),
     };
   };
 
@@ -94,7 +100,9 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
         </div>
         <ul>
           {lists.map((list) => (
-            <li key={list.id}>{list.name}</li>
+            <li key={list.id} data-guide-id={`guide-list-row-${list.id}`}>
+              {list.name}
+            </li>
           ))}
           {lists.length === 0 && <li className="muted">No lists yet</li>}
         </ul>
@@ -143,7 +151,12 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
 
 export function App() {
   const pack = useMemo(() => loadDemoTodoPack(), []);
-  const bagRef = useRef<ContextBag>({ listCount: 0, itemCount: 0, completedCount: 0 });
+  const bagRef = useRef<ContextBag>({
+    listCount: 0,
+    itemCount: 0,
+    completedCount: 0,
+    lists: [],
+  });
   const onnxRanker = isOnnxRankerEnabled({
     onnxRanker:
       typeof import.meta !== 'undefined' &&

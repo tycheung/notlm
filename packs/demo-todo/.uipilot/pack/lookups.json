@@ -1,0 +1,11 @@
+[
+  {
+    "id": "lists",
+    "dataPath": "lists",
+    "nameKey": "name",
+    "idKey": "id",
+    "utteranceHints": ["show me", "open", "find", "go to"],
+    "entityWords": ["list", "lists"],
+    "guideIdTemplate": "guide-list-row-{{id}}"
+  }
+]
