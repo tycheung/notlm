@@ -57,6 +57,8 @@ export type ChatMessage = {
 
 export type ParseUtteranceResult = {
   stepId: StepId | null;
+  /** Near-tied step matches when the utterance is ambiguous across contexts. */
+  candidates?: StepId[];
   slotPatches: SlotBag;
   isCorrection: boolean;
   goBack: boolean;

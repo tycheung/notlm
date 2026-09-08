@@ -111,20 +111,38 @@ function matchMetaIntent(text: string, enabledMeta?: string[]): string | null {
   return null;
 }
 
-function matchStep(text: string, pack: IntentParsePack): StepId | null {
+/** Treat scores within this fraction of the best as a keyword collision. */
+const COLLISION_SCORE_RATIO = 0.92;
+
+function matchStepCandidates(
+  text: string,
+  pack: IntentParsePack
+): Array<{ id: StepId; score: number }> {
   const n = text.includes(' ') || text === text.toLowerCase() ? text : normalizeUtterance(text);
   const haystack = normalizeUtterance(n);
-  let best: { id: StepId; score: number } | null = null;
+  const bestByStep = new Map<StepId, number>();
 
   for (const step of pack.steps) {
     const phrases = [step.title, ...step.keywords, ...(pack.aliases[step.id] || [])];
     for (const phrase of phrases) {
       const score = phraseScore(haystack, phrase);
       if (score <= 0) continue;
-      if (!best || score > best.score) best = { id: step.id, score };
+      const prev = bestByStep.get(step.id) ?? 0;
+      if (score > prev) bestByStep.set(step.id, score);
     }
   }
-  return best?.id ?? null;
+
+  let top = 0;
+  for (const score of bestByStep.values()) {
+    if (score > top) top = score;
+  }
+  if (top <= 0) return [];
+
+  const floor = top * COLLISION_SCORE_RATIO;
+  return [...bestByStep.entries()]
+    .filter(([, score]) => score >= floor)
+    .map(([id, score]) => ({ id, score }))
+    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
 
 export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteranceResult {
@@ -149,7 +167,11 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
     meta === 'explain_field' ||
     meta === 'skip_side_actions' ||
     meta === 'lookup_participant';
-  let stepId = metaBlocksStep ? null : matchStep(normalized, pack);
+
+  const stepHits = metaBlocksStep ? [] : matchStepCandidates(normalized, pack);
+  let stepId: StepId | null = stepHits.length === 1 ? (stepHits[0]?.id ?? null) : null;
+  const candidates =
+    !metaBlocksStep && stepHits.length >= 2 ? stepHits.map((h) => h.id) : undefined;
 
   if (isCorrection && stepId) {
     const phrases = [
@@ -168,12 +190,14 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
   else if (meta === 'explain_field') rawIntent = 'explain_field';
   else if (meta === 'skip_side_actions') rawIntent = 'skip_side_actions';
   else if (meta === 'lookup_participant') rawIntent = 'lookup_participant';
+  else if (candidates && candidates.length >= 2) rawIntent = 'ambiguous';
   else if (isCorrection) rawIntent = 'correction';
   else if (stepId) rawIntent = `goto:${stepId}`;
   else rawIntent = 'unknown';
 
   return {
     stepId,
+    candidates,
     slotPatches: {},
     isCorrection,
     goBack,

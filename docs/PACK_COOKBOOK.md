@@ -294,8 +294,9 @@ CLI never auto-merges into `pack/` without an explicit accept path. That is inte
 
 | Symptom | Likely cause |
 |---------|----------------|
-| Utterance unmatched | Missing alias or corpus expect wrong |
+| Utterance unmatched | Missing alias — or gibberish: coach offers next DAG steps from screen/flow instead of guessing |
 | Chat works, UI does nothing | `navigate` does not click `data-guide-id`, or id mismatch |
+| Coach asks “which one?” | Shared keyword across steps — reply with the step title, add a longer alias, or land on a page that biases the match |
 | Step always incomplete | Binder path ≠ `getContext().data` key, or op/value wrong |
 | Step always available too early | Missing / weak `requires` |
 | Coach “cheats” | Host called a product API from coach code — remove it; click UI instead |

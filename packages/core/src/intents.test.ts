@@ -51,6 +51,68 @@ describe('parseUtterance', () => {
     expect(result.isCorrection).toBe(true);
     expect(result.rawIntent).toBe('correction');
   });
+
+  it('flags keyword collisions instead of silently picking one step', () => {
+    const collisionPack: IntentParsePack = {
+      steps: [
+        {
+          id: 'create_list',
+          title: 'Create list',
+          keywords: ['create', 'list'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'create_event',
+          title: 'Create event',
+          keywords: ['create', 'event'],
+          kind: 'hard',
+          requires: [],
+        },
+      ],
+      aliases: {
+        create_list: ['create'],
+        create_event: ['create'],
+      },
+      meta: ['go_back', 'whats_next'],
+    };
+    const result = parseUtterance('create', collisionPack);
+    expect(result.stepId).toBeNull();
+    expect(result.rawIntent).toBe('ambiguous');
+    expect(result.candidates?.sort()).toEqual(['create_event', 'create_list']);
+  });
+
+  it('keeps a clear longer-phrase winner over a shared short keyword', () => {
+    const collisionPack: IntentParsePack = {
+      steps: [
+        {
+          id: 'create_list',
+          title: 'Create list',
+          keywords: ['create', 'create list'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'create_event',
+          title: 'Create event',
+          keywords: ['create', 'create event'],
+          kind: 'hard',
+          requires: [],
+        },
+      ],
+      aliases: {},
+      meta: [],
+    };
+    expect(parseUtterance('create list', collisionPack).stepId).toBe('create_list');
+    expect(parseUtterance('create list', collisionPack).rawIntent).toBe('goto:create_list');
+  });
+
+  it('does not mark unique matches as ambiguous', () => {
+    const result = parseUtterance('add todo', pack);
+    expect(result.stepId).toBe('add_item');
+    expect(result.rawIntent).toBe('goto:add_item');
+    expect(result.candidates).toBeUndefined();
+  });
 });
 
 describe('parsePackedUtterance', () => {
