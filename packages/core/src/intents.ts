@@ -209,6 +209,15 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
   else if (stepId) rawIntent = `goto:${stepId}`;
   else rawIntent = 'unknown';
 
+  const topScore = stepHits[0]?.score ?? 0;
+  let confidence: 'high' | 'mid' | 'low' | undefined;
+  if (stepId || (candidates && candidates.length >= 2)) {
+    // ≥500 substring/exact; ≥250 fuzzy; else truncated-STT / weak prefix.
+    if (topScore >= 500) confidence = 'high';
+    else if (topScore >= 250) confidence = 'mid';
+    else confidence = 'low';
+  }
+
   return {
     stepId,
     candidates,
@@ -216,5 +225,6 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
     isCorrection,
     goBack,
     rawIntent,
+    confidence,
   };
 }

@@ -1,10 +1,11 @@
+import { emitCoachEvent } from './coachEvents.js';
 import { resolveDiscourse } from './discourse.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
+import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
 import { matchFaqEntry, matchGlossaryEntry } from './glossary.js';
 import { parseUtterance } from './intents.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
-import { pathMatchesStep } from './pageContext.js';
 import {
   formatBlockedQueueMessage,
   injectBeforeDeferred,
@@ -12,17 +13,27 @@ import {
   planResumeQueue,
 } from './queueAdvance.js';
 import { gateBeforeLaunch, handlePendingUtterance } from './dispatchTalk.js';
+import {
+  disambiguationPrompt,
+  lowConfidencePrompt,
+  resolveGoBackStep,
+  resolveKeywordCollision,
+  stepChoices,
+  stepTitle,
+  suggestNextStepOptions,
+  unintelligiblePrompt,
+} from './dispatchResolve.js';
 import { pickReply } from './replies.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
 import type {
   ChatChoice,
+  CoachEvent,
   GuideAction,
   IntentParsePack,
   LoadedPack,
   ParseUtteranceResult,
   SessionSlots,
   StepId,
-  StepStatus,
 } from './types.js';
 
 export type ParseUtteranceFn = (
@@ -45,108 +56,20 @@ export type DispatchDeps = {
    * Defaults to rule-based parseUtterance.
    */
   parseUtteranceFn?: ParseUtteranceFn;
+  /** Optional structured telemetry (no secrets). */
+  onCoachEvent?: (event: CoachEvent) => void;
 };
 
-const MAX_SUGGESTED_NEXT = 4;
-
-function stepTitle(pack: LoadedPack, stepId: StepId): string {
-  return pack.steps.find((s) => s.id === stepId)?.title ?? stepId;
-}
-
-function stepChoices(pack: LoadedPack, stepIds: StepId[]): ChatChoice[] {
-  return stepIds.map((id) => ({ id, label: stepTitle(pack, id) }));
-}
-
-function resolveGoBackStep(session: SessionSlots): StepId | null {
-  const hist = session.history;
-  if (session.activeStep && hist.length >= 2) {
-    const idx = hist.lastIndexOf(session.activeStep);
-    if (idx > 0) return hist[idx - 1] ?? null;
-  }
-  return hist.length >= 2 ? (hist[hist.length - 2] ?? null) : null;
-}
-
-/** Prefer pathname, then a single available incomplete step among near-ties. */
-function resolveKeywordCollision(
-  candidates: StepId[],
-  pack: LoadedPack,
-  ctx: { pathname: string; data: Record<string, unknown> },
-  session: SessionSlots
-): StepId | null {
-  if (candidates.length <= 1) return candidates[0] ?? null;
-
-  const pathHits = candidates.filter((id) => pathMatchesStep(ctx.pathname, id));
-  if (pathHits.length === 1) return pathHits[0] ?? null;
-
-  const statuses = evaluateFlowStatuses(pack, ctx, session.stale);
-  const byId = new Map(statuses.map((s) => [s.id, s]));
-
-  const availableIncomplete = candidates.filter((id) => {
-    const s = byId.get(id);
-    return Boolean(s?.available && !s.complete);
-  });
-  if (availableIncomplete.length === 1) return availableIncomplete[0] ?? null;
-
-  const available = candidates.filter((id) => byId.get(id)?.available);
-  if (available.length === 1) return available[0] ?? null;
-
-  return null;
-}
-
-function disambiguationPrompt(pack: LoadedPack, candidates: StepId[]): string {
-  const labels = candidates.map((id) => `“${stepTitle(pack, id)}”`);
-  if (labels.length === 2) {
-    return `That could mean ${labels[0]} or ${labels[1]}. Which one did you mean?`;
-  }
-  return `That could mean several things. Which one: ${labels.join(', ')}?`;
-}
-
-/** Next incomplete available steps, path-relevant first, capped for chat. */
-function suggestNextStepOptions(
-  pack: LoadedPack,
-  ctx: { pathname: string; data: Record<string, unknown> },
-  session: SessionSlots
-): StepStatus[] {
-  const statuses = evaluateFlowStatuses(pack, ctx, session.stale);
-  const next = nextAvailableSteps(statuses);
-  return [...next]
-    .sort((a, b) => {
-      const ap = pathMatchesStep(ctx.pathname, a.id) ? 0 : 1;
-      const bp = pathMatchesStep(ctx.pathname, b.id) ? 0 : 1;
-      if (ap !== bp) return ap - bp;
-      return 0;
-    })
-    .slice(0, MAX_SUGGESTED_NEXT);
-}
-
-function unintelligiblePrompt(
-  pack: LoadedPack,
-  options: StepStatus[],
-  session: SessionSlots
-): string {
-  if (session.actionQueue.length > 0) {
-    const head = session.actionQueue[0]!;
-    return (
-      `I didn’t catch that. You still have “${stepTitle(pack, head.stepId)}” queued — ` +
-      `say “what’s next” to resume, or name a checklist step.`
-    );
-  }
-  if (options.length === 0) {
-    return (
-      `I didn’t catch that — and you’re caught up on the checklist. ` +
-      `Try naming a step if you want to revisit one.`
-    );
-  }
-  const labels = options.map((s) => `“${s.title}”`);
-  if (labels.length === 1) {
-    return (
-      `I didn’t catch that. From where you are, next up looks like ${labels[0]} — ` +
-      `say that name if you want to go there.`
-    );
-  }
-  return (
-    `I didn’t catch that. From where you are, next up could be: ${labels.join(', ')}. Which one?`
-  );
+function trackSession(deps: DispatchDeps): DispatchDeps {
+  const tracked: DispatchDeps = {
+    ...deps,
+    session: deps.session,
+    setSession: (updater) => {
+      tracked.session = updater(tracked.session);
+      deps.setSession(() => tracked.session);
+    },
+  };
+  return tracked;
 }
 
 function launchStep(
@@ -162,7 +85,12 @@ function launchStep(
   if (!isCorrection) {
     const missing = listMissingRequires(pack, targetStep, ctx, session.stale);
     if (missing.length > 0) {
-      pushAssistant(formatBlockedQueueMessage(pack, targetStep, missing));
+      const message = formatBlockedQueueMessage(pack, targetStep, missing);
+      const picked = pickReply(session, pack.replies, 'repair.blocked', { message });
+      setSession(() => picked.session);
+      pushAssistant(picked.text);
+      emitCoachEvent(deps, { type: 'blocked', stepId: targetStep, missing });
+      emitCoachEvent(deps, { type: 'repair', kind: 'blocked' });
       return;
     }
   }
@@ -172,6 +100,16 @@ function launchStep(
     !opts?.skipGate &&
     gateBeforeLaunch(pack, session, targetStep, slots, sink)
   ) {
+    const pending = deps.session.pending;
+    if (pending?.kind === 'ask_slot') {
+      emitCoachEvent(deps, {
+        type: 'slot_ask',
+        stepId: targetStep,
+        slotKey: pending.slotKey,
+      });
+    } else if (pending?.kind === 'confirm') {
+      emitCoachEvent(deps, { type: 'confirm_ask', stepId: targetStep });
+    }
     return;
   }
 
@@ -194,24 +132,31 @@ function launchStep(
       };
       setSession(() => next);
       if (injected.message) pushAssistant(injected.message);
+      emitCoachEvent(deps, { type: 'launch', stepId: targetStep, gated: false });
       executeStep(targetStep, { prefill: slots, skipCoach: true });
       return;
     }
   }
 
+  const staleDependents = isCorrection
+    ? dependentStepIds(pack.steps, targetStep)
+    : [];
   let next = session;
   if (Object.keys(slots).length > 0) {
-    next = patchStepSlots(next, targetStep, slots, { isCorrection });
+    next = patchStepSlots(next, targetStep, slots, {
+      isCorrection,
+      staleDependents,
+    });
   }
   if (isCorrection) {
-    next = goBackToStep(next, targetStep, []);
+    next = goBackToStep(next, targetStep, staleDependents);
   }
   next = {
     ...next,
     pending: null,
     discourse: { ...(next.discourse ?? {}), lastStepId: targetStep },
   };
-  const picked = pickReply(next, pack.replies, isCorrection ? 'launch' : 'launch', {
+  const picked = pickReply(next, pack.replies, 'launch', {
     title: stepTitle(pack, targetStep),
     stepId: targetStep,
   });
@@ -220,6 +165,12 @@ function launchStep(
     : picked.text;
   setSession(() => picked.session);
   pushAssistant(text);
+  emitCoachEvent(deps, {
+    type: 'launch',
+    stepId: targetStep,
+    gated: !opts?.skipGate,
+    correction: isCorrection,
+  });
   executeStep(targetStep, { prefill: slots, skipCoach: true });
 }
 
@@ -227,17 +178,20 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   const trimmed = deps.text.trim();
   if (!trimmed) return;
 
-  const sink = { pushAssistant: deps.pushAssistant, setSession: deps.setSession };
+  const live = trackSession(deps);
+  emitCoachEvent(live, { type: 'utterance', textLength: trimmed.length });
+
+  const sink = { pushAssistant: live.pushAssistant, setSession: live.setSession };
   const pendingResult = handlePendingUtterance(
-    deps.pack,
-    deps.session,
+    live.pack,
+    live.session,
     trimmed,
     sink
   );
   if (pendingResult.handled) {
     if (pendingResult.launch) {
       launchStep(
-        { ...deps, session: { ...deps.session, pending: null } },
+        live,
         pendingResult.launch.stepId,
         pendingResult.launch.slots,
         false,
@@ -247,26 +201,69 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     return;
   }
 
-  const discourse = resolveDiscourse(trimmed, deps.session.discourse);
+  const discourse = resolveDiscourse(trimmed, live.session.discourse);
+  if (discourse.kind === 'undo') {
+    const prev = resolveGoBackStep(live.session);
+    if (!prev) {
+      live.pushAssistant('Nothing to undo yet.');
+      return;
+    }
+    live.setSession((s) => goBackToStep(s, prev, []));
+    live.pushAssistant(`Okay — back to “${stepTitle(live.pack, prev)}”.`);
+    live.executeStep(prev);
+    return;
+  }
+  if (discourse.kind === 'repair_slot') {
+    const stepId = live.session.discourse?.lastStepId;
+    if (!stepId) {
+      live.pushAssistant('Tell me which step to update first.');
+      return;
+    }
+    const slots = discourse.slotHint ? { name: discourse.slotHint } : {};
+    if (discourse.slotHint) {
+      launchStep(live, stepId, slots, true);
+      return;
+    }
+    live.setSession((s) => ({
+      ...s,
+      pending: {
+        kind: 'ask_slot',
+        stepId,
+        slotKey: 'name',
+        slots: { ...(s.byStep[stepId] ?? {}) },
+      },
+    }));
+    const picked = pickReply(live.session, live.pack.replies, 'ask_slot', {
+      prompt: 'What should the new name be?',
+      title: stepTitle(live.pack, stepId),
+      stepId,
+    });
+    live.setSession((s) => ({ ...picked.session, pending: s.pending }));
+    live.pushAssistant(picked.text);
+    emitCoachEvent(live, { type: 'slot_ask', stepId, slotKey: 'name' });
+    return;
+  }
   if (discourse.kind === 'step') {
-    launchStep(deps, discourse.stepId, {}, false);
+    launchStep(live, discourse.stepId, {}, false);
     return;
   }
   const parseText = discourse.kind === 'entity' ? discourse.text : trimmed;
 
   const intentPack: IntentParsePack = {
-    steps: deps.pack.steps,
-    aliases: deps.pack.aliases,
-    meta: deps.pack.meta,
+    steps: live.pack.steps,
+    aliases: live.pack.aliases,
+    meta: live.pack.meta,
   };
-  const parseFn = deps.parseUtteranceFn ?? parseUtterance;
+  const parseFn = live.parseUtteranceFn ?? parseUtterance;
   const parsedOrPromise = parseFn(parseText, intentPack);
   if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
     return (parsedOrPromise as Promise<ParseUtteranceResult>).then((parsed) => {
-      dispatchParsed({ ...deps, text: parseText }, intentPack, parsed);
+      live.text = parseText;
+      dispatchParsed(live, intentPack, parsed);
     });
   }
-  dispatchParsed({ ...deps, text: parseText }, intentPack, parsedOrPromise as ParseUtteranceResult);
+  live.text = parseText;
+  dispatchParsed(live, intentPack, parsedOrPromise as ParseUtteranceResult);
 }
 
 function dispatchParsed(
@@ -309,16 +306,16 @@ function dispatchParsed(
       launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection);
       return;
     }
-    pushAssistant(disambiguationPrompt(pack, parsed.candidates), {
-      choices: stepChoices(pack, parsed.candidates),
-    });
-    setSession((s) => ({
-      ...s,
+    const picked = disambiguationPrompt(pack, session, parsed.candidates);
+    setSession(() => ({
+      ...picked.session,
       discourse: {
-        ...(s.discourse ?? {}),
+        ...(picked.session.discourse ?? {}),
         lastChoiceIds: parsed.candidates,
       },
     }));
+    pushAssistant(picked.text, { choices: stepChoices(pack, parsed.candidates) });
+    emitCoachEvent(deps, { type: 'repair', kind: 'ambiguous' });
     return;
   }
 
@@ -369,7 +366,6 @@ function dispatchParsed(
     return;
   }
 
-  // Prefer entity name-match over weak step keyword hits ("… list").
   const lookup = matchEntityLookup(trimmed, pack.lookups, ctx);
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
@@ -432,15 +428,46 @@ function dispatchParsed(
       const head = session.actionQueue[0]!;
       const missing = listMissingRequires(pack, head.stepId, ctx, session.stale);
       if (missing.length > 0) {
-        pushAssistant(
-          `I didn’t catch that. ${formatBlockedQueueMessage(pack, head.stepId, missing)}`
-        );
+        const message = `I didn’t catch that. ${formatBlockedQueueMessage(pack, head.stepId, missing)}`;
+        const picked = pickReply(session, pack.replies, 'repair.unknown', { message });
+        setSession(() => picked.session);
+        pushAssistant(picked.text);
+        emitCoachEvent(deps, { type: 'repair', kind: 'unknown' });
         return;
       }
     }
-    pushAssistant(unintelligiblePrompt(pack, options, session), {
+    const picked = unintelligiblePrompt(pack, options, session);
+    setSession(() => picked.session);
+    pushAssistant(picked.text, {
       choices: options.length ? stepChoices(pack, options.map((o) => o.id)) : undefined,
     });
+    emitCoachEvent(deps, { type: 'repair', kind: 'unknown' });
+    return;
+  }
+
+  if (
+    parsed.confidence === 'low' &&
+    !parsed.isCorrection &&
+    packed.actions.length < 2 &&
+    !(pack.confirm ?? []).includes(targetStep)
+  ) {
+    const picked = lowConfidencePrompt(pack, session, targetStep);
+    setSession(() => ({
+      ...picked.session,
+      pending: { kind: 'confirm', stepId: targetStep, slots: parsed.slotPatches },
+      discourse: {
+        ...(picked.session.discourse ?? {}),
+        lastChoiceIds: ['__yes__', '__no__'],
+      },
+    }));
+    pushAssistant(picked.text, {
+      choices: [
+        { id: '__yes__', label: 'Yes' },
+        { id: '__no__', label: 'No' },
+      ],
+    });
+    emitCoachEvent(deps, { type: 'repair', kind: 'low_confidence' });
+    emitCoachEvent(deps, { type: 'confirm_ask', stepId: targetStep });
     return;
   }
 

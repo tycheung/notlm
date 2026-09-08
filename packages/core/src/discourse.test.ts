@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest';
+import { resolveDiscourse } from './discourse.js';
+import { parseUtterance } from './intents.js';
+import { loadPackFromJson } from './loadPack.js';
+import type { FlowStepDef } from './types.js';
+
+const flow: FlowStepDef[] = [
+  {
+    id: 'create_list',
+    title: 'Create list',
+    keywords: ['create list'],
+    kind: 'hard',
+    requires: [],
+  },
+  {
+    id: 'add_item',
+    title: 'Add item',
+    keywords: ['add item'],
+    kind: 'hard',
+    requires: ['create_list'],
+  },
+];
+
+describe('discourse repair', () => {
+  it('detects change-the-name repair', () => {
+    const r = resolveDiscourse('change the name', { lastStepId: 'create_list' });
+    expect(r.kind).toBe('repair_slot');
+  });
+
+  it('extracts rename target', () => {
+    const r = resolveDiscourse('rename to Errands', { lastStepId: 'create_list' });
+    expect(r.kind).toBe('repair_slot');
+    if (r.kind === 'repair_slot') expect(r.slotHint).toMatch(/Errands/i);
+  });
+
+  it('detects undo without stealing go back meta', () => {
+    expect(resolveDiscourse('undo that', {}).kind).toBe('undo');
+    expect(resolveDiscourse('go back', {}).kind).toBe('none');
+  });
+});
+
+describe('parse confidence', () => {
+  it('marks exact alias hits as high confidence', () => {
+    const pack = loadPackFromJson({
+      manifest: { id: 'c' },
+      flow,
+      controls: [{ id: 'a', stepId: 'create_list', path: '/a' }],
+      intents: { aliases: { create_list: ['create list'], add_item: ['add item'] }, meta: [] },
+      binders: {
+        create_list: { path: 'data.listCount', op: 'gte', value: 1 },
+        add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
+      },
+    });
+    const r = parseUtterance('create list', {
+      steps: pack.steps,
+      aliases: pack.aliases,
+      meta: pack.meta,
+    });
+    expect(r.stepId).toBe('create_list');
+    expect(r.confidence).toBe('high');
+  });
+});

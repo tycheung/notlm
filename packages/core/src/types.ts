@@ -153,7 +153,19 @@ export type ParseUtteranceResult = {
   isCorrection: boolean;
   goBack: boolean;
   rawIntent: string | null;
+  /** Rule-score tier for single/top hit (ranker may omit). */
+  confidence?: 'high' | 'mid' | 'low';
 };
+
+/** Structured coach telemetry for hosts (no secrets / raw credentials). */
+export type CoachEvent =
+  | { type: 'utterance'; textLength: number }
+  | { type: 'pending'; kind: PendingPrompt['kind']; stepId?: StepId }
+  | { type: 'blocked'; stepId: StepId; missing: StepId[] }
+  | { type: 'repair'; kind: 'ambiguous' | 'unknown' | 'low_confidence' | 'blocked' }
+  | { type: 'launch'; stepId: StepId; gated?: boolean; correction?: boolean }
+  | { type: 'confirm_ask'; stepId: StepId }
+  | { type: 'slot_ask'; stepId: StepId; slotKey: string };
 
 export type GuideAction = {
   stepId: StepId;

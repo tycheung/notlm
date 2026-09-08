@@ -3,7 +3,9 @@ import type { DiscourseState, StepId } from './types.js';
 export type DiscourseResolution =
   | { kind: 'none'; text: string }
   | { kind: 'step'; text: string; stepId: StepId }
-  | { kind: 'entity'; text: string; name: string };
+  | { kind: 'entity'; text: string; name: string }
+  | { kind: 'repair_slot'; text: string; slotHint?: string }
+  | { kind: 'undo'; text: string };
 
 const AGAIN =
   /^(do\s+)?(that|it|the same)(\s+again)?[.!?]*$/i;
@@ -13,17 +15,41 @@ const OTHER =
   /^(the )?other(\s+one)?[.!?]*$/i;
 const THAT_ENTITY =
   /^(that|the same)\s+(list|contact|item|one)[.!?]*$/i;
+const UNDO =
+  /^(undo( that)?|never ?mind|scratch that)[.!?]*$/i;
+const CHANGE_NAME =
+  /^(change|rename|update|fix)\s+(the\s+)?(name|title|list name|contact name)\b/i;
+const CHANGE_NAME_VALUE =
+  /^(?:change|rename|update|fix)\s+(?:the\s+)?(?:name|title)\s+(?:to\s+)?(.+)$/i;
+const RENAME_TO = /^(?:rename|change)\s+to\s+(.+)$/i;
 
 /**
- * Resolve light anaphora against discourse before NLU.
- * Returns rewritten text and/or a direct step/entity target.
+ * Resolve light anaphora / repair against discourse before NLU.
  */
 export function resolveDiscourse(
   utterance: string,
   discourse: DiscourseState | undefined
 ): DiscourseResolution {
   const text = utterance.trim();
-  if (!text || !discourse) return { kind: 'none', text };
+  if (!text) return { kind: 'none', text };
+
+  if (UNDO.test(text)) {
+    return { kind: 'undo', text };
+  }
+
+  const renameTo = text.match(RENAME_TO);
+  if (renameTo?.[1]) {
+    return { kind: 'repair_slot', text, slotHint: renameTo[1].trim() };
+  }
+  const rename = text.match(CHANGE_NAME_VALUE);
+  if (rename?.[1]) {
+    return { kind: 'repair_slot', text, slotHint: rename[1].trim() };
+  }
+  if (CHANGE_NAME.test(text)) {
+    return { kind: 'repair_slot', text };
+  }
+
+  if (!discourse) return { kind: 'none', text };
 
   if (OTHER.test(text) && discourse.lastChoiceIds && discourse.lastChoiceIds.length >= 2) {
     return { kind: 'step', text, stepId: discourse.lastChoiceIds[1]! };

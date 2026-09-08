@@ -14,6 +14,13 @@ const DEFAULTS: ReplyBank = {
   blocked: ['{{message}}'],
   cancel: ['Okay, cancelled.', 'No problem — say what’s next whenever you’re ready.'],
   affirm_skip: ['Alright — just say when you want to continue.'],
+  'repair.blocked': ['{{message}}'],
+  'repair.ambiguous': ['{{message}}'],
+  'repair.unknown': ['{{message}}'],
+  'repair.low_confidence': [
+    'Just to check — did you mean “{{title}}”? Say yes to continue.',
+    '{{message}}',
+  ],
 };
 
 export function renderTemplate(
