@@ -227,7 +227,12 @@ export function UiPilotProvider({
       );
       sessionRef.current = result.session;
       setSession(result.session);
-      for (const msg of result.messages) pushAssistant(msg);
+      for (let i = 0; i < result.messages.length; i++) {
+        const msg = result.messages[i]!;
+        const choices =
+          i === result.messages.length - 1 ? result.choices : undefined;
+        pushAssistant(msg, choices?.length ? { choices } : undefined);
+      }
       if (result.executeNext) {
         const next = result.executeNext;
         queueMicrotask(() => {
