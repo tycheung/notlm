@@ -1,6 +1,7 @@
-import { expect, test, type Page, type Request } from '@playwright/test';
+import { expect, test, type Request } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { answerSlotAsk, openChat, sendUtterance } from './helpers/chat';
 
 test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
   function assertNoProductApi(request: Request) {
@@ -14,16 +15,6 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
     if (pathname === '/api' || pathname.startsWith('/api/')) {
       throw new Error(`Unexpected product API request: ${url}`);
     }
-  }
-
-  async function openChat(page: Page) {
-    await page.getByTestId('uipilot-fab').click();
-    await expect(page.getByRole('dialog', { name: 'Assistant' })).toBeVisible();
-  }
-
-  async function sendUtterance(page: Page, text: string) {
-    await page.getByTestId('uipilot-chat-input').fill(text);
-    await page.getByTestId('uipilot-chat-send').click();
   }
 
   const scenariosPath = join(
@@ -48,6 +39,9 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
 
     for (const s of sample) {
       await sendUtterance(page, s.utterance);
+      if (s.expect.stepId === 'create_list') {
+        await answerSlotAsk(page, /name the list/i, 'Shopping');
+      }
     }
 
     await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible();

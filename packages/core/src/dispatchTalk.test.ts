@@ -133,11 +133,36 @@ describe('conversational dispatch', () => {
     expect(advanced.choices?.some((c) => c.id === 'add_item')).toBe(true);
   });
 
-  it('uses reply banks for launch copy', () => {
-    const pack = makePack({
-      replies: { launch: ['Custom open “{{title}}”.'] },
+  it('blocks unavailable steps before asking confirm', () => {
+    const pack = makePack({ confirm: ['add_item'] });
+    const { calls, session } = run('add item', emptySession(), pack, {
+      pathname: '/',
+      data: {},
     });
-    const { calls } = run('create list', emptySession(), pack);
-    expect(calls.assistant[0]).toBe('Custom open “Create list”.');
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toMatch(/blocked/i);
+    expect(session.pending).toBeFalsy();
+  });
+
+  it('step alias after proactive offer still hits confirm gate', () => {
+    const pack = makePack({ confirm: ['add_item'] });
+    let session = emptySession();
+    const advanced = advanceAfterStepCompleted(
+      pack,
+      session,
+      { pathname: '/', data: { listCount: 1 } },
+      'create_list'
+    );
+    session = advanced.session;
+    expect(session.pending?.kind).toBe('proactive');
+    expect(session.pending?.stepId).toBe('add_item');
+
+    const { calls, session: next } = run('add item', session, pack, {
+      pathname: '/',
+      data: { listCount: 1 },
+    });
+    expect(calls.executed).toEqual([]);
+    expect(next.pending?.kind).toBe('confirm');
+    expect(calls.assistant.some((m) => /sound good|Ready/i.test(m))).toBe(true);
   });
 });

@@ -1,4 +1,9 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
+import {
+  coachCreateList,
+  openChat,
+  sendUtterance,
+} from './helpers/chat';
 
 test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
   function assertNoProductApi(request: Request) {
@@ -14,17 +19,6 @@ test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
     }
   }
 
-  async function openChat(page: Page) {
-    await page.getByTestId('uipilot-fab').click();
-    await expect(page.getByRole('dialog', { name: 'Assistant' })).toBeVisible();
-    await expect(page.getByTestId('uipilot-chat-input')).toBeVisible();
-  }
-
-  async function sendUtterance(page: Page, text: string) {
-    await page.getByTestId('uipilot-chat-input').fill(text);
-    await page.getByTestId('uipilot-chat-send').click();
-  }
-
   test('create list (and add item) via coach chat — UI click only, no /api', async ({
     page,
   }) => {
@@ -35,7 +29,7 @@ test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
     await expect(page.getByText('No lists yet')).toBeVisible();
 
     await openChat(page);
-    await sendUtterance(page, 'create list');
+    await coachCreateList(page, 'Shopping');
 
     await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible();
 

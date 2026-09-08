@@ -1,4 +1,9 @@
-import { expect, test, type Page, type Request } from '@playwright/test';
+import { expect, test, type Request } from '@playwright/test';
+import {
+  coachAddContact,
+  coachSaveContact,
+  openChat,
+} from './helpers/chat';
 
 test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
   function assertNoProductApi(request: Request) {
@@ -14,16 +19,6 @@ test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
     }
   }
 
-  async function openChat(page: Page) {
-    await page.getByTestId('uipilot-fab').click();
-    await expect(page.getByRole('dialog', { name: 'Assistant' })).toBeVisible();
-  }
-
-  async function sendUtterance(page: Page, text: string) {
-    await page.getByTestId('uipilot-chat-input').fill(text);
-    await page.getByTestId('uipilot-chat-send').click();
-  }
-
   test('add + save contact via coach — UI click only, branded accent', async ({ page }) => {
     page.on('request', assertNoProductApi);
 
@@ -36,12 +31,12 @@ test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
     await expect(fab).toHaveCSS('background-color', 'rgb(180, 83, 9)');
 
     await openChat(page);
-    await sendUtterance(page, 'add contact');
+    await coachAddContact(page, 'Alex Rivera');
     await expect(page.getByLabel('Contact name')).toBeVisible();
 
-    await sendUtterance(page, 'save contact');
-    await expect(page.getByText('Alex Rivera')).toBeVisible();
-    await expect(page.getByText('alex@example.com')).toBeVisible();
+    await coachSaveContact(page);
+    await expect(page.getByRole('listitem').filter({ hasText: 'Alex Rivera' })).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'alex@example.com' })).toBeVisible();
   });
 
   test('command palette opens with Ctrl+K', async ({ page }) => {

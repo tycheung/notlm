@@ -183,10 +183,9 @@ export function handlePendingUtterance(
       sink.pushAssistant(picked.text);
       return { handled: true };
     }
-    if (
-      isAffirmative(text) ||
-      text.toLowerCase().includes(titleOf(pack, pending.stepId).toLowerCase())
-    ) {
+    // Only bare affirmatives accept the offer (chips send "Yes — …"). Step aliases
+    // fall through so slot/confirm gates still run.
+    if (isAffirmative(text)) {
       sink.setSession((s) => ({ ...s, pending: null }));
       return { handled: true, launch: { stepId: pending.stepId, slots: {} } };
     }

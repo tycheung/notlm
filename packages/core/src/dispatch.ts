@@ -159,6 +159,14 @@ function launchStep(
   const { pack, session, ctx, pushAssistant, executeStep, setSession } = deps;
   const sink = { pushAssistant, setSession };
 
+  if (!isCorrection) {
+    const missing = listMissingRequires(pack, targetStep, ctx, session.stale);
+    if (missing.length > 0) {
+      pushAssistant(formatBlockedQueueMessage(pack, targetStep, missing));
+      return;
+    }
+  }
+
   if (
     !isCorrection &&
     !opts?.skipGate &&
