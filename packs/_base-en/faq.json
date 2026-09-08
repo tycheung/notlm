@@ -47,5 +47,48 @@
       "what can you do for me today"
     ],
     "text": "I can walk you through this app’s annotated workflows — navigate, spotlight fields, and click the same buttons you would. Ask “what can you do” for the steps available right now."
+  },
+  {
+    "id": "where_am_i",
+    "aliases": [
+      "where am i",
+      "what screen is this",
+      "what page is this",
+      "where are we"
+    ],
+    "text": "I follow the app’s annotated steps and your current checklist progress. Ask “what’s next” to see the best next step from here."
+  },
+  {
+    "id": "what_just_happened",
+    "aliases": [
+      "what just happened",
+      "what did you do",
+      "why did you do that"
+    ],
+    "text": "I only navigate, spotlight, or click controls that match the pack — the same actions you could do by hand. Nothing is written through a hidden API."
+  },
+  {
+    "id": "frustrated",
+    "aliases": [
+      "this isn't working",
+      "this isnt working",
+      "that didn't work",
+      "that didnt work",
+      "i'm stuck",
+      "im stuck",
+      "help me i'm stuck"
+    ],
+    "text": "Sorry you’re stuck. Say “what’s next”, name a step, or ask me to explain a field — I can also go back if we took a wrong turn."
+  },
+  {
+    "id": "why_blocked",
+    "aliases": [
+      "why can't i",
+      "why cant i",
+      "why is this blocked",
+      "why won't it let me",
+      "why wont it let me"
+    ],
+    "text": "Some steps stay locked until earlier required steps are finished. Ask “what’s next” and I’ll tell you what still needs to happen."
   }
 ]

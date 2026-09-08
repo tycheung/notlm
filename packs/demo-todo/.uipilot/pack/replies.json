@@ -1,0 +1,22 @@
+{
+  "launch": [
+    "Taking you to “{{title}}”.",
+    "Okay — opening “{{title}}”.",
+    "On it — “{{title}}”."
+  ],
+  "launch.create_list": [
+    "Let’s make a list.",
+    "Opening list creation for you."
+  ],
+  "confirm": [
+    "I’ll open “{{title}}” — sound good?",
+    "Ready for “{{title}}”? Say yes to continue."
+  ],
+  "proactive": [
+    "Nice — “{{done}}” is done. Next up looks like “{{title}}”. Want me to take you there?",
+    "“{{done}}” looks complete. Shall I open “{{title}}” next?"
+  ],
+  "ask_slot": ["{{prompt}}"],
+  "cancel": ["Okay, cancelled.", "No problem — say what’s next whenever you’re ready."],
+  "affirm_skip": ["Alright — just say when you want to continue."]
+}

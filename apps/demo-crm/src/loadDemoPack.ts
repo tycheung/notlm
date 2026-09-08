@@ -3,6 +3,7 @@ import type {
   FlowStepDef,
   GlossaryEntry,
   IntentConfig,
+  ReplyBank,
 } from '@uipilot/core';
 import { loadPackFromJson } from '@uipilot/core';
 
@@ -12,6 +13,7 @@ import flowJson from '../../../packs/demo-crm/.uipilot/pack/flow.json';
 import glossaryJson from '../../../packs/demo-crm/.uipilot/pack/glossary.json';
 import intentsJson from '../../../packs/demo-crm/.uipilot/pack/intents.json';
 import manifestJson from '../../../packs/demo-crm/.uipilot/pack/manifest.json';
+import repliesJson from '../../../packs/demo-crm/.uipilot/pack/replies.json';
 
 type BinderRow = BinderPredicate & { stepId: string };
 
@@ -41,5 +43,6 @@ export function loadDemoCrmPack() {
     intents: intentsJson as IntentConfig,
     binders: bindersArrayToRecord(bindersJson as BinderRow[]),
     glossary: glossaryJson as GlossaryEntry[],
+    replies: repliesJson as ReplyBank,
   });
 }

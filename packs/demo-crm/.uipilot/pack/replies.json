@@ -1,0 +1,15 @@
+{
+  "launch": [
+    "Taking you to “{{title}}”.",
+    "Opening “{{title}}” now."
+  ],
+  "confirm": [
+    "I’ll open “{{title}}” — sound good?"
+  ],
+  "proactive": [
+    "“{{done}}” is done. Next up: “{{title}}”. Want me to take you there?"
+  ],
+  "ask_slot": ["{{prompt}}"],
+  "cancel": ["Okay, cancelled."],
+  "affirm_skip": ["Alright — say when you’re ready."]
+}

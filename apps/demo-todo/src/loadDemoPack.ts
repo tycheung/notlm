@@ -5,6 +5,7 @@ import type {
   GlossaryEntry,
   IntentConfig,
   LookupDef,
+  ReplyBank,
 } from '@uipilot/core';
 import { loadPackFromJson, mergeFaqEntries } from '@uipilot/core';
 
@@ -17,6 +18,7 @@ import glossaryJson from '../../../packs/demo-todo/.uipilot/pack/glossary.json';
 import intentsJson from '../../../packs/demo-todo/.uipilot/pack/intents.json';
 import lookupsJson from '../../../packs/demo-todo/.uipilot/pack/lookups.json';
 import manifestJson from '../../../packs/demo-todo/.uipilot/pack/manifest.json';
+import repliesJson from '../../../packs/demo-todo/.uipilot/pack/replies.json';
 
 type BinderRow = BinderPredicate & { stepId: string };
 
@@ -30,32 +32,24 @@ function bindersArrayToRecord(rows: BinderRow[]): Record<string, BinderPredicate
 }
 
 export function loadDemoTodoPack() {
-  const manifest = manifestJson as { id: string };
-  const flow = flowJson as FlowStepDef[];
-  const controls = controlsJson as Array<{
-    id: string;
-    stepId: string;
-    path?: string;
-    spotlight?: string;
-    coachMessage?: string;
-    openModal?: string;
-    prefill?: Record<string, unknown>;
-    userFill?: string[];
-  }>;
-  const intents = intentsJson as IntentConfig;
-  const binders = bindersArrayToRecord(bindersJson as BinderRow[]);
-  const glossary = glossaryJson as GlossaryEntry[];
-  const faq = mergeFaqEntries(baseFaqJson as FaqEntry[], faqJson as FaqEntry[]);
-  const lookups = lookupsJson as LookupDef[];
-
   return loadPackFromJson({
-    manifest,
-    flow,
-    controls,
-    intents,
-    binders,
-    glossary,
-    faq,
-    lookups,
+    manifest: manifestJson as { id: string },
+    flow: flowJson as FlowStepDef[],
+    controls: controlsJson as Array<{
+      id: string;
+      stepId: string;
+      path?: string;
+      spotlight?: string;
+      coachMessage?: string;
+      openModal?: string;
+      prefill?: Record<string, unknown>;
+      userFill?: string[];
+    }>,
+    intents: intentsJson as IntentConfig,
+    binders: bindersArrayToRecord(bindersJson as BinderRow[]),
+    glossary: glossaryJson as GlossaryEntry[],
+    faq: mergeFaqEntries(baseFaqJson as FaqEntry[], faqJson as FaqEntry[]),
+    lookups: lookupsJson as LookupDef[],
+    replies: repliesJson as ReplyBank,
   });
 }
