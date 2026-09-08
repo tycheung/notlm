@@ -35,6 +35,16 @@ export function completeQueueHead(session: SessionSlots): SessionSlots {
   return { ...session, actionQueue: session.actionQueue.slice(1) };
 }
 
+/** Pop the head only when it matches `stepId` (avoids dropping deferred work). */
+export function completeQueueHeadIfMatch(
+  session: SessionSlots,
+  stepId: StepId
+): SessionSlots {
+  const head = session.actionQueue[0];
+  if (!head || head.stepId !== stepId) return session;
+  return completeQueueHead(session);
+}
+
 export function clearStale(session: SessionSlots, stepId: StepId): SessionSlots {
   return { ...session, stale: session.stale.filter((id) => id !== stepId) };
 }

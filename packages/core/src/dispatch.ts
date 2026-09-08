@@ -1,8 +1,14 @@
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { parseUtterance } from './intents.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
+import {
+  formatBlockedQueueMessage,
+  injectBeforeDeferred,
+  listMissingRequires,
+  planResumeQueue,
+} from './queueAdvance.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
-import type { LoadedPack, SessionSlots, StepId, StepStatus } from './types.js';
+import type { GuideAction, LoadedPack, SessionSlots, StepId, StepStatus } from './types.js';
 
 export type DispatchDeps = {
   text: string;
@@ -95,11 +101,7 @@ function suggestNextStepOptions(
     .slice(0, MAX_SUGGESTED_NEXT);
 }
 
-function unintelligiblePrompt(
-  pack: LoadedPack,
-  options: StepStatus[],
-  session: SessionSlots
-): string {
+function unintelligiblePrompt(pack: LoadedPack, options: StepStatus[], session: SessionSlots): string {
   if (session.actionQueue.length > 0) {
     const head = session.actionQueue[0]!;
     return (
@@ -131,7 +133,27 @@ function launchStep(
   slots: Record<string, unknown>,
   isCorrection: boolean
 ): void {
-  const { pack, pushAssistant, executeStep, setSession } = deps;
+  const { pack, session, ctx, pushAssistant, executeStep, setSession } = deps;
+  const action: GuideAction = {
+    stepId: targetStep,
+    slots,
+    rawSegment: targetStep,
+  };
+
+  if (!isCorrection && session.actionQueue.length > 0) {
+    const injected = injectBeforeDeferred(pack, session, ctx, action);
+    if (injected.injected) {
+      let next = injected.session;
+      if (Object.keys(slots).length > 0) {
+        next = patchStepSlots(next, targetStep, slots);
+      }
+      setSession(() => next);
+      if (injected.message) pushAssistant(injected.message);
+      executeStep(targetStep, { prefill: slots, skipCoach: true });
+      return;
+    }
+  }
+
   if (Object.keys(slots).length > 0) {
     setSession((s) => patchStepSlots(s, targetStep, slots, { isCorrection }));
   }
@@ -190,9 +212,11 @@ export function dispatchUserUtterance(deps: DispatchDeps): void {
 
   if (parsed.rawIntent === 'whats_next') {
     if (session.actionQueue.length > 0) {
-      const head = session.actionQueue[0]!;
-      pushAssistant(`Resuming queue: ${stepTitle(pack, head.stepId)}.`);
-      executeStep(head.stepId, { prefill: head.slots });
+      const planned = planResumeQueue(pack, session, ctx, { announceContinue: true });
+      for (const msg of planned.messages) pushAssistant(msg);
+      if (planned.executeNext) {
+        executeStep(planned.executeNext.stepId, { prefill: planned.executeNext.slots });
+      }
       return;
     }
     const statuses = evaluateFlowStatuses(pack, ctx, session.stale);
@@ -216,6 +240,16 @@ export function dispatchUserUtterance(deps: DispatchDeps): void {
 
   if (!targetStep) {
     const options = suggestNextStepOptions(pack, ctx, session);
+    if (session.actionQueue.length > 0) {
+      const head = session.actionQueue[0]!;
+      const missing = listMissingRequires(pack, head.stepId, ctx, session.stale);
+      if (missing.length > 0) {
+        pushAssistant(
+          `I didn’t catch that. ${formatBlockedQueueMessage(pack, head.stepId, missing)}`
+        );
+        return;
+      }
+    }
     pushAssistant(unintelligiblePrompt(pack, options, session));
     return;
   }

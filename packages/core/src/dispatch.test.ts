@@ -266,11 +266,102 @@ describe('dispatchUserUtterance', () => {
       ...emptySession(),
       actionQueue: [{ stepId: 'add_item', slots: {}, rawSegment: 'add item' }],
     };
-    const calls = runDispatch('mumble jumble', session, { pathname: '/', data: {} });
+    const calls = runDispatch('mumble jumble', session, {
+      pathname: '/',
+      data: { listCount: 1 },
+    });
     expect(calls.executed).toEqual([]);
     expect(calls.assistant[0]).toMatch(/didn.?t catch that/i);
     expect(calls.assistant[0]).toContain('Add item');
     expect(calls.assistant[0]).toMatch(/what.?s next/i);
+  });
+
+  it('explains DAG blockers when gibberish hits a blocked queue head', () => {
+    const session: SessionSlots = {
+      ...emptySession(),
+      actionQueue: [{ stepId: 'add_item', slots: {}, rawSegment: 'add item' }],
+    };
+    const calls = runDispatch('mumble jumble', session, { pathname: '/', data: {} });
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toMatch(/didn.?t catch that/i);
+    expect(calls.assistant[0]).toMatch(/blocked/i);
+    expect(calls.assistant[0]).toContain('Create list');
+  });
+
+  it('injects a missing require ahead of a deferred queued step', () => {
+    const dagPack = loadPackFromJson({
+      manifest: { id: 'dag-inject' },
+      flow: [
+        { id: 'a', title: 'Step A', keywords: ['step a'], kind: 'hard', requires: [] },
+        { id: 'b', title: 'Step B', keywords: ['step b'], kind: 'hard', requires: ['a'] },
+        { id: 'c', title: 'Step C', keywords: ['step c'], kind: 'hard', requires: [] },
+        { id: 'd', title: 'Step D', keywords: ['step d'], kind: 'hard', requires: ['c'] },
+      ],
+      controls: [
+        { id: 'na', stepId: 'a', path: '/a' },
+        { id: 'nb', stepId: 'b', path: '/b' },
+        { id: 'nc', stepId: 'c', path: '/c' },
+        { id: 'nd', stepId: 'd', path: '/d' },
+      ],
+      intents: {
+        aliases: {
+          a: ['do a'],
+          b: ['do b'],
+          c: ['do c', 'step c'],
+          d: ['do d'],
+        },
+        meta: ['whats_next'],
+      },
+      binders: {
+        a: { path: 'data.a', op: 'truthy' },
+        b: { path: 'data.b', op: 'truthy' },
+        c: { path: 'data.c', op: 'truthy' },
+        d: { path: 'data.d', op: 'truthy' },
+      },
+    });
+    const session: SessionSlots = {
+      ...emptySession(),
+      actionQueue: [{ stepId: 'd', slots: {}, rawSegment: 'do d' }],
+    };
+    const calls = runDispatch(
+      'do c',
+      session,
+      { pathname: '/', data: { a: true, b: true } },
+      dagPack
+    );
+    expect(calls.executed).toEqual(['c']);
+    expect(calls.assistant[0]).toMatch(/Step C.*Step D/i);
+    expect(calls.sessions.at(-1)?.actionQueue.map((q) => q.stepId)).toEqual(['c', 'd']);
+  });
+
+  it('whats_next explains blockers when the queue head is not available', () => {
+    const dagPack = loadPackFromJson({
+      manifest: { id: 'dag-next' },
+      flow: [
+        { id: 'c', title: 'Step C', keywords: ['step c'], kind: 'hard', requires: [] },
+        { id: 'd', title: 'Step D', keywords: ['step d'], kind: 'hard', requires: ['c'] },
+      ],
+      controls: [
+        { id: 'nc', stepId: 'c', path: '/c' },
+        { id: 'nd', stepId: 'd', path: '/d' },
+      ],
+      intents: {
+        aliases: { c: ['do c'], d: ['do d'] },
+        meta: ['whats_next'],
+      },
+      binders: {
+        c: { path: 'data.c', op: 'truthy' },
+        d: { path: 'data.d', op: 'truthy' },
+      },
+    });
+    const session: SessionSlots = {
+      ...emptySession(),
+      actionQueue: [{ stepId: 'd', slots: {}, rawSegment: 'do d' }],
+    };
+    const calls = runDispatch("what's next", session, { pathname: '/', data: {} }, dagPack);
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toMatch(/blocked/i);
+    expect(calls.assistant[0]).toContain('Step C');
   });
 
   it('offers the next incomplete step after prior work is done', () => {

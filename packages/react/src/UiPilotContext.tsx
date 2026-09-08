@@ -1,9 +1,10 @@
 import {
-  clearStale,
-  completeQueueHead,
+  advanceAfterStepCompleted,
   dispatchUserUtterance,
   emptySession,
   evaluateFlowStatuses,
+  formatBlockedQueueMessage,
+  listMissingRequires,
   type AssistantFeatures,
   type ChatMessage,
   type LoadedPack,
@@ -144,16 +145,13 @@ export function UiPilotProvider({
   const executeStep = useCallback(
     (stepId: StepId) => {
       const loaded = asLoadedPack(pack);
-      const status = evaluateFlowStatuses(
-        loaded,
-        getContext(),
-        sessionRef.current.stale
-      ).find((s) => s.id === stepId);
-      if (status && !status.available) {
-        pushAssistant(status.blockedReason ?? 'That step is not available yet.');
+      const liveCtx = getContext();
+      const missing = listMissingRequires(loaded, stepId, liveCtx, sessionRef.current.stale);
+      if (missing.length > 0) {
+        pushAssistant(formatBlockedQueueMessage(loaded, stepId, missing));
         return;
       }
-      const nav = loaded.resolveNav(stepId, getContext());
+      const nav = loaded.resolveNav(stepId, liveCtx);
       if (!nav) {
         pushAssistant('I could not find where to go for that step.');
         return;
@@ -173,9 +171,27 @@ export function UiPilotProvider({
   const executeStepRef = useRef(executeStep);
   executeStepRef.current = executeStep;
 
-  const notifyStepCompleted = useCallback((stepId: StepId) => {
-    setSession((prev) => completeQueueHead(clearStale(prev, stepId)));
-  }, []);
+  const notifyStepCompleted = useCallback(
+    (stepId: StepId) => {
+      const loaded = asLoadedPack(pack);
+      const result = advanceAfterStepCompleted(
+        loaded,
+        sessionRef.current,
+        getContext(),
+        stepId
+      );
+      sessionRef.current = result.session;
+      setSession(result.session);
+      for (const msg of result.messages) pushAssistant(msg);
+      if (result.executeNext) {
+        const next = result.executeNext;
+        queueMicrotask(() => {
+          executeStepRef.current(next.stepId);
+        });
+      }
+    },
+    [getContext, pack, pushAssistant]
+  );
 
   const handleUserUtterance = useCallback(
     (text: string) => {
@@ -190,7 +206,13 @@ export function UiPilotProvider({
         ctx: getContext(),
         pushAssistant,
         executeStep: executeStepRef.current,
-        setSession,
+        setSession: (updater) => {
+          setSession((prev) => {
+            const next = updater(prev);
+            sessionRef.current = next;
+            return next;
+          });
+        },
       });
     },
     [getContext, pack, pushAssistant]
