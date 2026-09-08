@@ -72,6 +72,8 @@ export const PACK_PIECES = [
   'corpus.json',
   'glossary.json',
   'faq.json',
+  'lookups.json',
+  'replies.json',
 ] as const;
 
 export function loadPackFolderJson(home: string): Record<string, unknown> {

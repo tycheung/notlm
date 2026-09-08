@@ -96,3 +96,7 @@ export {
   type BatchGenerator,
   type SaturateLoopResult,
 } from './saturation/saturateLoop.js';
+
+export { draftConversationalCopy } from './draftTalk.js';
+export type { DraftTalkResult } from './draftTalk.js';
+
