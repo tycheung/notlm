@@ -58,6 +58,8 @@ User utterance / palette pick
     binders.json      # declarative completeness DSL
     corpus.json
     glossary.json     # optional
+    faq.json          # optional (merged with packs/_base-en)
+    lookups.json      # optional entity name-match vs getContext().data
   drafts/             # LLM proposals before --accept
   traces/             # optional record mode
 ```
@@ -97,7 +99,12 @@ Assistant chat may attach **choice chips** (`ChatMessage.choices`) for ambiguous
 utterances and unintelligible next-up offers. Prefill applies to annotated inputs
 via `data-guide-id` (slot key / `guide-*` candidates). Optional `glossary.json`
 powers `explain_field`. Optional `faq.json` answers blurb-led product questions
-before the “didn’t catch that” fallback.
+before the “didn’t catch that” fallback (merged with portable `packs/_base-en/faq.json`
+greetings). Meta `help` / “what can you do” lists **currently available** flow steps.
+Optional `lookups.json` fuzzy-matches names against host-published arrays on
+`getContext().data` and flashes row `data-guide-id`s (UI-actions only).
+Control `userFill` guide ids trigger a **sequential** scroll + 3× blink tour for
+fields the coach cannot type (e.g. the user’s name).
 
 **User-ask saturation:** `uipilotCLI scenarios ask --force=5000..10000 --blurb="…"`
 generates naturalistic questions from a 30s description (not DAG aliases);

@@ -11,6 +11,7 @@ Reference packs in this repo:
 | `packs/demo-crm/.uipilot/` | Second host; same shapes |
 | `packs/vb-director/.uipilot/` | Larger real-world DAG / corpus |
 | `packs/_template/` | Empty schema fixture |
+| `packs/_base-en/faq.json` | Shared English greetings / soft conversational FAQ (merged under product FAQ) |
 
 CLI operator loop (`map` / `tune` / `prepare`) is documented in `CONTRIBUTING.md`. This guide is the **human accept** path: what each JSON file means, and what must change in the host app.
 
@@ -50,6 +51,9 @@ User says “add a todo” / picks a palette row
     intents.json              # step aliases + meta intents
     binders.json              # completeness vs getContext().data
     corpus.json               # NLU regression cases (CI gate)
+    faq.json                  # product Q&A (merged with packs/_base-en)
+    glossary.json             # explain_field copy
+    lookups.json              # name-match entity lists from getContext().data
   drafts/                     # CLI/LLM proposals before --accept
 ```
 
@@ -315,13 +319,61 @@ CLI never auto-merges into `pack/` without an explicit accept path. That is inte
 [ ] binders: each hard step has a predicate on getContext().data
 [ ] corpus: clean + at least one reject case
 [ ] glossary (optional): explain_field entries with guideId
+[ ] faq (optional): product Q&A; base English greetings merge automatically
+[ ] lookups (optional): entity name match vs getContext().data arrays + row guide ids
 [ ] Host: Provider/Host mounted; getContext; navigate clicks guides
 [ ] Host: notifyStepCompleted on finishing saves (if using queue)
 [ ] Host: field inputs annotated for prefill / explain flash
+[ ] Host: list rows annotated (`guideIdTemplate`) when using lookups
+[ ] controls.userFill: guide ids the coach cannot type — sequential 3× blink tour on step launch
 [ ] uipilotCLI annotate checklist  # merges host DoD into checklist.json
 [ ] uipilotCLI intents check green
 [ ] Manual chat/palette smoke on the happy path
 ```
+
+---
+
+## User-must-fill fields (`userFill`)
+
+When a step needs personal data the coach must not invent (name, email, etc.):
+
+1. Annotate each input with `data-guide-id`.
+2. On the step’s control in `controls.json`, set `"userFill": ["guide-your-name", "guide-email"]`.
+3. Do **not** put those keys in `prefill` — prefill is for coach-known values only.
+
+On `executeStep`, UiPilot scrolls top→bottom and blinks each empty `userFill` field **3 times** before moving to the next, and tells the user to fill them in.
+
+---
+
+## Base English FAQ + dynamic help
+
+`packs/_base-en/faq.json` supplies portable greetings (“hello”), who-are-you, and soft how-to-talk copy. Node loaders (`loadUipilotHomeFromDir`) merge it under product `pack/faq.json` (product wins on the same `id`). Browser demos import + `mergeFaqEntries` the same way.
+
+Ask **“what can you do”** for a live list of **currently available** flow steps (meta `help`) — not static marketing prose.
+
+---
+
+## Entity name lookup (`lookups.json`)
+
+For “show me the XYZ list/event”:
+
+1. Host publishes an array on `getContext().data` (e.g. `lists: [{ id, name }]`).
+2. Annotate each row with a stable `data-guide-id` (e.g. `guide-list-row-${id}`).
+3. Declare a lookup in `pack/lookups.json`:
+
+```json
+[{
+  "id": "lists",
+  "dataPath": "lists",
+  "nameKey": "name",
+  "idKey": "id",
+  "utteranceHints": ["show me", "open", "find", "go to"],
+  "entityWords": ["list", "lists"],
+  "guideIdTemplate": "guide-list-row-{{id}}"
+}]
+```
+
+Runtime: after step NLU misses, the coach fuzzy-matches the name, confirms, and flashes the row guide id (UI-actions only — no silent APIs).
 
 ---
 
