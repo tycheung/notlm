@@ -63,6 +63,7 @@ const PACK_FOLDER_KEYS: PackPieceName[] = [
   'glossary',
   'faq',
   'lookups',
+  'replies',
 ];
 
 /**

@@ -111,6 +111,16 @@ export const intentsSchema = {
     },
     meta: { type: 'array', items: { type: 'string' } },
     slots: { type: 'object', additionalProperties: true },
+    confirm: { type: 'array', items: { type: 'string', minLength: 1 } },
+  },
+} as const;
+
+export const repliesSchema = {
+  $id: 'https://uipilot.dev/schemas/replies.json',
+  type: 'object',
+  additionalProperties: {
+    type: 'array',
+    items: { type: 'string', minLength: 1 },
   },
 } as const;
 
@@ -250,6 +260,7 @@ export const PACK_PIECE_SCHEMAS = {
   glossary: glossarySchema,
   faq: faqSchema,
   lookups: lookupsSchema,
+  replies: repliesSchema,
 } as const;
 
 export type PackPieceName = keyof typeof PACK_PIECE_SCHEMAS;

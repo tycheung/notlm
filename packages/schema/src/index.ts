@@ -13,6 +13,7 @@ export {
   intentsSchema,
   manifestSchema,
   PACK_PIECE_SCHEMAS,
+  repliesSchema,
   scenariosSchema,
 } from './schemas.js';
 export type { PackPieceName } from './schemas.js';
