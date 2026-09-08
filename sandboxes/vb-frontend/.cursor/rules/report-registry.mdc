@@ -1,0 +1,29 @@
+---
+description: Reports via registry + menu defs; no new logic in the mega menu modal
+globs: src/components/side_actions/**/report*,src/components/side_actions/reports/**,src/api/side-action-reports.ts
+alwaysApply: false
+---
+
+# Report registry
+
+## Pattern
+
+- Menu entries: `reports/reportMenuDefs.ts` (`forTypes`, labels, ids).
+- HTTP: `src/api/side-action-reports.ts`.
+- Document builders: `reports/build*ReportDocument.ts`.
+- Prefer a registry map `reportRegistry[type][reportId] = { fetch, buildDocument }` as the system grows.
+
+## Forbidden
+
+- Adding substantial fetch/config/build logic into `SideActionReportsMenuModal`.
+- Copy-pasting a new report type only inside the modal without menu defs + API module + builder.
+
+## Thin shell
+
+The menu modal selects a report and opens preview/print. It should not become the report system.
+
+## Print chrome
+
+Shared logo, `@page`, fonts, tables: `print-report-kit.mdc` + `src/utils/sideActionReportPrint.ts`.
+Builders stay thin — no one-off document shells.
+

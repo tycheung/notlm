@@ -1,0 +1,382 @@
+{
+  "capturedAt": "2026-09-07T19:54:58.865Z",
+  "baseUrl": "sandbox://vb-frontend",
+  "controls": [
+    {
+      "role": "control",
+      "name": "CREATE_TOURNAMENT",
+      "selectorHint": "[data-guide-id=\"guide-create-tournament\"]",
+      "existingGuideId": "guide-create-tournament",
+      "proposedGuideId": "guide-create-tournament",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "CREATE_EVENT",
+      "selectorHint": "[data-guide-id=\"guide-create-event\"]",
+      "existingGuideId": "guide-create-event",
+      "proposedGuideId": "guide-create-event",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "CREATE_TOURNAMENT_SUBMIT",
+      "selectorHint": "[data-guide-id=\"guide-create-tournament-submit\"]",
+      "existingGuideId": "guide-create-tournament-submit",
+      "proposedGuideId": "guide-create-tournament-submit",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "CREATE_EVENT_SUBMIT",
+      "selectorHint": "[data-guide-id=\"guide-create-event-submit\"]",
+      "existingGuideId": "guide-create-event-submit",
+      "proposedGuideId": "guide-create-event-submit",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "BOWLING_CENTERS_NAV",
+      "selectorHint": "[data-guide-id=\"guide-bowling-centers\"]",
+      "existingGuideId": "guide-bowling-centers",
+      "proposedGuideId": "guide-bowling-centers",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "SUBSCRIPTION_NAV",
+      "selectorHint": "[data-guide-id=\"guide-subscription\"]",
+      "existingGuideId": "guide-subscription",
+      "proposedGuideId": "guide-subscription",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_PARTICIPANTS",
+      "selectorHint": "[data-guide-id=\"guide-tab-participants\"]",
+      "existingGuideId": "guide-tab-participants",
+      "proposedGuideId": "guide-tab-participants",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_SQUADS",
+      "selectorHint": "[data-guide-id=\"guide-tab-squads\"]",
+      "existingGuideId": "guide-tab-squads",
+      "proposedGuideId": "guide-tab-squads",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_LANES",
+      "selectorHint": "[data-guide-id=\"guide-tab-lanes\"]",
+      "existingGuideId": "guide-tab-lanes",
+      "proposedGuideId": "guide-tab-lanes",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_SCORING",
+      "selectorHint": "[data-guide-id=\"guide-tab-scoring\"]",
+      "existingGuideId": "guide-tab-scoring",
+      "proposedGuideId": "guide-tab-scoring",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_FORMAT",
+      "selectorHint": "[data-guide-id=\"guide-tab-format\"]",
+      "existingGuideId": "guide-tab-format",
+      "proposedGuideId": "guide-tab-format",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_SIDE_ACTIONS",
+      "selectorHint": "[data-guide-id=\"guide-tab-side-actions\"]",
+      "existingGuideId": "guide-tab-side-actions",
+      "proposedGuideId": "guide-tab-side-actions",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TAB_STANDINGS",
+      "selectorHint": "[data-guide-id=\"guide-tab-standings\"]",
+      "existingGuideId": "guide-tab-standings",
+      "proposedGuideId": "guide-tab-standings",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_REPORTS",
+      "selectorHint": "[data-guide-id=\"guide-event-reports\"]",
+      "existingGuideId": "guide-event-reports",
+      "proposedGuideId": "guide-event-reports",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "ADD_PARTICIPANTS",
+      "selectorHint": "[data-guide-id=\"guide-add-participants\"]",
+      "existingGuideId": "guide-add-participants",
+      "proposedGuideId": "guide-add-participants",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "LOCK_SQUAD",
+      "selectorHint": "[data-guide-id=\"guide-lock-squad\"]",
+      "existingGuideId": "guide-lock-squad",
+      "proposedGuideId": "guide-lock-squad",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "LOCK_SA_ENTRIES",
+      "selectorHint": "[data-guide-id=\"guide-lock-sa-entries\"]",
+      "existingGuideId": "guide-lock-sa-entries",
+      "proposedGuideId": "guide-lock-sa-entries",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "CREATE_SIDE_ACTION",
+      "selectorHint": "[data-guide-id=\"guide-create-side-action\"]",
+      "existingGuideId": "guide-create-side-action",
+      "proposedGuideId": "guide-create-side-action",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TOURNAMENT_NAME",
+      "selectorHint": "[data-guide-id=\"guide-field-tournament-name\"]",
+      "existingGuideId": "guide-field-tournament-name",
+      "proposedGuideId": "guide-field-tournament-name",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "TOURNAMENT_CENTER",
+      "selectorHint": "[data-guide-id=\"guide-field-tournament-center\"]",
+      "existingGuideId": "guide-field-tournament-center",
+      "proposedGuideId": "guide-field-tournament-center",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_NAME",
+      "selectorHint": "[data-guide-id=\"guide-field-event-name\"]",
+      "existingGuideId": "guide-field-event-name",
+      "proposedGuideId": "guide-field-event-name",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_FORMAT",
+      "selectorHint": "[data-guide-id=\"guide-field-event-format\"]",
+      "existingGuideId": "guide-field-event-format",
+      "proposedGuideId": "guide-field-event-format",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_REENTRY",
+      "selectorHint": "[data-guide-id=\"guide-field-event-reentry\"]",
+      "existingGuideId": "guide-field-event-reentry",
+      "proposedGuideId": "guide-field-event-reentry",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_START",
+      "selectorHint": "[data-guide-id=\"guide-field-event-start\"]",
+      "existingGuideId": "guide-field-event-start",
+      "proposedGuideId": "guide-field-event-start",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_END",
+      "selectorHint": "[data-guide-id=\"guide-field-event-end\"]",
+      "existingGuideId": "guide-field-event-end",
+      "proposedGuideId": "guide-field-event-end",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "EVENT_SUBMIT",
+      "selectorHint": "[data-guide-id=\"guide-create-event-submit\"]",
+      "existingGuideId": "guide-create-event-submit",
+      "proposedGuideId": "guide-create-event-submit",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "PARTICIPANT_AVERAGE",
+      "selectorHint": "[data-guide-id=\"guide-participant-average\"]",
+      "existingGuideId": "guide-participant-average",
+      "proposedGuideId": "guide-participant-average",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "PARTICIPANT_ROW_PREFIX",
+      "selectorHint": "[data-guide-id=\"guide-participant-row-\"]",
+      "existingGuideId": "guide-participant-row-",
+      "proposedGuideId": "guide-participant-row-",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_WIZARD",
+      "selectorHint": "[data-guide-id=\"guide-format-wizard\"]",
+      "existingGuideId": "guide-format-wizard",
+      "proposedGuideId": "guide-format-wizard",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_ADD_STAGE",
+      "selectorHint": "[data-guide-id=\"guide-format-add-stage\"]",
+      "existingGuideId": "guide-format-add-stage",
+      "proposedGuideId": "guide-format-add-stage",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_ADD_RELATIONSHIP",
+      "selectorHint": "[data-guide-id=\"guide-format-add-relationship\"]",
+      "existingGuideId": "guide-format-add-relationship",
+      "proposedGuideId": "guide-format-add-relationship",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_ADD_FINAL",
+      "selectorHint": "[data-guide-id=\"guide-format-add-final\"]",
+      "existingGuideId": "guide-format-add-final",
+      "proposedGuideId": "guide-format-add-final",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_SAVE",
+      "selectorHint": "[data-guide-id=\"guide-format-save\"]",
+      "existingGuideId": "guide-format-save",
+      "proposedGuideId": "guide-format-save",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_APPLY_TO_EVENT",
+      "selectorHint": "[data-guide-id=\"guide-format-apply-to-event\"]",
+      "existingGuideId": "guide-format-apply-to-event",
+      "proposedGuideId": "guide-format-apply-to-event",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_NAME",
+      "selectorHint": "[data-guide-id=\"guide-format-name\"]",
+      "existingGuideId": "guide-format-name",
+      "proposedGuideId": "guide-format-name",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_DESCRIPTION",
+      "selectorHint": "[data-guide-id=\"guide-format-description\"]",
+      "existingGuideId": "guide-format-description",
+      "proposedGuideId": "guide-format-description",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_ROUND_GAMES",
+      "selectorHint": "[data-guide-id=\"guide-format-round-games\"]",
+      "existingGuideId": "guide-format-round-games",
+      "proposedGuideId": "guide-format-round-games",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_ROUND_METHOD",
+      "selectorHint": "[data-guide-id=\"guide-format-round-method\"]",
+      "existingGuideId": "guide-format-round-method",
+      "proposedGuideId": "guide-format-round-method",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_ROUND_SCORE_TYPE",
+      "selectorHint": "[data-guide-id=\"guide-format-round-score-type\"]",
+      "existingGuideId": "guide-format-round-score-type",
+      "proposedGuideId": "guide-format-round-score-type",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_REL_SOURCE",
+      "selectorHint": "[data-guide-id=\"guide-format-rel-source\"]",
+      "existingGuideId": "guide-format-rel-source",
+      "proposedGuideId": "guide-format-rel-source",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_REL_TARGET",
+      "selectorHint": "[data-guide-id=\"guide-format-rel-target\"]",
+      "existingGuideId": "guide-format-rel-target",
+      "proposedGuideId": "guide-format-rel-target",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_REL_FILTER",
+      "selectorHint": "[data-guide-id=\"guide-format-rel-filter\"]",
+      "existingGuideId": "guide-format-rel-filter",
+      "proposedGuideId": "guide-format-rel-filter",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_REL_COUNT",
+      "selectorHint": "[data-guide-id=\"guide-format-rel-count\"]",
+      "existingGuideId": "guide-format-rel-count",
+      "proposedGuideId": "guide-format-rel-count",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_REL_PERCENT",
+      "selectorHint": "[data-guide-id=\"guide-format-rel-percent\"]",
+      "existingGuideId": "guide-format-rel-percent",
+      "proposedGuideId": "guide-format-rel-percent",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_REL_EXEC_ORDER",
+      "selectorHint": "[data-guide-id=\"guide-format-rel-execution-order\"]",
+      "existingGuideId": "guide-format-rel-execution-order",
+      "proposedGuideId": "guide-format-rel-execution-order",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_FINAL_NAME",
+      "selectorHint": "[data-guide-id=\"guide-format-final-name\"]",
+      "existingGuideId": "guide-format-final-name",
+      "proposedGuideId": "guide-format-final-name",
+      "url": "/"
+    },
+    {
+      "role": "control",
+      "name": "FORMAT_FINAL_PLACEMENT",
+      "selectorHint": "[data-guide-id=\"guide-format-final-placement\"]",
+      "existingGuideId": "guide-format-final-placement",
+      "proposedGuideId": "guide-format-final-placement",
+      "url": "/"
+    }
+  ]
+}

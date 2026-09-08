@@ -1,0 +1,32 @@
+---
+description: Strict TypeScript - no new any; imports; console policy; dead deps
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript hygiene (target state)
+
+Broader language/React patterns: see `typescript-best-practices.mdc`.
+
+## Types
+
+- `strict` is on - do not weaken it
+- No new `any` / `as any` escapes; type API responses with `src/types/*` aligned to backend schemas
+- Prefer `Role` enum members over raw role strings in app code (tests/e2e may use enum values)
+- Status strings that mirror backend (`complete` vs `completed`) must match `round_enums` / backend docs
+
+## Imports
+
+- Prefer the `@/` alias for new files and when rewriting imports (tests already do)
+- Avoid deep `../../../../` chains when adding modules under `features/`
+
+## Console & logging
+
+- Production UI: no `console.log` / `console.error` litter - use `devLog`/`devError` or error UI
+- `src/api/**` is hard no-console (CI)
+
+## Dependencies
+
+- Do not add Formik, Yup, or MUI Data Grid for new work
+- Prefer deleting unused deps over wiring them "because they are installed"
+- Long-term: OpenAPI codegen is welcome; until then keep `src/types` updated when schemas change in the same PR when feasible

@@ -1,2 +1,19 @@
-/** Codegen slices land in codegen-001+. */
-export const CODEGEN_STATUS = 'bootstrap' as const;
+/**
+ * Annotation / checklist helpers only — no TypeScript pack codegen (ADR-002).
+ */
+export {
+  checklistToMarkdown,
+  type ChecklistItem,
+  type ChecklistJson,
+} from './checklistMd.js';
+
+export {
+  jobsToFlowSteps,
+  parseJobsYamlLite,
+  writeJobsFlowDraft,
+  type FlowStepDraft,
+  type JobYamlStep,
+  type JobsDocument,
+} from './jobsToFlow.js';
+
+export const CODEGEN_STATUS = 'checklist-md' as const;

@@ -1,0 +1,48 @@
+name: Frontend E2E (Playwright)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 6 * * *"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Checkout fastapi-backend for live Playwright
+        uses: actions/checkout@v4
+        with:
+          repository: VictoryBowlingSoftware/fastapi-backend
+          path: backend
+          ssh-key: ${{ secrets.E2E_BACKEND_CHECKOUT_KEY }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pip install "poetry<3"
+
+      - name: Install backend runtime dependencies
+        working-directory: backend
+        run: poetry install --only main
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        env:
+          CI: "true"
+        run: npm run test:e2e

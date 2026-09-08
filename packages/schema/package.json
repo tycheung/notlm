@@ -1,5 +1,5 @@
 {
-  "name": "@workflow-assistant/schema",
+  "name": "@uipilot/schema",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,6 +11,9 @@
     }
   },
   "files": ["dist"],
+  "dependencies": {
+    "ajv": "^8.17.1"
+  },
   "scripts": {
     "build": "tsc -b"
   }

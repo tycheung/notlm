@@ -1,5 +1,5 @@
 /**
- * Portable workflow-assistant core types.
+ * Portable uipilot core types.
  * Domain step ids are opaque strings defined by packs — not VB GuideStepId unions.
  */
 
@@ -95,3 +95,61 @@ export type PackRuntime = {
   resolveNav: (stepId: StepId, ctx: RuntimeContextBase) => NavResolve | null;
   unavailableReason?: (stepId: StepId, ctx: RuntimeContextBase) => string | null;
 };
+
+export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
+
+export type BinderPredicate =
+  | { path: string; op: BinderOp; value?: unknown }
+  | { all: BinderPredicate[] }
+  | { any: BinderPredicate[] };
+
+export type ControlDef = {
+  id: string;
+  stepId: StepId;
+  path?: string;
+  openModal?: string;
+  spotlight?: string;
+  coachMessage?: string;
+};
+
+export type IntentConfig = {
+  aliases: Record<StepId, string[]>;
+  meta?: string[];
+};
+
+export type ScenarioCase = {
+  utterance: string;
+  expect: {
+    stepId?: StepId | null;
+    rawIntent?: string | null;
+    goBack?: boolean;
+    isCorrection?: boolean;
+  };
+};
+
+export type NavSkipEntry = {
+  id: StepId;
+  title: string;
+  keywords: string[];
+};
+
+export type PackJsonInput = {
+  manifest: { id: string };
+  flow: FlowStepDef[];
+  controls: ControlDef[];
+  intents: IntentConfig;
+  binders: Record<string, BinderPredicate>;
+};
+
+export type IntentParsePack = {
+  steps: FlowStepDef[];
+  aliases: Record<StepId, string[]>;
+  meta?: string[];
+};
+
+export type PackedUtteranceResult = {
+  actions: GuideAction[];
+  meta: ParseUtteranceResult | null;
+};
+
+export type LoadedPack = PackRuntime & IntentConfig;

@@ -1,0 +1,46 @@
+---
+description: Generalize match-play UI + reports without fiction config or dual client engines
+alwaysApply: true
+---
+
+# Match-play types & reporting generalization
+
+Lessons from format editor / H2H / live-scores hardening: generalize presentation by
+**shared adapters and query keys**, never by a second client ranking or fiction settings.
+
+## Backend owns winners and structure
+
+Winners, series resolution, advancement, and match-structure sync are API/backend only
+(`no-client-engines.mdc`). Allowed on the client: diagram/scoring adapters, labels,
+manual-winner UX that calls the API, and print formatting of API JSON.
+
+## Fiction config is unfinished surface
+
+Do not seed or edit UI for `competition_method_config` keys the backend does not apply
+(e.g. unwired `selection_mode`, `bye_criteria`, DYLG advertising when forced off). Prefer
+backend defaults / strip-on-save over shipping controls that only write JSON.
+
+## One React Query key per resource
+
+The same list endpoint must not use two cache keys (e.g. `roundRelationships` vs
+`tournamentFlowRelationships`). Invalidation helpers (`eventFlowQueries`) and Event Details /
+flow preview must share one key or views go stale after format apply.
+
+## Route by method; don’t mount unused work
+
+Format Matchups and scoring surfaces should early-return by `competition_method` so RR
+hooks/queries are not mounted for bracket/stepladder (and vice versa). Shared hooks
+(`useFormatEditorMatchupQueries`) are for identical query blocks, not for loading every
+method’s UI at once.
+
+## Shared identity across scoring diagrams and reports
+
+Participant slot id / option resolve / “TBD” labels belong in one helper path used by
+match-play diagram adapters, scoring visuals, and report builders. Do not invent a third
+side-label map for print.
+
+## Reports: registry + print kit only
+
+New director sheets = menu def + API fetch + thin `build*ReportDocument` on the shared
+print kit (`report-registry.mdc`, `print-report-kit.mdc`). No counting rules in builders;
+no one-off `@page`/logo CSS.

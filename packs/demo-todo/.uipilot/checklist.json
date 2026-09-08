@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": "binders-review",
+      "kind": "binders",
+      "message": "Review structured-draft steps and add binders.json entries",
+      "checked": false
+    }
+  ]
+}

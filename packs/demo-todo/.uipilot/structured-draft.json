@@ -1,0 +1,170 @@
+{
+  "generatedAt": "2026-09-08T00:45:07.535Z",
+  "baseUrl": "packages/mapper/src/fixtures/sample.html",
+  "steps": [
+    {
+      "id": "link-lists",
+      "title": "Lists",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-link-lists"
+    },
+    {
+      "id": "button-new-list",
+      "title": "New list",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-button-new-list"
+    },
+    {
+      "id": "textbox-list-title",
+      "title": "List title",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-textbox-list-title"
+    },
+    {
+      "id": "combobox-visibility",
+      "title": "Visibility",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-combobox-visibility"
+    },
+    {
+      "id": "button-save",
+      "title": "Save",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-button-save"
+    },
+    {
+      "id": "button-cancel",
+      "title": "Cancel",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-button-cancel"
+    },
+    {
+      "id": "link-help",
+      "title": "Help",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-link-help"
+    },
+    {
+      "id": "region-sidebar",
+      "title": "Sidebar marker",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-region-sidebar"
+    },
+    {
+      "id": "create-list",
+      "title": "guide-create-list",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-create-list"
+    },
+    {
+      "id": "add-item",
+      "title": "guide-add-item",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-add-item"
+    },
+    {
+      "id": "complete-item",
+      "title": "guide-complete-item",
+      "kind": "soft",
+      "requires": [],
+      "confidence": "low",
+      "sourceGuideId": "guide-complete-item"
+    }
+  ],
+  "controls": [
+    {
+      "id": "guide-link-lists",
+      "role": "link",
+      "name": "Lists",
+      "selectorHint": "a",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-button-new-list",
+      "role": "button",
+      "name": "New list",
+      "selectorHint": "[data-guide-id=\"guide-button-new-list\"]",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-textbox-list-title",
+      "role": "textbox",
+      "name": "List title",
+      "selectorHint": "#title",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-combobox-visibility",
+      "role": "combobox",
+      "name": "Visibility",
+      "selectorHint": "select[name=\"visibility\"]",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-button-save",
+      "role": "button",
+      "name": "Save",
+      "selectorHint": "button[type=\"submit\"]",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-button-cancel",
+      "role": "button",
+      "name": "Cancel",
+      "selectorHint": "span",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-link-help",
+      "role": "link",
+      "name": "Help",
+      "selectorHint": "a",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-region-sidebar",
+      "role": "div",
+      "name": "Sidebar marker",
+      "selectorHint": "[data-guide-id=\"guide-region-sidebar\"]",
+      "path": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "id": "guide-create-list",
+      "role": "unknown",
+      "name": "guide-create-list",
+      "selectorHint": "[data-guide-id=\"guide-create-list\"]"
+    },
+    {
+      "id": "guide-add-item",
+      "role": "unknown",
+      "name": "guide-add-item",
+      "selectorHint": "[data-guide-id=\"guide-add-item\"]"
+    },
+    {
+      "id": "guide-complete-item",
+      "role": "unknown",
+      "name": "guide-complete-item",
+      "selectorHint": "[data-guide-id=\"guide-complete-item\"]"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+---
+description: URL tab state, draft localStorage, and client-only persistence rules
+globs: src/pages/**,src/hooks/**,src/utils/**DraftStorage*
+alwaysApply: false
+---
+
+# Local state, URL params & drafts (target state)
+
+## URL as navigation SSOT
+
+- Event/director tabs should stay synced with `?tab=` (and related query params). Prefer updating search params over inventing a second tab store.
+- Do not break `?view=bowler` or role-prefix redirects when adding links or default tabs.
+
+## Client drafts
+
+- Form draft helpers (`*DraftStorage.ts`) are UX convenience only — never treat localStorage as source of truth for scores, bracket runs, fees, or access.
+- Key draft caches by stable IDs (`user_id`, `eventId`, `tournamentId`), not display names.
+- Clear or version draft keys when schema shape changes so stale drafts cannot corrupt new forms.
+
+## Modals & ephemeral UI
+
+- Prefer `useModalState` / small hooks over sprawling boolean `useState` lists on pages.
+- Do not persist modal open state to the URL unless product explicitly requires shareable deep links.

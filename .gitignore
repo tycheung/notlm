@@ -8,3 +8,9 @@ coverage
 playwright-report
 test-results
 .DS_Store
+*.tsbuildinfo
+.pytest_cache
+
+# Saturation / author drafts generated locally (keep pack/ committed)
+**/.uipilot/saturation/
+**/.uipilot/drafts/

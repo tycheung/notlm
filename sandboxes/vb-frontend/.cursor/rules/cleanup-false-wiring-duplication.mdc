@@ -1,0 +1,35 @@
+---
+description: Before commit/cleanup/push — kill false wiring and duplicate paths; loop back until gone
+alwaysApply: true
+---
+
+# Cleanup gate: false wiring + duplication
+
+Applies at **commit / cleanup / push** time (and any “done” claim). Extend `looks-done-not-wired.mdc` and `complexity-first.mdc`.
+
+## False wiring (must fix before ship)
+
+A feature is false-wired when UI, types, or unit tests look complete but the **live path** does not:
+
+- Controls that never call the API client
+- Router cases / surfaces never imported from `ScoringSurfaceRouter` (or equivalent)
+- Config fields saved but ignored at score / lock / generate time
+- Fallbacks that invent valid-looking data (fake `Pod 1`, empty membership → placeholder groups)
+
+**Loop:** grep from the live entrypoint → wire or delete → re-grep → repeat until only real callers remain.
+
+## Duplication (must collapse or justify)
+
+Before commit, search for twin helpers / twin hooks / twin API methods:
+
+- Two `defaultAdvance*` helpers, duplicate cluster-find logic, `/home-events` plus unused `/in-progress-events`
+- Dead diagram adapters after a pinfall (or other) pivot
+
+Prefer **one module + delete** over parallel copies. If both must stay, say why in the PR body.
+
+## Commit checklist (agent)
+
+1. Diff new exports; grep each for production callers (not only tests).
+2. Delete unreachable UI branches left by routing pivots in the same change.
+3. Prefer net **LOC down** on cleanup commits.
+4. If a check fails, **do not push** — loop back and fix, then re-run the checklist.

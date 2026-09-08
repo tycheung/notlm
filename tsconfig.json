@@ -3,8 +3,10 @@
   "references": [
     { "path": "packages/core" },
     { "path": "packages/schema" },
+    { "path": "packages/author" },
     { "path": "packages/react" },
     { "path": "packages/mapper" },
+    { "path": "packages/cli" },
     { "path": "packages/codegen" },
     { "path": "apps/demo" }
   ]

@@ -1,0 +1,27 @@
+---
+description: Backend contract changes must update side-action e2e fixtures same window
+globs: tests/e2e/**,src/api/side-action*.ts,src/types/side_action.ts
+alwaysApply: false
+---
+
+# E2E fixture sync
+
+## When backend contracts change
+
+Update in the **same delivery window**:
+
+1. `src/types` / API clients  
+2. E2E route mocks and fixtures under `tests/e2e/` (prefer a dedicated `side-actions` fixture area as it grows)  
+3. Assertions for Create CTA / panels / report entry points  
+
+## Rules
+
+- Director e2e stays mocked — no live login dependency.
+- New APIs used by a tab must be stubbed or tests fail closed.
+- Do not leave stale placeholders that assert removed “coming soon” copy after a type ships.
+- When **display formatting** changes (e.g. `Games 1, 2, 3` → `Games 1 → 2 → 3`),
+  update e2e assertions in the **same PR** as the UI/report change.
+- When adding a side-action type with a director **Create new** CTA, bump Create-new
+  count / panel fixtures (do not leave “4 types” assumptions after Mystery Doubles).
+- New optional request fields (`is_all`, `pot_from` / `pot_to`, …) must be reflected in
+  mocks and deep-equality expectations the same window.

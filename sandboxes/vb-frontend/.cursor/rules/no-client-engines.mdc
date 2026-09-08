@@ -1,0 +1,24 @@
+---
+description: Ban reintroducing client bracket/HG/Elim generate-score engines
+globs: src/utils/**,src/components/side_actions/**,src/features/side-actions/**
+alwaysApply: false
+---
+
+# No client engines
+
+## Forbidden
+
+- Reintroducing `utils/bracketEngine/generation`, `scoring`, `sim`, or equivalent client generate/score engines.
+- Client-side standings engines that duplicate backend High Game / Eliminator services.
+- Client lane placement/movement engines — lane SSOT is backend; see `lane-ui-backend-ssot.mdc`.
+- Keeping process/calculate API wrappers after live standings ship.
+
+## Allowed
+
+- Presentation adapters (diagram props, display name maps).
+- Conflicts/UI helpers that do not own pot generation.
+- Pure selected-game UX validation with **parity tests** that mirrors backend config rules — not a second SSOT for winners.
+
+## Backend is SSOT
+
+Preview/generate/score/standings come from API. If the backend is wrong, fix the backend — do not shadow it on the client.

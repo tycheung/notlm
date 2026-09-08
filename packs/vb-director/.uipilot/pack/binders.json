@@ -1,0 +1,77 @@
+[
+  {
+    "stepId": "billing_ready",
+    "path": "data.complete.billing_ready",
+    "op": "truthy"
+  },
+  {
+    "stepId": "bowling_center",
+    "path": "data.complete.bowling_center",
+    "op": "truthy"
+  },
+  {
+    "stepId": "create_tournament",
+    "path": "data.complete.create_tournament",
+    "op": "truthy"
+  },
+  {
+    "stepId": "create_event",
+    "path": "data.complete.create_event",
+    "op": "truthy"
+  },
+  {
+    "stepId": "apply_format",
+    "path": "data.complete.apply_format",
+    "op": "truthy"
+  },
+  {
+    "stepId": "side_actions",
+    "path": "data.complete.side_actions",
+    "op": "truthy"
+  },
+  {
+    "stepId": "register_participants",
+    "path": "data.complete.register_participants",
+    "op": "truthy"
+  },
+  {
+    "stepId": "sa_signups",
+    "path": "data.complete.sa_signups",
+    "op": "truthy"
+  },
+  {
+    "stepId": "assign_squads",
+    "path": "data.complete.assign_squads",
+    "op": "truthy"
+  },
+  {
+    "stepId": "assign_lanes",
+    "path": "data.complete.assign_lanes",
+    "op": "truthy"
+  },
+  {
+    "stepId": "lock_squads",
+    "path": "data.complete.lock_squads",
+    "op": "truthy"
+  },
+  {
+    "stepId": "lock_sa_entries",
+    "path": "data.complete.lock_sa_entries",
+    "op": "truthy"
+  },
+  {
+    "stepId": "enter_scores",
+    "path": "data.complete.enter_scores",
+    "op": "truthy"
+  },
+  {
+    "stepId": "advance_rounds",
+    "path": "data.complete.advance_rounds",
+    "op": "truthy"
+  },
+  {
+    "stepId": "run_reports",
+    "path": "data.complete.run_reports",
+    "op": "truthy"
+  }
+]

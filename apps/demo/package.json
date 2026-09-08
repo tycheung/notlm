@@ -1,11 +1,11 @@
 {
-  "name": "@workflow-assistant/demo",
+  "name": "@uipilot/demo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@workflow-assistant/core": "workspace:*",
-    "@workflow-assistant/react": "workspace:*"
+    "@uipilot/core": "*",
+    "@uipilot/react": "*"
   },
   "scripts": {
     "build": "tsc -b"

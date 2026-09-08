@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Allow Google to verify the site
+User-agent: Googlebot
+Allow: /
+
+# Sitemap location
+Sitemap: https://app.victorybowling.com/sitemap.xml

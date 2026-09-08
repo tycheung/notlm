@@ -4,13 +4,14 @@
 
 ```text
 host-app/
-  .workflow-assistant/     → ALL config + scan/author learnings (JSON only)  [ADR-002]
+  .uipilot/     → ALL config + scan/author learnings (JSON only)  [ADR-002]
   src/…                    → getContext, data-guide-id, notifyStepCompleted
 
-npm: @workflow-assistant/react  → UI Host (depends on core)
-npm: @workflow-assistant/core   → pure TS runtime; loads/evaluates pack JSON
-CLI: mapper / extract / author  → write JSON into .workflow-assistant/ only
-npm: @workflow-assistant/schema → JSON Schema for the folder format
+npm: @uipilot/react  → UI Host (depends on core)
+npm: @uipilot/core   → pure TS runtime; loads/evaluates pack JSON
+CLI: mapper / extract / author  → write JSON into .uipilot/ only
+     primary façade: map | tune | prepare (ADR-006)
+npm: @uipilot/schema → JSON Schema for the folder format
 ```
 
 ### Import rules (enforced later by `boot-003` / `ci`)
@@ -42,9 +43,10 @@ User utterance / palette pick
 ## Host folder (canonical — ADR-002)
 
 ```text
-.workflow-assistant/
+.uipilot/
   config.json
   scenarios.json           # labeled utterances for intent tuning (ADR-001)
+  saturation/              # G5d / ADR-005 — candidates, novelty reports, batches
   inventory.json
   structured-draft.json
   checklist.json
@@ -86,6 +88,10 @@ Spotlight and flash **only** query this contract.
 **UI-actions only (ADR-003):** `executeStep` resolves to path / modal / spotlight / prefill.
 The coach must not import host `*API` clients or issue domain HTTP. Playwright demos
 **click** annotated controls.
+
+**Chrome personalization (ADR-007 / G10):** Hosts brand FAB/chat/palette via CSS variables
+(`appearance` prop), stable `uipilot-*` classes, and optional `components` slots.
+Pack JSON does not store brand colors. Dispatch and guide-id coaching stay unchanged.
 
 ## Voice
 

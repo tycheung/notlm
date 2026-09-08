@@ -1,5 +1,5 @@
 {
-  "name": "@workflow-assistant/mapper",
+  "name": "@uipilot/mapper",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,9 +10,20 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
-    "@workflow-assistant/core": "workspace:*"
+    "@uipilot/core": "*",
+    "node-html-parser": "^9.0.4"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsc -b"

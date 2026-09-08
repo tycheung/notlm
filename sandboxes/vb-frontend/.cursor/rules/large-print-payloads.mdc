@@ -1,0 +1,29 @@
+---
+description: Large director print payloads — request server windows; never download full 10k trees
+globs: src/components/**/reports/**,src/api/side-action-reports.ts,src/components/side_actions/SideActionReportsMenuModal.tsx,tests/e2e/**/*report*,tests/e2e/**/*bracket*
+alwaysApply: false
+---
+
+# Large print payloads
+
+## Rule
+
+For high-volume reports (especially brackets wall sheets):
+
+- Request a **server-side window** (`pot_from` / `pot_to` or equivalent).
+- Default chunk ≤ `BRACKETS_REPORT_DEFAULT_CHUNK_POTS` (100).
+- Do **not** fetch the full pot list then slice in the browser for large pools.
+
+## Document builders
+
+- When the API returns `pot_from` / `pot_to` with a sliced `brackets` array, treat the payload as **already windowed**.
+- `bracket_count` is the total pool size for labels; do not assume `brackets.length === bracket_count`.
+- Keep HTML build costs bounded — page-chunk pots; avoid expanding thousands of trees client-side.
+
+## Companion backend
+
+Backend must slice **then** expand trees (`bracket-engine-scale.mdc` / `director-print-reports.mdc`). Ship FE + BE contract in the same delivery window.
+
+## Modal size
+
+Do not grow `SideActionReportsMenuModal` with option panels or fetch logic — extract to `reports/*OptionPanels` / fetch helpers (`report-registry.mdc`, `file-size-limits.mdc`). Run `npm run check:god-components` before merge when touching it.

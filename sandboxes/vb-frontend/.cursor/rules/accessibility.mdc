@@ -1,0 +1,25 @@
+---
+description: Minimum a11y contract for dialogs, tabs, tables, and live feedback
+globs: src/components/**,src/pages/**
+alwaysApply: false
+---
+
+# Accessibility (target state)
+
+New and heavily edited interactive UI must be usable by keyboard and announce state to assistive tech.
+
+## Minimums
+
+- **Dialogs:** `role="dialog"`, `aria-modal`, labelled title, Escape closes (follow `Modal.tsx`)
+- **Tabs:** prefer `tablist` / `tab` / `aria-selected` / `aria-controls` when rewriting tab chrome - do not invent mouse-only tab strips
+- **Icon-only buttons:** meaningful `aria-label`
+- **Errors / toasts:** `role="alert"` or `aria-live="polite"` for important async feedback
+- **Forms:** associate labels (`Label` + input ids); do not rely on placeholder-only labeling
+
+## Avoid
+
+- Mouse-only drag-and-drop without a keyboard alternative for critical assignment flows
+- Decorative SVG/diagram controls without accessible names when they are the primary scoring affordance
+- Shipping color-only status (always pair with text/icon)
+
+Do not depend on an a11y plugin being present - bake the contract into components as you touch them.

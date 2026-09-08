@@ -2,32 +2,43 @@
 
 ## Current
 
-- **Slice:** `boot-001` — Workspace builds empty packages (**done** enough to typecheck/test)
-- **Also landed with bootstrap:** planning docs, ADR-000, trimmed core starter (types, fuzzy, flowGraph, slots, flowStatus), react speech/flash stubs, mapper types, demo-todo pack draft
+- **G5d / G5e / G10 implementation: DONE** (saturation + CLI façade + chrome personalization)
+- Publish (`publish-*`) intentionally deferred
 
 ## Last completed
 
-- `boot-001` (+ planning + core starter extract)
-- Docs: PLAN, PLAN_GAP, SLICE_BACKLOG, PROGRESS, ARCHITECTURE, CONTRIBUTING, SECURITY, tests/README, ADR-000
-- Packages: core / react / schema / mapper / codegen + apps/demo + packs
+- Steward pass: deleted dead `stubDispatch` (−~90 LOC); demo-crm + accent Playwright (7 e2e green)
+- **sat-014 / sat-015** — no-lift stop (5×100) + `--force=N` hard augment
+- **P4d–P4f** saturation, CLI façade, chrome personalization
+- Unit: 84/84; Playwright demo-todo+crm: **7/7**
 
-## Blockers
+## Next (optional)
 
-- None. Prefer pnpm when available; npm workspaces verified locally.
+1. CI coverage floors / module-size gates (`ci-002`…)
+2. Live LLM integration pass for `scenarios generate` / `tune` (BYO keys)
+3. **npm publish** when explicitly requested
 
-## Next
+## Goal check (PLAN G1–G10)
 
-1. `boot-002` — harden CI script / coverage config (optional polish)
-2. `core-006`… intent parse + dispatch (or continue core extract)
-3. `react-001` Provider + feature flags
-4. After demo-todo: `extract-*` then `author-*` (build-time LLM; ADR-001)
-5. Keep `mapper-*` / `author-*` out of runtime package dependency graphs
+| Goal | Status |
+|------|--------|
+| G1 Installable packages | **Done** (workspaces; publish deferred) |
+| G2 Generic Core + Host | **Done** |
+| G3/G3b Pack JSON folder | **Done** |
+| G4 Mapper inventory | **Done** |
+| G5 Process authoring assist | **Done** |
+| G5b Build-time LLM author | **Done** |
+| G5c Intent tune | **Done** |
+| G5d Scenario saturation + orthogonality | **Done** |
+| G5e Operator CLI façade | **Done** (`map` / `tune` / `prepare`) |
+| G6 VB parity path | **Done** |
+| G7 Quality gates | **Done** (+ `@guide-saturate` opt-in) |
+| G8 Feature flags | **Done** |
+| G9 UI-actions only | **Done** |
+| G10 Host chrome personalization | **Done** |
 
 ## Notes
 
-- Prefer `typescript-slice-master.mdc` as the constitution for this repo.
-- **ADR-003:** UI-actions only — always press/simulate real controls; never call host product APIs from the coach.
-- **ADR-001:** BYO / Ollama / OpenAI-compatible for pack author **and** `intents tune` from `scenarios.json`; never in runtime NLU.
-- **ADR-002:** all host learnings/config in `.workflow-assistant/` as JSON only (no generated TS pack code).
-- Mapper thesis: inventory ≠ process DAG; structured extract + checklist + optional LLM author (build-time).
-- Voice policy: Web Speech; Chrome/Edge/Safari; Firefox type-only; no Whisper.
+- Prefer `UIPILOT_SATURATE_FIXTURE=1` or `--batch=5` when using npm (flags often stripped on Windows).
+- Saturation artifacts under `.uipilot/saturation/` and `drafts/` are gitignored.
+- Real Victory Bowling app not modified; use `sandboxes/vb-frontend`.

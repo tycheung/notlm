@@ -1,0 +1,5 @@
+[
+  { "stepId": "create_list", "path": "data.listCount", "op": "gte", "value": 1 },
+  { "stepId": "add_item", "path": "data.itemCount", "op": "gte", "value": 1 },
+  { "stepId": "complete_item", "path": "data.completedCount", "op": "gte", "value": 1 }
+]

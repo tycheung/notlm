@@ -1,0 +1,26 @@
+---
+description: Prefer deleting and extracting over growing complexity or dual paths
+alwaysApply: true
+---
+
+# Complexity-first changes
+
+When improving code quality, optimize for **fewer concepts and fewer lines**, not more abstraction layers.
+
+## Order of operations
+
+1. **Delete** dead/orphan/stub code (e.g. duplicate lane list+preview when grid + backend API suffices)
+2. **Fix** silent functional bugs (providers, wrong paths)
+3. **Collapse** duplicate surfaces (one nearby UX, one alert path)
+4. **Extract** from god files only after the above
+5. **Lower** size-gate ceilings after extraction
+
+## Do not
+
+- Raise god-component ceilings without an extraction PR
+- Add a second implementation "for later" beside a working one
+- Grow `EventDetails` / workspaces with another modal/`useState` — extract a panel/hook first
+
+## Tests as containment
+
+Add or extend cleanup/unit gates that assert orphans and stub strings stay gone (`tests/unit/cleanup/`).

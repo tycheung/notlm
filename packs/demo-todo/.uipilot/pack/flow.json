@@ -1,0 +1,23 @@
+[
+  {
+    "id": "create_list",
+    "title": "Create list",
+    "keywords": ["list", "new list", "create list"],
+    "kind": "hard",
+    "requires": []
+  },
+  {
+    "id": "add_item",
+    "title": "Add item",
+    "keywords": ["add", "todo", "item"],
+    "kind": "hard",
+    "requires": ["create_list"]
+  },
+  {
+    "id": "complete_item",
+    "title": "Complete item",
+    "keywords": ["done", "complete", "check"],
+    "kind": "hard",
+    "requires": ["add_item"]
+  }
+]

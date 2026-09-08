@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": "parity-compare",
+      "severity": "info",
+      "text": "Compare intents check vs original GUIDE_NLU_CORPUS in sandbox"
+    },
+    {
+      "id": "ui-actions-only",
+      "severity": "info",
+      "text": "Coach must click data-guide-id controls; never call VB *API clients"
+    }
+  ]
+}

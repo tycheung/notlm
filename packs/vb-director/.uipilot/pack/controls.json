@@ -1,0 +1,107 @@
+[
+  {
+    "id": "guide-subscription",
+    "stepId": "billing_ready",
+    "path": "/",
+    "spotlight": "guide-subscription",
+    "coachMessage": "Open “Subscription / access” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-bowling-centers",
+    "stepId": "bowling_center",
+    "path": "/",
+    "spotlight": "guide-bowling-centers",
+    "coachMessage": "Open “Bowling centers” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-create-tournament",
+    "stepId": "create_tournament",
+    "path": "/",
+    "spotlight": "guide-create-tournament",
+    "coachMessage": "Open “Create tournament” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-create-event",
+    "stepId": "create_event",
+    "path": "/",
+    "spotlight": "guide-create-event",
+    "coachMessage": "Open “Create event” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-format",
+    "stepId": "apply_format",
+    "path": "/",
+    "spotlight": "guide-tab-format",
+    "coachMessage": "Open “Event format” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-side-actions",
+    "stepId": "side_actions",
+    "path": "/",
+    "spotlight": "guide-tab-side-actions",
+    "coachMessage": "Open “Side actions” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-participants",
+    "stepId": "register_participants",
+    "path": "/",
+    "spotlight": "guide-tab-participants",
+    "coachMessage": "Open “Register participants” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-side-actions",
+    "stepId": "sa_signups",
+    "path": "/",
+    "spotlight": "guide-tab-side-actions",
+    "coachMessage": "Open “Side action signups” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-squads",
+    "stepId": "assign_squads",
+    "path": "/",
+    "spotlight": "guide-tab-squads",
+    "coachMessage": "Open “Assign squads” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-lanes",
+    "stepId": "assign_lanes",
+    "path": "/",
+    "spotlight": "guide-tab-lanes",
+    "coachMessage": "Open “Lane assignments” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-lock-squad",
+    "stepId": "lock_squads",
+    "path": "/",
+    "spotlight": "guide-lock-squad",
+    "coachMessage": "Open “Lock squads” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-lock-sa-entries",
+    "stepId": "lock_sa_entries",
+    "path": "/",
+    "spotlight": "guide-lock-sa-entries",
+    "coachMessage": "Open “Lock SA entries” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-scoring",
+    "stepId": "enter_scores",
+    "path": "/",
+    "spotlight": "guide-tab-scoring",
+    "coachMessage": "Open “Enter scores” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-tab-scoring",
+    "stepId": "advance_rounds",
+    "path": "/",
+    "spotlight": "guide-tab-scoring",
+    "coachMessage": "Open “Advance / complete rounds” via the highlighted control (UI click only)."
+  },
+  {
+    "id": "guide-event-reports",
+    "stepId": "run_reports",
+    "path": "/",
+    "spotlight": "guide-event-reports",
+    "coachMessage": "Open “Reports” via the highlighted control (UI click only)."
+  }
+]

@@ -1,0 +1,792 @@
+[
+  {
+    "id": "billing-clean",
+    "utterance": "Open my subscription",
+    "expect": {
+      "stepId": "billing_ready"
+    }
+  },
+  {
+    "id": "billing-plan",
+    "utterance": "show me my plan",
+    "expect": {
+      "stepId": "billing_ready"
+    }
+  },
+  {
+    "id": "billing-typo",
+    "utterance": "open subscripshin",
+    "expect": {
+      "stepId": "billing_ready"
+    }
+  },
+  {
+    "id": "billing-trunc",
+    "utterance": "need to renew my",
+    "expect": {
+      "stepId": "billing_ready"
+    }
+  },
+  {
+    "id": "billing-pass",
+    "utterance": "check my passes",
+    "expect": {
+      "stepId": "billing_ready"
+    }
+  },
+  {
+    "id": "center-clean",
+    "utterance": "Add a bowling center",
+    "expect": {
+      "stepId": "bowling_center"
+    }
+  },
+  {
+    "id": "center-typo",
+    "utterance": "add bowlng center",
+    "expect": {
+      "stepId": "bowling_center"
+    }
+  },
+  {
+    "id": "center-alley",
+    "utterance": "which alley are we using",
+    "expect": {
+      "stepId": "bowling_center"
+    }
+  },
+  {
+    "id": "center-house",
+    "utterance": "set the house",
+    "expect": {
+      "stepId": "bowling_center"
+    }
+  },
+  {
+    "id": "center-uk",
+    "utterance": "bowling centre list",
+    "expect": {
+      "stepId": "bowling_center"
+    }
+  },
+  {
+    "id": "tourn-clean",
+    "utterance": "Create a tournament",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-named",
+    "utterance": "Create a tournament named Friday Night Scratch",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-typo",
+    "utterance": "creat a tornament",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-crate",
+    "utterance": "crate tournament please",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-slang",
+    "utterance": "start a new tourney",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-trunc",
+    "utterance": "create tourn",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-lanes",
+    "utterance": "new tournament with 12 lanes",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-at-center",
+    "utterance": "create tournament at Oakwood Lanes",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "tourn-call-it",
+    "utterance": "make a tournament call it Saturday Sweepers",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "event-clean",
+    "utterance": "Create an event",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "event-add",
+    "utterance": "add event to this tournament",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "event-typo",
+    "utterance": "creat an event",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "event-named",
+    "utterance": "add event named Scratch Singles",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "event-trunc",
+    "utterance": "add eve",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "format-clean",
+    "utterance": "Open the format editor",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-apply",
+    "utterance": "apply format",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-rounds",
+    "utterance": "set up rounds",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-choose",
+    "utterance": "choose format for the event",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-trunc",
+    "utterance": "format edit",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-wizard",
+    "utterance": "open format wizard",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-qualifying",
+    "utterance": "set up qualifying rounds",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-cashers",
+    "utterance": "cashers cut then finals",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-stepladder",
+    "utterance": "stepladder finals",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-bracket",
+    "utterance": "single elim bracket",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-add-round",
+    "utterance": "add a round",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-structure",
+    "utterance": "structure the event",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "format-pay-top",
+    "utterance": "pay top 8 championship",
+    "expect": {
+      "stepId": "apply_format"
+    }
+  },
+  {
+    "id": "sa-clean",
+    "utterance": "Configure side actions",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "sa-hyphen",
+    "utterance": "open side-actions",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "sa-pot",
+    "utterance": "set up bracket pot",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "sa-elim",
+    "utterance": "add eliminator pot",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "sa-trunc",
+    "utterance": "side act",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "sa-bracket-pot",
+    "utterance": "add a bracket pot",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "sa-high-game",
+    "utterance": "set up high game pot",
+    "expect": {
+      "stepId": "side_actions"
+    }
+  },
+  {
+    "id": "part-clean",
+    "utterance": "Register participants",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-bowlers",
+    "utterance": "add bowlers to the roster",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-typo",
+    "utterance": "add particpants",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-typo2",
+    "utterance": "open particiants",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-signups",
+    "utterance": "manage sign-ups",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-trunc",
+    "utterance": "add bowl",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-roster",
+    "utterance": "open the roster",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "part-entries",
+    "utterance": "manage entries",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "sasign-clean",
+    "utterance": "Side action signups",
+    "expect": {
+      "stepId": "sa_signups"
+    }
+  },
+  {
+    "id": "sasign-pot",
+    "utterance": "sign up for pots",
+    "expect": {
+      "stepId": "sa_signups"
+    }
+  },
+  {
+    "id": "sasign-enter",
+    "utterance": "enter the pots",
+    "expect": {
+      "stepId": "sa_signups"
+    }
+  },
+  {
+    "id": "sasign-opt-in",
+    "utterance": "opt bowlers into side pots",
+    "expect": {
+      "stepId": "sa_signups"
+    }
+  },
+  {
+    "id": "squad-clean",
+    "utterance": "Assign squads",
+    "expect": {
+      "stepId": "assign_squads"
+    }
+  },
+  {
+    "id": "squad-typo",
+    "utterance": "assgn squad",
+    "expect": {
+      "stepId": "assign_squads"
+    }
+  },
+  {
+    "id": "squad-put",
+    "utterance": "put them in squads",
+    "expect": {
+      "stepId": "assign_squads"
+    }
+  },
+  {
+    "id": "squad-trunc",
+    "utterance": "squad ass",
+    "expect": {
+      "stepId": "assign_squads"
+    }
+  },
+  {
+    "id": "squad-shift",
+    "utterance": "assign shifts",
+    "expect": {
+      "stepId": "assign_squads"
+    }
+  },
+  {
+    "id": "lane-clean",
+    "utterance": "Lane assignments",
+    "expect": {
+      "stepId": "assign_lanes"
+    }
+  },
+  {
+    "id": "lane-assign",
+    "utterance": "assign lanes",
+    "expect": {
+      "stepId": "assign_lanes"
+    }
+  },
+  {
+    "id": "lane-typo",
+    "utterance": "assign lain pairs",
+    "expect": {
+      "stepId": "assign_lanes"
+    }
+  },
+  {
+    "id": "lane-trunc",
+    "utterance": "lane ass",
+    "expect": {
+      "stepId": "assign_lanes"
+    }
+  },
+  {
+    "id": "lane-pair",
+    "utterance": "set lane pairs",
+    "expect": {
+      "stepId": "assign_lanes"
+    }
+  },
+  {
+    "id": "locksq-clean",
+    "utterance": "Lock squads",
+    "expect": {
+      "stepId": "lock_squads"
+    }
+  },
+  {
+    "id": "locksq-in",
+    "utterance": "lock in the squad",
+    "expect": {
+      "stepId": "lock_squads"
+    }
+  },
+  {
+    "id": "locksq-typo",
+    "utterance": "lok squad please",
+    "expect": {
+      "stepId": "lock_squads"
+    }
+  },
+  {
+    "id": "locksq-trunc",
+    "utterance": "lock squ",
+    "expect": {
+      "stepId": "lock_squads"
+    }
+  },
+  {
+    "id": "locksq-shells",
+    "utterance": "lock squad for game shells",
+    "expect": {
+      "stepId": "lock_squads"
+    }
+  },
+  {
+    "id": "locksa-clean",
+    "utterance": "Lock SA entries",
+    "expect": {
+      "stepId": "lock_sa_entries"
+    }
+  },
+  {
+    "id": "locksa-pots",
+    "utterance": "lock pots before scoring",
+    "expect": {
+      "stepId": "lock_sa_entries"
+    }
+  },
+  {
+    "id": "locksa-event",
+    "utterance": "lock event entries",
+    "expect": {
+      "stepId": "lock_sa_entries"
+    }
+  },
+  {
+    "id": "score-clean",
+    "utterance": "Enter scores",
+    "expect": {
+      "stepId": "enter_scores"
+    }
+  },
+  {
+    "id": "score-tab",
+    "utterance": "open game scoring",
+    "expect": {
+      "stepId": "enter_scores"
+    }
+  },
+  {
+    "id": "score-typo",
+    "utterance": "enter scors",
+    "expect": {
+      "stepId": "enter_scores"
+    }
+  },
+  {
+    "id": "score-pinfall",
+    "utterance": "enter pinfall",
+    "expect": {
+      "stepId": "enter_scores"
+    }
+  },
+  {
+    "id": "score-trunc",
+    "utterance": "game scor",
+    "expect": {
+      "stepId": "enter_scores"
+    }
+  },
+  {
+    "id": "score-input",
+    "utterance": "score entry",
+    "expect": {
+      "stepId": "enter_scores"
+    }
+  },
+  {
+    "id": "adv-clean",
+    "utterance": "Advance rounds",
+    "expect": {
+      "stepId": "advance_rounds"
+    }
+  },
+  {
+    "id": "adv-complete",
+    "utterance": "complete round",
+    "expect": {
+      "stepId": "advance_rounds"
+    }
+  },
+  {
+    "id": "adv-process",
+    "utterance": "process advancement",
+    "expect": {
+      "stepId": "advance_rounds"
+    }
+  },
+  {
+    "id": "adv-cut",
+    "utterance": "run the cut",
+    "expect": {
+      "stepId": "advance_rounds"
+    }
+  },
+  {
+    "id": "rep-clean",
+    "utterance": "Run reports",
+    "expect": {
+      "stepId": "run_reports"
+    }
+  },
+  {
+    "id": "rep-print",
+    "utterance": "print reports",
+    "expect": {
+      "stepId": "run_reports"
+    }
+  },
+  {
+    "id": "rep-standings",
+    "utterance": "standings report",
+    "expect": {
+      "stepId": "run_reports"
+    }
+  },
+  {
+    "id": "rep-typo",
+    "utterance": "open reprt menu",
+    "expect": {
+      "stepId": "run_reports"
+    }
+  },
+  {
+    "id": "rep-recap",
+    "utterance": "event recap report",
+    "expect": {
+      "stepId": "run_reports"
+    }
+  },
+  {
+    "id": "tourn-sweepers",
+    "utterance": "new sweepers tournament",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "event-scratch",
+    "utterance": "new scratch event",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "event-doubles",
+    "utterance": "add doubles event",
+    "expect": {
+      "stepId": "create_event"
+    }
+  },
+  {
+    "id": "corr-center",
+    "utterance": "Oh actually it should have been Oakwood Lanes",
+    "expect": {
+      "stepId": null,
+      "isCorrection": true
+    }
+  },
+  {
+    "id": "corr-name",
+    "utterance": "wait rename it Victory Open",
+    "expect": {
+      "stepId": null,
+      "isCorrection": true
+    }
+  },
+  {
+    "id": "corr-meant",
+    "utterance": "I meant Saturday Classic",
+    "expect": {
+      "stepId": null,
+      "isCorrection": true
+    }
+  },
+  {
+    "id": "back-clean",
+    "utterance": "go back",
+    "expect": {
+      "stepId": null,
+      "goBack": true
+    }
+  },
+  {
+    "id": "back-undo",
+    "utterance": "undo that",
+    "expect": {
+      "stepId": null,
+      "goBack": true
+    }
+  },
+  {
+    "id": "back-earlier",
+    "utterance": "previous step",
+    "expect": {
+      "stepId": null,
+      "goBack": true
+    }
+  },
+  {
+    "id": "meta-help",
+    "utterance": "help me get started",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-take-there",
+    "utterance": "take me there",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-go-there",
+    "utterance": "go there",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-do-that",
+    "utterance": "do that",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-skip-sa",
+    "utterance": "skip side actions",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-explain",
+    "utterance": "what does that mean",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-huh",
+    "utterance": "huh?",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-where-bob",
+    "utterance": "where is Bob Benton",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-average",
+    "utterance": "what average were they playing at",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "meta-scores",
+    "utterance": "show their scores",
+    "expect": {
+      "stepId": null
+    }
+  },
+  {
+    "id": "noisy-um",
+    "utterance": "um create a tournament uh named Night Owl",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "noisy-please",
+    "utterance": "can you please open participant management thanks",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  },
+  {
+    "id": "noisy-caps",
+    "utterance": "CREATE TOURNAMENT",
+    "expect": {
+      "stepId": "create_tournament"
+    }
+  },
+  {
+    "id": "noisy-punct",
+    "utterance": "Add bowlers!!!",
+    "expect": {
+      "stepId": "register_participants"
+    }
+  }
+]

@@ -1,0 +1,34 @@
+---
+description: Ask concrete domain questions before inventing tournament UI rules
+alwaysApply: true
+---
+
+# Domain clarification gate
+
+Bob often ships domain UI via Cursor without a written eng spec. **Do not invent
+bowling tournament rules, pot UX, lock behavior, or counting semantics in the client.**
+
+## Before implementing domain-affecting UI
+
+If ambiguous, **ask 2–5 concrete questions first** (examples over prose). Do not
+build large UI until answered or a named safe default is agreed.
+
+| Ambiguity | Ask with an example |
+|-----------|---------------------|
+| Who counts | “8 tickets, 5 unique bowlers — standings rows show how many?” |
+| Lock | “After lock, which buttons stay enabled?” |
+| Scope | “Pool picker: per squad vs all squads?” |
+| Window | “Games 1,2,4 — show non-contiguous checkboxes?” |
+| Live vs process | “Standings from GET only, or still calling process/calculate?” |
+| Reports | “Which report menus are in-scope for this ship?” |
+
+## Safe defaults
+
+Match an existing pot type’s UI patterns and backend capability matrix. State the
+default in one line. Never invent a client-only counting rule.
+
+## Never silently invent
+
+- Client engines / projections that disagree with backend  
+- Name-keyed maps for domain logic  
+- Keeping retired `calculate*` / `process*` clients “for later”

@@ -1,0 +1,30 @@
+---
+description: Async TZ handoff packet — what every vibe ship must leave in the repo
+alwaysApply: true
+---
+
+# Async handoff packet
+
+GitHub is the primary conversation between time zones. Every multi-file UI ship
+must leave a **readable packet**, not only code.
+
+## Minimum packet (commit messages and/or short ADR)
+
+1. **Intent** — one sentence: what director/bowler can do now  
+2. **Examples** — setup → click → expect (`examples-as-spec.mdc`)  
+3. **Smoke** — open tab → create/edit → standings/report (or N/A + reason)  
+4. **Risks** — render loops, dual clients, pool picker edge cases  
+5. **Companion repo** — BE contract note (or “none”)  
+6. **Rules/ADR** — paths touched or added  
+
+## Prefer
+
+- Phased commits for steward-sized days  
+- Rules/ADR in the **last** phase  
+- Historical banner on drifting HANDOFF files  
+
+## Anti-patterns
+
+- Single multi-thousand-line commit titled only “Add X UI”  
+- HANDOFF redefining counting/lock without ADR  
+- New API client with no BE note in the packet

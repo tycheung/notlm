@@ -1,0 +1,8 @@
+{
+  "aliases": {
+    "create_list": ["create list", "new list", "make a list", "make a new list"],
+    "add_item": ["add item", "add todo", "add an item", "add a todo"],
+    "complete_item": ["complete item", "mark done", "mark it done", "check off", "check off the task"]
+  },
+  "meta": ["whats_next", "go_back"]
+}

@@ -1,0 +1,29 @@
+---
+description: React Query for server state; query keys, mutations, invalidation
+globs: src/pages/**,src/components/**,src/hooks/**,src/contexts/**
+alwaysApply: false
+---
+
+# Data fetching (target state)
+
+## Server state
+
+- Prefer TanStack Query (`useQuery` / `useMutation`) for all remote data
+- Do **not** add `useEffect` + direct axios/fetch for domain loads in components
+- Auth user remains in `AuthContext` for now; do not invent a second parallel user cache without a migration plan
+- Do not make network failures during `/users/me` silently treat stale localStorage as fully trusted without a clear product decision
+
+## Keys & invalidation
+
+- Use stable, domain-prefixed query keys (`['eventComplete', id]`, ...); prefer per-domain key factories for new modules
+- After scoring / structure / **lane assign / check-in** mutations, invalidate the same downstream sets existing scoring flows use (event complete, squad games, squad participants, realtime status, ...) - extract shared invalidators when duplicating
+- Gate fetches with `enabled` tied to tab/capability so inactive tabs do not hammer the API
+
+## Mutations
+
+- Surface errors with `getErrorMessage`
+- Optimistic updates must type the cached shape (no `any` callbacks) and roll back on failure
+
+## Capability UX
+
+Combine `DirectorsAPI.getEventDirectorAccess` / `useTournamentManagementAccess` / `mapDirectorAccessToUiFlags` - do not invent "any TD can edit" shortcuts.

@@ -1,0 +1,97 @@
+{
+  "capturedAt": "2026-09-07T21:43:08.653Z",
+  "baseUrl": "packages/mapper/src/fixtures/sample.html",
+  "controls": [
+    {
+      "role": "link",
+      "name": "Lists",
+      "selectorHint": "a",
+      "existingGuideId": "guide-link-lists",
+      "proposedGuideId": "guide-link-lists",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "button",
+      "name": "New list",
+      "selectorHint": "[data-guide-id=\"guide-button-new-list\"]",
+      "existingGuideId": "guide-button-new-list",
+      "proposedGuideId": "guide-button-new-list",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "textbox",
+      "name": "List title",
+      "selectorHint": "#title",
+      "existingGuideId": "guide-textbox-list-title",
+      "proposedGuideId": "guide-textbox-list-title",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "combobox",
+      "name": "Visibility",
+      "selectorHint": "select[name=\"visibility\"]",
+      "existingGuideId": "guide-combobox-visibility",
+      "proposedGuideId": "guide-combobox-visibility",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "button",
+      "name": "Save",
+      "selectorHint": "button[type=\"submit\"]",
+      "existingGuideId": "guide-button-save",
+      "proposedGuideId": "guide-button-save",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "button",
+      "name": "Cancel",
+      "selectorHint": "span",
+      "existingGuideId": "guide-button-cancel",
+      "proposedGuideId": "guide-button-cancel",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "link",
+      "name": "Help",
+      "selectorHint": "a",
+      "existingGuideId": "guide-link-help",
+      "proposedGuideId": "guide-link-help",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "div",
+      "name": "Sidebar marker",
+      "selectorHint": "[data-guide-id=\"guide-region-sidebar\"]",
+      "existingGuideId": "guide-region-sidebar",
+      "proposedGuideId": "guide-region-sidebar",
+      "url": "packages/mapper/src/fixtures/sample.html"
+    },
+    {
+      "role": "unknown",
+      "name": "guide-create-list",
+      "selectorHint": "[data-guide-id=\"guide-create-list\"]",
+      "existingGuideId": "guide-create-list",
+      "proposedGuideId": "guide-create-list",
+      "url": "",
+      "landmark": "App.tsx"
+    },
+    {
+      "role": "unknown",
+      "name": "guide-add-item",
+      "selectorHint": "[data-guide-id=\"guide-add-item\"]",
+      "existingGuideId": "guide-add-item",
+      "proposedGuideId": "guide-add-item",
+      "url": "",
+      "landmark": "App.tsx"
+    },
+    {
+      "role": "unknown",
+      "name": "guide-complete-item",
+      "selectorHint": "[data-guide-id=\"guide-complete-item\"]",
+      "existingGuideId": "guide-complete-item",
+      "proposedGuideId": "guide-complete-item",
+      "url": "",
+      "landmark": "App.tsx"
+    }
+  ]
+}

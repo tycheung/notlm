@@ -1,0 +1,11 @@
+{
+  "home": ".uipilot",
+  "packId": "vb-director",
+  "features": {
+    "chat": true,
+    "palette": true,
+    "spotlight": true,
+    "voice": true
+  },
+  "note": "Extracted from sandboxes/vb-frontend — not the live Victory Bowling app"
+}

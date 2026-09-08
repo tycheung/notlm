@@ -1,0 +1,51 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+coverage
+playwright-report
+test-results
+dist
+dist-ssr
+*.local
+
+# Live Playwright SQLite seed ids (written by backend/scripts/run_e2e_api.py)
+tests/e2e/.e2e-seed.json
+
+# Nested fastapi-backend checkout used by GitHub Actions Playwright
+/backend
+
+# Lighthouse output (npm run perf:lighthouse)
+lighthouse-report.html
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Local preview artifacts (do not commit)
+tmp-standings-previews/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Ensure GitHub workflows are not ignored
+!.github
+!.github/workflows
+!.github/workflows/main.yml

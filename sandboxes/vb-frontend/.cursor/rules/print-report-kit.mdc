@@ -1,0 +1,71 @@
+---
+description: Director print/PDF kit — shared chrome, paper, fonts, tables; no one-off report CSS
+globs: src/utils/sideActionReportPrint.ts,src/utils/**/*Report*.ts,src/components/**/reports/**,src/components/**/build*Report*.ts,src/features/**/reports/**
+alwaysApply: false
+---
+
+# Print / PDF report kit
+
+Directors print HTML → browser “Save as PDF”. **One shared kit** — do not invent a
+second PDF library or per-report stylesheet islands.
+
+## SSOT locations
+
+| Concern | Where |
+|---------|--------|
+| Brand, logo SVG, `@page`, shared CSS, `buildReportDocument` | `src/utils/sideActionReportPrint.ts` (extract to `src/features/reports/print/` when splitting) |
+| Menu / registry | `reports/reportMenuDefs.ts` + builders (`report-registry.mdc`) |
+| Data / counting | Backend reports API — client only formats |
+
+## Required chrome (every new report)
+
+- Use `buildReportDocument(title, bodyHtml, filename, options?)` — never hand-roll `<html>`/`@page`.
+- Use `REPORT_LOGO_MARK_SVG` / `reportFooterHtml()` — do not paste a new logo.
+- Default paper: **letter portrait**, **0.5in** margins (override only via `pageMargin` / documented dense layouts).
+- Support **A4** only as an explicit option that still uses shared CSS tokens — no fork of the whole stylesheet.
+- Ink-light: hairlines, zebra rows, no dark full-bleed fills (color + B&W ok).
+
+## Typography (fit without micro-fonts)
+
+| Role | Target | Floor |
+|------|--------|-------|
+| Title | ~14–16pt | ≥12pt |
+| Body / table cell | ~10–11pt | ≥9pt |
+| Meta / notes | ~8.5–9pt | ≥8pt |
+| Table header | ~8.5pt | ≥8pt |
+
+If content overflows: **fewer columns, tighter padding, page-break sections, or multi-page** — do **not** drop below the floor or scale the whole page with CSS `zoom`/`transform`.
+
+## Standard elements (reuse classes)
+
+Prefer existing kit classes before new ones:
+
+- Header: `.report-header`, `.report-title`, `.report-subtitle`, `.report-meta`, `.report-doc-label`
+- Notes: `.report-note`
+- Tables: `table.report-table` (+ column helpers `.col-name`, `.col-money`, …)
+- Footer: `reportFooterHtml()`
+- Page breaks: shared page wrappers already used by payout/brackets/elim — extend those patterns
+
+New visual primitives (charts, score grids, bracket strips) belong in the **shared kit**
+as named helpers/CSS — not copy-pasted into one `buildXReportDocument.ts`.
+
+## Forbidden
+
+- New `@page` / logo / brand colors outside the kit file
+- Per-builder duplicate `PRINT_CSS` blobs
+- Client-side “PDF engines” (jsPDF/pdfkit) unless an ADR explicitly replaces HTML-print
+- Putting fetch/build logic into `SideActionReportsMenuModal` (`report-registry.mdc`)
+- Inventing counting/lock rules in the builder — format API data only
+
+## When Bob dumps many new reports
+
+1. Clarify paper (letter default vs A4), orientation, and must-fit-one-page vs multi-page  
+2. Implement or extend **shared** helpers first  
+3. Each report = thin builder calling kit helpers  
+4. Smoke: preview → Print → Save as PDF on letter (and A4 if offered)
+
+## Backend companion
+
+Data/counting/pool scope live in `fastapi-backend` (`director-print-reports.mdc`,
+`services/side_action_reports/`). FE formats API JSON only — do not invent
+payload shapes or counting in the builder.

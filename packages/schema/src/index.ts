@@ -1,2 +1,22 @@
-/** Pack schema slices land in schema-001+. Placeholder export for bootstrap. */
-export const PACK_SCHEMA_VERSION = 0;
+export const PACK_SCHEMA_VERSION = 1;
+
+export {
+  binderPredicateSchema,
+  bindersSchema,
+  configSchema,
+  controlsSchema,
+  corpusSchema,
+  flowSchema,
+  intentsSchema,
+  manifestSchema,
+  PACK_PIECE_SCHEMAS,
+  scenariosSchema,
+} from './schemas.js';
+export type { PackPieceName } from './schemas.js';
+
+export {
+  validatePackFolder,
+  validatePiece,
+  validateScenarios,
+} from './validate.js';
+export type { ValidationResult } from './validate.js';

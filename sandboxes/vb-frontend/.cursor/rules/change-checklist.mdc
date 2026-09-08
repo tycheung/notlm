@@ -1,0 +1,26 @@
+---
+description: Refactor/feature checklist before finishing frontend changes
+alwaysApply: true
+---
+
+# Frontend change checklist
+
+- [ ] Unit tests updated for renames/splits/deletes
+- [ ] E2E assertions match current UI (no stale placeholders)
+- [ ] Director e2e still mocked (no live login dependency)
+- [ ] New APIs used by a tab are stubbed in e2e helpers/routes
+- [ ] Imports still resolve after moving/removing forms or panels
+- [ ] Identity remains ID-based where logic aggregates
+- [ ] Types/API clients updated if backend contract changed
+- [ ] `check:datetime` / `lint:api` still clean when relevant
+- [ ] Secrets / env not staged
+- [ ] Grep for retired process/calculate API clients after backend standings SSOT changes
+- [ ] Client projection/fund/window helpers have parity tests when they mirror backend math
+- [ ] No unfinished surfaces: no new Coming Soon tabs, orphan routes, or dead API methods — see `no-unfinished-surfaces.mdc`
+- [ ] Providers that expose feedback helpers actually render UI — see `wiring-verification.mdc`
+- [ ] God-component ceilings lowered after extraction (never raised without extraction)
+- [ ] New side-action type gets its own table component + report menu `forTypes` entries (not another inline table in the tab)
+- [ ] Config form duplication (handicap/financials) extracted before copy-pasting a third pot type
+- [ ] Lane/check-in changes use backend APIs only — no client placement engine; shared lane helpers reused (`lane-ui-backend-ssot.mdc`)
+
+Prefer fixing causes when CI fails (wrong UI contract, missing mock route, orphan import), not papering over with skip or resurrected placeholders.

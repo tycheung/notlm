@@ -1,0 +1,26 @@
+---
+description: Role-aware routing, dual layouts, bowler view - no hardcoded path trees
+globs: src/App.tsx,src/routes/**,src/pages/**,src/utils/roleBasedRouting.ts,src/hooks/**
+alwaysApply: false
+---
+
+# Routing & layouts (target state)
+
+## Three trees
+
+Public/bowler (`UserLayout`), `/director` (`TournamentDirectorLayout`), `/admin` (`AdminLayout`). Shared pages must respect the **active prefix**, not hardcode `/director/...`.
+
+## Always prefer
+
+- `getRoleAwarePath` / `useRoleAwareNavigation` / `getEventPath` from `src/utils/roleBasedRouting.ts`
+- Layout prefix derived once from `location.pathname` (or a small shared hook)
+
+## Avoid
+
+- Raw `navigate('/rounds/...')` or duplicated absolute paths for the wrong role
+- Growing `App.tsx` with more static imports - extract route config and **lazy-load** heavy trees (admin, event flow + React Flow, side actions, large event workspaces)
+- New parallel auth entrypoints for e2e (use director session mocks)
+
+## Bowler view
+
+Honor `?view=bowler` and existing redirect helpers (`DashboardRouter`, etc.) when changing navigation. Do not break role dashboards when adding links.

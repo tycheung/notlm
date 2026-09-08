@@ -1,5 +1,5 @@
 {
-  "name": "@workflow-assistant/core",
+  "name": "@uipilot/core",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./loadFolder": {
+      "types": "./dist/loadFolder.d.ts",
+      "import": "./dist/loadFolder.js"
     }
   },
   "files": ["dist"],

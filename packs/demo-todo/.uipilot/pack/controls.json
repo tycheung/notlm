@@ -1,0 +1,26 @@
+[
+  {
+    "id": "guide-create-list",
+    "role": "cta",
+    "stepId": "create_list",
+    "path": "guide-create-list",
+    "spotlight": "guide-create-list",
+    "coachMessage": "Click Create list — the coach only presses this button (no API)."
+  },
+  {
+    "id": "guide-add-item",
+    "role": "cta",
+    "stepId": "add_item",
+    "path": "guide-add-item",
+    "spotlight": "guide-add-item",
+    "coachMessage": "Click Add item to append a todo via the host UI."
+  },
+  {
+    "id": "guide-complete-item",
+    "role": "cta",
+    "stepId": "complete_item",
+    "path": "guide-complete-item",
+    "spotlight": "guide-complete-item",
+    "coachMessage": "Click Complete item to check off the first open todo."
+  }
+]

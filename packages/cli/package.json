@@ -1,0 +1,25 @@
+{
+  "name": "@uipilot/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "uipilotCLI": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@uipilot/author": "*",
+    "@uipilot/codegen": "*",
+    "@uipilot/core": "*",
+    "@uipilot/mapper": "*",
+    "@uipilot/schema": "*"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0"
+  }
+}

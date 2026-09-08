@@ -1,0 +1,20 @@
+---
+description: Client helpers that mirror backend math need parity/unit tests same commit
+globs: src/utils/**/*.ts,src/components/side_actions/**/*.ts*,tests/**/*.ts*
+alwaysApply: false
+---
+
+# Parity tests
+
+Any client helper that mirrors backend domain math needs a unit (or parity) test **in the same commit**:
+
+| Helper area | Examples |
+|-------------|----------|
+| Game plans | selected-game normalization, ordered Eliminator stages |
+| Projections | `eliminatorProjection`, Final alive counts |
+| Funds / payouts | `highGameFundBalance`, shared payout helpers |
+| Menu filtering | `reportMenuDefs` by type |
+
+## Drift
+
+If backend examples/fixtures change, update the FE test vectors in the same delivery window. Silent drift shows up as wrong director printouts and standings UI.

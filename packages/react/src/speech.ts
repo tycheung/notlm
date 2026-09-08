@@ -3,7 +3,7 @@
  * No Whisper / cloud STT. Trimmed from VB useWebSpeechInput.
  */
 
-type SpeechRecognitionLike = {
+export type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
   lang: string;

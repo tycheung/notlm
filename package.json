@@ -1,9 +1,9 @@
 {
-  "name": "workflow-assistant",
+  "name": "uipilot",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Plug-and-play workflow coach: core + react host + pack mapper/codegen",
+  "description": "UiPilot — plug-and-play UI coach (core + react host + pack mapper/codegen)",
   "engines": {
     "node": ">=20"
   },
@@ -16,14 +16,28 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:demo": "playwright test --project=demo-todo --project=demo-crm",
+    "test:e2e:todo": "playwright test --project=demo-todo",
+    "test:e2e:crm": "playwright test --project=demo-crm",
     "lint": "eslint packages apps --max-warnings=0",
-    "ci": "node scripts/ci/ci_check.mjs"
+    "ci": "node scripts/ci/ci_check.mjs",
+    "uipilotCLI": "node packages/cli/dist/cli.js",
+    "extract:vb": "node scripts/extract-vb-pack.mjs",
+    "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo",
+    "check:vb": "node packages/cli/dist/cli.js intents check packs/vb-director"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.0",
     "@types/node": "^22.10.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
     "eslint": "^9.17.0",
-    "typescript-eslint": "^8.18.0"
+    "typescript-eslint": "^8.18.0",
+    "vite": "^5.4.21"
+  },
+  "overrides": {
+    "vite": "^5.4.21"
   }
 }

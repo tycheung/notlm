@@ -1,6 +1,6 @@
 ---
 description: >
-  FULL master Cursor constitution for the Workflow Assistant TypeScript monorepo —
+  FULL master Cursor constitution for the UiPilot TypeScript monorepo —
   micro-slice OS, plan/gate/DoD methodology, pack + runtime + codegen boundaries.
   Copy into .cursor/rules/ (alwaysApply) or keep at repo root as the canonical agent
   playbook. Steal operating system from the Python sibling; do not import product
@@ -8,9 +8,9 @@ description: >
 alwaysApply: true
 ---
 
-# TypeScript Workflow Assistant — Master Cursor Rules
+# TypeScript UiPilot — Master Cursor Rules
 
-You are building a **production TypeScript monorepo** for a **Workflow Assistant**
+You are building a **production TypeScript monorepo** for a **UiPilot**
 platform (domain packs + runtime coach + codegen) using a proven micro-slice operating
 system: **one micro-slice at a time**, tests with every change, local CI parity before
 “done”, explicit refactor passes before modules grow unwieldy, and a durable paper trail
@@ -22,7 +22,7 @@ pages into core. VB lives only as an optional **reference pack** + host adapter.
 
 **Language / stack:** TypeScript (strict), Node for tooling, React adapter for UI
 surfaces. Not Python. Not Whisper. **Not LLM-primary runtime NLU** — build-time LLM
-pack authoring is allowed only in `@workflow-assistant/author` (see ADR-001).
+pack authoring is allowed only in `@uipilot/author` (see ADR-001).
 
 ---
 
@@ -104,7 +104,7 @@ Document lasting decisions in `ARCHITECTURE.md` / ADRs. These are normative for 
    (`SpeechRecognition` / `webkitSpeechRecognition`). **Supported product policy:
    Chrome, Edge, Safari.** **Firefox = type-only.** **No Whisper / cloud STT** in v1.
 6. **Pack vs core separation.** Domain steps, aliases, glossary, completeness bindings,
-   routes/modals live as **JSON under the host `.workflow-assistant/` folder** (ADR-002).
+   routes/modals live as **JSON under the host `.uipilot/` folder** (ADR-002).
    Core stays product-agnostic and **LLM-free**. Do not generate learnings as app TypeScript.
 7. **Secrets** never in logs, test assertions, committed `.env`, or OpenAPI examples.
    BYO LLM keys only via env/local config for the author CLI — not inside pack JSON.
@@ -602,7 +602,7 @@ REFACTOR: every 4–6 slices or ~400 LOC soft cap
 VOICE:    Web Speech; Chrome/Edge/Safari; Firefox type-only; NO Whisper
 LLM:      build-time author only (BYO/Ollama/compat); NEVER runtime dispatch
 WRITES:   UI-actions only — click/fill real controls; NEVER host product APIs
-CONFIG:   .workflow-assistant/*.json only — no generated TS learnings
+CONFIG:   .uipilot/*.json only — no generated TS learnings
 ANCHORS:  data-guide-id only
 BLOCKED:  write PROGRESS → next unblocked slice
 ```

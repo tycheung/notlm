@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-09-07T21:00:00.000Z",
+  "baseUrl": "http://127.0.0.1:5173",
+  "events": [
+    {
+      "at": 0,
+      "type": "click",
+      "guideId": "guide-create-list",
+      "text": "Create list"
+    },
+    {
+      "at": 1200,
+      "type": "click",
+      "guideId": "guide-add-item",
+      "text": "Add item"
+    },
+    {
+      "at": 2400,
+      "type": "click",
+      "guideId": "guide-complete-item",
+      "text": "Complete item"
+    }
+  ]
+}

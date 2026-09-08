@@ -1,0 +1,53 @@
+---
+description: Prefer small sequential commits; split work when user asks to commit or push
+alwaysApply: true
+---
+
+# Commit cadence
+
+## Default: small, logical commits
+
+Never default to one fat commit that mixes unrelated concerns. Prefer a short sequence of focused commits that review cleanly and bisect well.
+
+## When the user says "commit", "commit and push", or similar
+
+1. Inspect the full working tree (`git status`, `git diff`).
+2. **Partition** changes into logical bundles **before** committing. Typical frontend splits:
+   - Pure utils + their unit tests
+   - Shared UI pieces (e.g. handicap/financials sections)
+   - Feature wiring (tab/tables/modals)
+   - API client / types aligned to backend
+   - E2E or broad test updates
+   - Docs / Cursor rules (last)
+3. Commit each bundle **sequentially** with its own message (why, not a file dump).
+4. Only then push **if** the user asked to push (`git push` once after the stack lands unless they ask otherwise).
+5. Do **not** amend or squash unless the user explicitly asks.
+
+## Bundling heuristics
+
+| Bundle together | Keep separate |
+|-----------------|---------------|
+| Component + its focused unit/e2e update | Unrelated refactors |
+| API/types change for one contract | Visual polish unrelated to that contract |
+| Extract/split of one mega file | Feature behavior change in the same commit as a huge move (prefer extract-then-wire) |
+| Docs/rules | Product code |
+
+If unsure, ask: "Could this commit stand alone in `git bisect` / review?" If no, split further.
+
+## Anti-patterns
+
+- One mega commit for an entire multi-phase UI refactor
+- Mixing `.env`, credentials, or local artifacts into any commit
+- Committing or pushing without an explicit user request
+- Using `--no-verify` / force-push unless the user explicitly asks
+
+## Message style
+
+Follow recent repo history: imperative, 1–2 sentences focused on **why**. Example stacks:
+
+```
+Fix Eliminator window clamp and contiguous High Game games.
+Extract shared handicap and open-pot financials sections.
+Split side-action reports API and HG/Elim tables.
+docs(cursor): capture retired-endpoint lessons.
+```

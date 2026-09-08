@@ -8,7 +8,7 @@ const FLASH_COUNT = 3;
 const WAIT_MS = 8000;
 const POLL_MS = 100;
 
-export const DEFAULT_FLASH_CLASS = 'wa-field-flash';
+export const DEFAULT_FLASH_CLASS = 'uipilot-field-flash';
 export const DEFAULT_GUIDE_ATTR = 'data-guide-id';
 
 export function flashGuideField(

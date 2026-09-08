@@ -1,0 +1,36 @@
+---
+description: CI gates, repo hygiene, and non-negotiable pre-done checks for Victory Bowling frontend
+alwaysApply: true
+---
+
+# Frontend CI & hygiene
+
+This repo is `VictoryBowlingSoftware/react-frontend`. Backend is a separate git root (`fastapi-backend` / workspace `backend/`).
+
+## Before claiming done (match CI)
+
+```bash
+npm run check:vibe-ship
+npm run check:god-components
+npm run check:datetime
+npm run lint:api
+npm run test:cov
+npm run build
+npm run test:e2e -- --grep-invert @fullflow
+```
+
+Merge-blocking CI job id: `vibe-ship-invariants` (`docs/MERGE_GATES.md`).
+
+Also run `npm test` / `npm run lint` locally when touching broad UI. Director e2e must use **`seedDirectorSession` + `page.route` mocks**, not live `loginAsDirector` against a missing backend. Reserve `@fullflow` for real-backend suites. Prefer `npm run check:god-components` when touching large pages/workspaces **or any file listed in** `scripts/check-god-component-sizes.mjs`. If over ceiling, extract in the same PR (`file-size-limits.mdc`, `large-print-payloads.mdc`).
+
+## UI / test coupling
+
+If you change headings, tab copy, CTAs, or remove/rename components - **update matching unit and e2e tests in the same change**. Specs that still assert `"Coming Soon"` after shipping real UI (or after hiding a deferred tab) are defective tests. Do not reintroduce unfinished surfaces — see `no-unfinished-surfaces.mdc`.
+
+## Never commit
+
+- `.env`, credentials, local-only artifacts
+- Push only when asked. For commit shape / "commit and push" splitting, follow `commit-cadence.mdc` (small sequential commits, not one fat dump).
+## Language standards
+
+TypeScript / React conventions live in `typescript-best-practices.mdc` and `typescript-hygiene.mdc` — follow those on new and touched `.ts`/`.tsx` files.

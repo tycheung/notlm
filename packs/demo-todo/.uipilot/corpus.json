@@ -1,0 +1,12 @@
+[
+  { "utterance": "create a list", "expect": { "stepId": "create_list" } },
+  { "utterance": "make a new list", "expect": { "stepId": "create_list" } },
+  { "utterance": "add an item", "expect": { "stepId": "add_item" } },
+  { "utterance": "add a todo", "expect": { "stepId": "add_item" } },
+  { "utterance": "mark it done", "expect": { "stepId": "complete_item" } },
+  { "utterance": "complete item", "expect": { "stepId": "complete_item" } },
+  { "utterance": "check off the task", "expect": { "stepId": "complete_item" } },
+  { "utterance": "what's next", "expect": { "rawIntent": "whats_next" } },
+  { "utterance": "go back", "expect": { "goBack": true } },
+  { "utterance": "what's the weather", "expect": { "stepId": null } }
+]

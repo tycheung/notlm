@@ -1,0 +1,33 @@
+---
+description: Page/workspace size limits, features/ extraction, no new god components
+globs: src/pages/**,src/components/**,src/features/**
+alwaysApply: false
+---
+
+# Component & feature architecture (target state)
+
+TypeScript language standards: `typescript-best-practices.mdc` / `typescript-hygiene.mdc`.
+
+## Legacy containment (do not grow)
+
+- `EventDetails.tsx` - extract tab panels into feature folders; use `useModalState` / focused hooks instead of +1 `useState` per modal
+- `EventRoundWorkspace.tsx` - split toward Squads / Scoring workspaces sharing a thin context; **no new scoring/assignment logic landed here**
+- Prefer exporting pure helpers from pages (like EventDetails tab helpers) and unit-testing them
+
+## Feature slices
+
+Extend `src/features/<domain>/` (see `features/rounds/`): colocated pure logic, hooks, and UI for a domain. Pages become composition shells.
+
+## Size
+
+Global soft limits (always apply): prefer files **under 1000 lines**; do not grow any file **above 1500** — see `file-size-limits.mdc`.
+
+## Side actions & diagrams
+
+- Thin hooks + table/modal components under `components/side_actions/`
+- Match-play **scoring** UIs use `match-play-diagram` adapters/surfaces - not React Flow
+- React Flow only for event **flow structure** (`components/event/flow`) and should be lazy-loaded
+
+## Before deleting or renaming
+
+Grep imports (config forms, panels, mounts). Orphan imports and stale e2e headings are CI failures.

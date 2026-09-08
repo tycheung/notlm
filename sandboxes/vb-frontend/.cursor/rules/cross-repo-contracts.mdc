@@ -1,0 +1,31 @@
+---
+description: Keep frontend types and API clients in sync when backend contracts change
+alwaysApply: true
+---
+
+# Cross-repo API contracts
+
+Backend (`fastapi-backend`) and this app are separate git roots. Contract drift is a common failure mode.
+
+## When backend response/request shapes change
+
+- Update `src/types/*` and the matching `src/api/*` module in the same frontend PR/initiative
+- Align status enums carefully (`complete` vs `completed`, Role values)
+- Extend Playwright route mocks (`mockDirectorSession` / event mocks) so smoke e2e still matches
+- Prefer additive fields; treat removed/renamed fields as breaking and search for callers
+
+## Errors
+
+- UI continues to use `getErrorMessage` — do not parse ad-hoc shapes that diverge from backend `build_error_body`
+
+## Do not
+
+- Leave `Record<string, any>` / `type_config: any` as the long-term contract for new features — narrow types as the feature stabilizes
+
+## Dual-engine / retired endpoints
+
+When the backend retires process/calculate routes in favor of live standings GETs:
+
+1. Delete unused frontend clients in the same change (do not leave methods that hit 410)
+2. Point UI at standings/report GETs/POSTs only
+3. Keep client math mirrors (`eliminatorProjection`, fund helpers) tested against backend examples so list previews match reports

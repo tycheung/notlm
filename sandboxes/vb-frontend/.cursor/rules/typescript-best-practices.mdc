@@ -1,0 +1,49 @@
+---
+description: TypeScript and modern React coding standards for the Victory Bowling frontend
+globs: src/**/*.{ts,tsx},tests/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript best practices
+
+Complements `typescript-hygiene.mdc` (strict / any / console). Prefer these patterns in new and touched code.
+
+## Language
+
+- Prefer `const`; use `let` only when reassignment is required. Never `var`.
+- Use `async`/`await` over raw Promise chains; handle errors at a useful boundary.
+- Prefer optional chaining (`?.`) and nullish coalescing (`??`) over nested ternaries / `||` for defaults when `0`/`""` are valid.
+- Prefer `unknown` over `any` at boundaries; narrow with type guards or Zod/schema parsers when needed.
+- Prefer `interface` for object shapes shared across modules; use `type` for unions, intersections, mapped, and utility types.
+- Discriminated unions (`kind` / `side_action_type`) over bags of optional fields when variants differ.
+- Avoid enums for new closed string sets when a `as const` object + union already matches backend string values — stay consistent with existing `SideActionType` / Role patterns in this repo.
+- No non-null assertions (`!`) unless the invariant is obvious and locally proven; prefer early returns.
+
+## Functions & modules
+
+- Small, single-purpose functions; extract helpers over mega-components with nested lambdas.
+- Prefer named exports for reusable utilities; default export mainly for React page/component entry files when the file already does.
+- Colocate pure domain math under `src/utils/` or `src/features/<domain>/` with unit tests.
+- Do not add `useMemo` / `useCallback` by default — follow React Compiler guidance unless profiling shows need or an existing API requires a stable reference.
+
+## React + TypeScript
+
+- Functional components + hooks only; typed props (`type Props = { ... }` or `interface`).
+- Derive state when possible; avoid duplicating server state into local state without a sync reason.
+- Event handlers: type the event (`React.ChangeEvent<HTMLInputElement>`) or the payload you care about.
+- Exhaustive `switch` on discriminated unions with a `never` default when closing a type.
+- Keep hooks rules clean — no conditional hooks; extract custom hooks for shared stateful logic.
+
+## API & domain types
+
+- Define request/response types in `src/types/*` or next to the API module; align names/fields with backend schemas.
+- API modules return typed data (`Promise<FooRead>`), not `Promise<any>`.
+- Prefer narrowing `type_config` per side-action type over `Record<string, any>`.
+- Errors: `getErrorMessage` / `unknown` in `catch` — never `catch (err: any)` in new code.
+
+## Safety checklist
+
+- [ ] No new `any` / unjustified `as`
+- [ ] Null/undefined cases handled at the boundary
+- [ ] Unions narrowed before property access
+- [ ] Tests cover non-trivial pure helpers
