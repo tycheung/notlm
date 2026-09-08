@@ -52,9 +52,40 @@ export type StepStatus = {
 
 /** Clickable reply options (disambiguation / next-up). */
 export type ChatChoice = {
-  id: StepId;
+  id: string;
   label: string;
 };
+
+/** Multi-turn coach prompts awaiting the next user utterance. */
+export type PendingPrompt =
+  | {
+      kind: 'ask_slot';
+      stepId: StepId;
+      slotKey: string;
+      /** Slots collected so far for this step. */
+      slots: SlotBag;
+    }
+  | { kind: 'confirm'; stepId: StepId; slots: SlotBag }
+  | { kind: 'proactive'; stepId: StepId };
+
+/** Short-term discourse for anaphora (“that”, “again”, “the other one”). */
+export type DiscourseState = {
+  lastStepId?: StepId;
+  lastEntityName?: string;
+  lastEntityId?: string;
+  lastChoiceIds?: string[];
+  /** Round-robin cursor for reply-bank variants. */
+  replyCursor?: number;
+};
+
+export type SlotAskDef = {
+  key: string;
+  ask: string;
+  required?: boolean;
+};
+
+/** Pack reply banks — keys like `launch`, `launch.create_list`, `confirm`, `proactive`. */
+export type ReplyBank = Record<string, string[]>;
 
 export type ChatMessage = {
   id: string;
@@ -138,6 +169,8 @@ export type SessionSlots = {
   actionQueue: GuideAction[];
   /** Pack/host opaque flags (e.g. skipped optional steps). */
   flags: Record<string, unknown>;
+  pending?: PendingPrompt | null;
+  discourse?: DiscourseState;
 };
 
 export type AssistantFeatures = {
@@ -163,6 +196,7 @@ export type PackRuntime = {
   glossary?: GlossaryEntry[];
   faq?: FaqEntry[];
   lookups?: LookupDef[];
+  replies?: ReplyBank;
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -187,6 +221,10 @@ export type ControlDef = {
 export type IntentConfig = {
   aliases: Record<StepId, string[]>;
   meta?: string[];
+  /** Required/optional slot asks before launching a step. */
+  slots?: Record<StepId, SlotAskDef[]>;
+  /** Steps that ask for confirmation before navigate/click. */
+  confirm?: StepId[];
 };
 
 export type ScenarioCase = {
@@ -215,6 +253,7 @@ export type PackJsonInput = {
   glossary?: GlossaryEntry[];
   faq?: FaqEntry[];
   lookups?: LookupDef[];
+  replies?: ReplyBank;
 };
 
 export type IntentParsePack = {

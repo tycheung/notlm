@@ -6,7 +6,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { mergeFaqEntries } from './glossary.js';
 import { loadPackFromJson } from './loadPack.js';
-import type { BinderPredicate, FaqEntry, LoadedPack, LookupDef, PackJsonInput } from './types.js';
+import type {
+  BinderPredicate,
+  FaqEntry,
+  LoadedPack,
+  LookupDef,
+  PackJsonInput,
+  ReplyBank,
+} from './types.js';
 
 export const UIPILOT_DIRNAME = '.uipilot';
 
@@ -94,6 +101,8 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const baseFaq = readBaseFaq(dirname(home));
   const lookupsPath = join(pack, 'lookups.json');
   const lookups = existsSync(lookupsPath) ? readJsonFile(lookupsPath) : undefined;
+  const repliesPath = join(pack, 'replies.json');
+  const replies = existsSync(repliesPath) ? readJsonFile(repliesPath) : undefined;
 
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
@@ -112,6 +121,10 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
       Array.isArray(productFaq) ? (productFaq as FaqEntry[]) : undefined
     ),
     lookups: Array.isArray(lookups) ? (lookups as LookupDef[]) : undefined,
+    replies:
+      replies != null && typeof replies === 'object' && !Array.isArray(replies)
+        ? (replies as ReplyBank)
+        : undefined,
   };
 }
 

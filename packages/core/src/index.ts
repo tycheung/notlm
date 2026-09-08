@@ -11,6 +11,9 @@ export * from './pageContext.js';
 export * from './queueAdvance.js';
 export * from './glossary.js';
 export * from './entityLookup.js';
+export * from './replies.js';
+export * from './discourse.js';
+export * from './dispatchTalk.js';
 export * from './dispatch.js';
 export * from './loadPack.js';
 // Node-only FS loader lives at `@uipilot/core/loadFolder` (not in the

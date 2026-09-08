@@ -8,6 +8,8 @@ export function emptySession(): SessionSlots {
     stale: [],
     actionQueue: [],
     flags: {},
+    pending: null,
+    discourse: {},
   };
 }
 

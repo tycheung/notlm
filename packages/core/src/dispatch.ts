@@ -1,3 +1,4 @@
+import { resolveDiscourse } from './discourse.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { matchEntityLookup } from './entityLookup.js';
 import { matchFaqEntry, matchGlossaryEntry } from './glossary.js';
@@ -10,6 +11,8 @@ import {
   listMissingRequires,
   planResumeQueue,
 } from './queueAdvance.js';
+import { gateBeforeLaunch, handlePendingUtterance } from './dispatchTalk.js';
+import { pickReply } from './replies.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
 import type {
   ChatChoice,
@@ -150,9 +153,20 @@ function launchStep(
   deps: DispatchDeps,
   targetStep: StepId,
   slots: Record<string, unknown>,
-  isCorrection: boolean
+  isCorrection: boolean,
+  opts?: { skipGate?: boolean }
 ): void {
   const { pack, session, ctx, pushAssistant, executeStep, setSession } = deps;
+  const sink = { pushAssistant, setSession };
+
+  if (
+    !isCorrection &&
+    !opts?.skipGate &&
+    gateBeforeLaunch(pack, session, targetStep, slots, sink)
+  ) {
+    return;
+  }
+
   const action: GuideAction = {
     stepId: targetStep,
     slots,
@@ -166,6 +180,10 @@ function launchStep(
       if (Object.keys(slots).length > 0) {
         next = patchStepSlots(next, targetStep, slots);
       }
+      next = {
+        ...next,
+        discourse: { ...(next.discourse ?? {}), lastStepId: targetStep },
+      };
       setSession(() => next);
       if (injected.message) pushAssistant(injected.message);
       executeStep(targetStep, { prefill: slots, skipCoach: true });
@@ -173,15 +191,27 @@ function launchStep(
     }
   }
 
+  let next = session;
   if (Object.keys(slots).length > 0) {
-    setSession((s) => patchStepSlots(s, targetStep, slots, { isCorrection }));
+    next = patchStepSlots(next, targetStep, slots, { isCorrection });
   }
   if (isCorrection) {
-    setSession((s) => goBackToStep(s, targetStep, []));
-    pushAssistant(`Updated details for “${stepTitle(pack, targetStep)}”. Taking you back there.`);
-  } else {
-    pushAssistant(`Taking you to “${stepTitle(pack, targetStep)}”.`);
+    next = goBackToStep(next, targetStep, []);
   }
+  next = {
+    ...next,
+    pending: null,
+    discourse: { ...(next.discourse ?? {}), lastStepId: targetStep },
+  };
+  const picked = pickReply(next, pack.replies, isCorrection ? 'launch' : 'launch', {
+    title: stepTitle(pack, targetStep),
+    stepId: targetStep,
+  });
+  const text = isCorrection
+    ? `Updated details for “${stepTitle(pack, targetStep)}”. ${picked.text}`
+    : picked.text;
+  setSession(() => picked.session);
+  pushAssistant(text);
   executeStep(targetStep, { prefill: slots, skipCoach: true });
 }
 
@@ -189,19 +219,46 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   const trimmed = deps.text.trim();
   if (!trimmed) return;
 
+  const sink = { pushAssistant: deps.pushAssistant, setSession: deps.setSession };
+  const pendingResult = handlePendingUtterance(
+    deps.pack,
+    deps.session,
+    trimmed,
+    sink
+  );
+  if (pendingResult.handled) {
+    if (pendingResult.launch) {
+      launchStep(
+        { ...deps, session: { ...deps.session, pending: null } },
+        pendingResult.launch.stepId,
+        pendingResult.launch.slots,
+        false,
+        { skipGate: true }
+      );
+    }
+    return;
+  }
+
+  const discourse = resolveDiscourse(trimmed, deps.session.discourse);
+  if (discourse.kind === 'step') {
+    launchStep(deps, discourse.stepId, {}, false);
+    return;
+  }
+  const parseText = discourse.kind === 'entity' ? discourse.text : trimmed;
+
   const intentPack: IntentParsePack = {
     steps: deps.pack.steps,
     aliases: deps.pack.aliases,
     meta: deps.pack.meta,
   };
   const parseFn = deps.parseUtteranceFn ?? parseUtterance;
-  const parsedOrPromise = parseFn(trimmed, intentPack);
+  const parsedOrPromise = parseFn(parseText, intentPack);
   if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
     return (parsedOrPromise as Promise<ParseUtteranceResult>).then((parsed) => {
-      dispatchParsed(deps, intentPack, parsed);
+      dispatchParsed({ ...deps, text: parseText }, intentPack, parsed);
     });
   }
-  dispatchParsed(deps, intentPack, parsedOrPromise as ParseUtteranceResult);
+  dispatchParsed({ ...deps, text: parseText }, intentPack, parsedOrPromise as ParseUtteranceResult);
 }
 
 function dispatchParsed(
@@ -247,6 +304,13 @@ function dispatchParsed(
     pushAssistant(disambiguationPrompt(pack, parsed.candidates), {
       choices: stepChoices(pack, parsed.candidates),
     });
+    setSession((s) => ({
+      ...s,
+      discourse: {
+        ...(s.discourse ?? {}),
+        lastChoiceIds: parsed.candidates,
+      },
+    }));
     return;
   }
 
@@ -302,6 +366,15 @@ function dispatchParsed(
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
     pushAssistant(`Found “${entity.name}”.`);
+    setSession((s) => ({
+      ...s,
+      discourse: {
+        ...(s.discourse ?? {}),
+        lastEntityId: entity.id,
+        lastEntityName: entity.name,
+        lastStepId: entity.stepId ?? s.discourse?.lastStepId,
+      },
+    }));
     if (entity.guideId) flashField?.(entity.guideId);
     if (entity.stepId) executeStep(entity.stepId);
     return;
@@ -313,6 +386,14 @@ function dispatchParsed(
         label: c.name,
       })),
     });
+    setSession((s) => ({
+      ...s,
+      discourse: {
+        ...(s.discourse ?? {}),
+        lastChoiceIds: lookup.candidates.map((c) => c.guideId ?? c.id),
+        lastEntityName: lookup.candidates[0]?.name,
+      },
+    }));
     return;
   }
   if (lookup.kind === 'miss') {

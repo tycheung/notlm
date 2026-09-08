@@ -5,6 +5,8 @@ import type {
   SessionSlots,
   StepId,
 } from './types.js';
+import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
+import { pickReply } from './replies.js';
 import { clearStale } from './slots.js';
 
 function titleOf(pack: PackRuntime, stepId: StepId): string {
@@ -72,6 +74,7 @@ export type QueueAdvanceResult = {
   session: SessionSlots;
   executeNext: GuideAction | null;
   messages: string[];
+  choices?: Array<{ id: string; label: string }>;
 };
 
 /**
@@ -127,7 +130,43 @@ export function advanceAfterStepCompleted(
     };
   }
 
-  return planResumeQueue(pack, next, ctx);
+  const resumed = planResumeQueue(pack, next, ctx);
+  if (resumed.executeNext || resumed.messages.length > 0) {
+    return resumed;
+  }
+
+  // Proactive offer: next incomplete available step (dialogue, not auto-nav).
+  const statuses = evaluateFlowStatuses(pack, ctx, next.stale);
+  const offer = nextAvailableSteps(statuses).find((s) => s.id !== completedStepId);
+  if (!offer) {
+    return resumed;
+  }
+
+  let offered: SessionSlots = {
+    ...next,
+    pending: { kind: 'proactive' as const, stepId: offer.id },
+    discourse: {
+      ...(next.discourse ?? {}),
+      lastStepId: completedStepId,
+      lastChoiceIds: [offer.id, '__no__'],
+    },
+  };
+  const picked = pickReply(offered, pack.replies, 'proactive', {
+    title: offer.title,
+    done: titleOf(pack, completedStepId),
+    stepId: offer.id,
+  });
+  offered = { ...picked.session, pending: offered.pending };
+
+  return {
+    session: offered,
+    executeNext: null,
+    messages: [picked.text],
+    choices: [
+      { id: offer.id, label: `Yes — ${offer.title}` },
+      { id: '__no__', label: 'Not now' },
+    ],
+  };
 }
 
 export type InjectResult = {
