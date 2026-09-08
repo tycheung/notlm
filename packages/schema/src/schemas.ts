@@ -90,6 +90,8 @@ export const controlsSchema = {
       spotlight: { type: 'string' },
       coachMessage: { type: 'string' },
       role: { type: 'string' },
+      prefill: { type: 'object', additionalProperties: true },
+      userFill: { type: 'array', items: { type: 'string', minLength: 1 } },
     },
   },
 } as const;
@@ -188,6 +190,26 @@ export const faqSchema = {
   },
 } as const;
 
+export const lookupsSchema = {
+  $id: 'https://uipilot.dev/schemas/lookups.json',
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['id', 'dataPath'],
+    properties: {
+      id: { type: 'string', minLength: 1 },
+      dataPath: { type: 'string', minLength: 1 },
+      nameKey: { type: 'string' },
+      idKey: { type: 'string' },
+      utteranceHints: { type: 'array', items: { type: 'string' } },
+      entityWords: { type: 'array', items: { type: 'string' } },
+      guideIdTemplate: { type: 'string' },
+      stepId: { type: 'string' },
+    },
+  },
+} as const;
+
 export const glossarySchema = {
   $id: 'https://uipilot.dev/schemas/glossary.json',
   type: 'array',
@@ -227,6 +249,7 @@ export const PACK_PIECE_SCHEMAS = {
   config: configSchema,
   glossary: glossarySchema,
   faq: faqSchema,
+  lookups: lookupsSchema,
 } as const;
 
 export type PackPieceName = keyof typeof PACK_PIECE_SCHEMAS;

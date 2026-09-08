@@ -9,6 +9,7 @@ export {
   flowSchema,
   glossarySchema,
   faqSchema,
+  lookupsSchema,
   intentsSchema,
   manifestSchema,
   PACK_PIECE_SCHEMAS,
