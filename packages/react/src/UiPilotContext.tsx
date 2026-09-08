@@ -42,6 +42,11 @@ export type OpenModalFn = (modalKey: string) => void;
 export type ExecuteStepOpts = {
   prefill?: SlotBag;
   skipCoach?: boolean;
+  /**
+   * Steps to treat as complete for requires checks (queue resume after notify
+   * when getContext binders have not flushed yet).
+   */
+  assumeComplete?: StepId[];
 };
 
 function asLoadedPack(pack: PackRuntime): LoadedPack {
@@ -173,7 +178,13 @@ export function UiPilotProvider({
     (stepId: StepId, opts?: ExecuteStepOpts) => {
       const loaded = asLoadedPack(pack);
       const liveCtx = getContext();
-      const missing = listMissingRequires(loaded, stepId, liveCtx, sessionRef.current.stale);
+      const missing = listMissingRequires(
+        loaded,
+        stepId,
+        liveCtx,
+        sessionRef.current.stale,
+        { assumeComplete: opts?.assumeComplete }
+      );
       if (missing.length > 0) {
         pushAssistant(formatBlockedQueueMessage(loaded, stepId, missing));
         return;
@@ -239,8 +250,15 @@ export function UiPilotProvider({
       }
       if (result.executeNext) {
         const next = result.executeNext;
+        const assumeComplete = [stepId];
+        // After opening A, B’s control often mounts on the next frame.
         queueMicrotask(() => {
-          executeStepRef.current(next.stepId, { prefill: next.slots });
+          requestAnimationFrame(() => {
+            executeStepRef.current(next.stepId, {
+              prefill: next.slots,
+              assumeComplete,
+            });
+          });
         });
       }
     },

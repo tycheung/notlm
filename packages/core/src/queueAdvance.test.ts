@@ -61,6 +61,20 @@ describe('listMissingRequires / isRequiredFor', () => {
 });
 
 describe('advanceAfterStepCompleted (A → B → D with C gap)', () => {
+  it('resumes next step even when getContext binders lag notify', () => {
+    const session = setActionQueue(emptySession(), [action('a'), action('b')]);
+    // Host notified A complete, but binder still false (classic one-tick race).
+    const afterA = advanceAfterStepCompleted(
+      pack,
+      session,
+      { pathname: '/', data: {} },
+      'a'
+    );
+    expect(afterA.executeNext?.stepId).toBe('b');
+    expect(afterA.messages[0]).toMatch(/Continuing with .*Step B/);
+    expect(afterA.messages.join(' ')).not.toMatch(/blocked/i);
+  });
+
   it('auto-continues to the next available queued step', () => {
     let session = setActionQueue(emptySession(), [action('a'), action('b'), action('d')]);
     const afterA = advanceAfterStepCompleted(
@@ -85,7 +99,7 @@ describe('advanceAfterStepCompleted (A → B → D with C gap)', () => {
     expect(afterB.messages[0]).toContain('Step C');
   });
 
-  it('does not drop deferred D when an unrelated step completes', () => {
+  it('resumes deferred D when required C completes even if binders lag', () => {
     const session = setActionQueue(emptySession(), [action('d')]);
     const result = advanceAfterStepCompleted(
       pack,
@@ -94,12 +108,17 @@ describe('advanceAfterStepCompleted (A → B → D with C gap)', () => {
       'c'
     );
     expect(result.session.actionQueue.map((q) => q.stepId)).toEqual(['d']);
-    expect(result.executeNext).toBeNull();
+    expect(result.executeNext?.stepId).toBe('d');
   });
 
   it('resumes D after injected C completes', () => {
     let session = setActionQueue(emptySession(), [action('d')]);
-    const injected = injectBeforeDeferred(pack, session, { pathname: '/', data: { a: true, b: true } }, action('c'));
+    const injected = injectBeforeDeferred(
+      pack,
+      session,
+      { pathname: '/', data: { a: true, b: true } },
+      action('c')
+    );
     expect(injected.injected).toBe(true);
     expect(injected.session.actionQueue.map((q) => q.stepId)).toEqual(['c', 'd']);
     expect(injected.message).toMatch(/Step C.*Step D/);

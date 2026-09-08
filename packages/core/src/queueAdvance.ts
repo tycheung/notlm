@@ -18,12 +18,15 @@ export function listMissingRequires(
   pack: PackRuntime,
   stepId: StepId,
   ctx: RuntimeContextBase,
-  staleSteps: Iterable<StepId> = []
+  staleSteps: Iterable<StepId> = [],
+  opts?: { assumeComplete?: Iterable<StepId> }
 ): StepId[] {
   const step = pack.steps.find((s) => s.id === stepId);
   if (!step) return [];
   const stale = new Set(staleSteps);
+  const assumed = new Set(opts?.assumeComplete ?? []);
   return step.requires.filter((req) => {
+    if (assumed.has(req)) return false;
     const complete = pack.isComplete[req]?.(ctx) ?? false;
     return !complete || stale.has(req);
   });
@@ -85,14 +88,16 @@ export function planResumeQueue(
   pack: PackRuntime,
   session: SessionSlots,
   ctx: RuntimeContextBase,
-  opts?: { announceContinue?: boolean }
+  opts?: { announceContinue?: boolean; assumeComplete?: StepId[] }
 ): QueueAdvanceResult {
   const head = session.actionQueue[0];
   if (!head) {
     return { session, executeNext: null, messages: [] };
   }
 
-  const missing = listMissingRequires(pack, head.stepId, ctx, session.stale);
+  const missing = listMissingRequires(pack, head.stepId, ctx, session.stale, {
+    assumeComplete: opts?.assumeComplete,
+  });
   if (missing.length > 0) {
     return {
       session,
@@ -130,7 +135,10 @@ export function advanceAfterStepCompleted(
     };
   }
 
-  const resumed = planResumeQueue(pack, next, ctx);
+  const resumed = planResumeQueue(pack, next, ctx, {
+    // Host just asserted completion — binders/getContext often lag one tick.
+    assumeComplete: [completedStepId],
+  });
   if (resumed.executeNext || resumed.messages.length > 0) {
     return resumed;
   }
