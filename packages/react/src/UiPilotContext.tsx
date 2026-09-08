@@ -9,6 +9,7 @@ import {
   type AssistantFeatures,
   type ChatChoice,
   type ChatMessage,
+  type CoachEvent,
   type LoadedPack,
   type PackRuntime,
   type ParseUtteranceFn,
@@ -102,6 +103,8 @@ export type UiPilotProviderProps = {
   features?: AssistantFeatures;
   /** Optional hybrid / ONNX ranker parser (feature-flagged by host). */
   parseUtteranceFn?: ParseUtteranceFn;
+  /** Optional structured coach telemetry (no secrets). */
+  onCoachEvent?: (event: CoachEvent) => void;
   children: ReactNode;
 } & UiPilotChromeConfig;
 
@@ -112,6 +115,7 @@ export function UiPilotProvider({
   openModal,
   features: featuresProp,
   parseUtteranceFn,
+  onCoachEvent,
   appearance,
   className,
   classNames,
@@ -249,7 +253,7 @@ export function UiPilotProvider({
       if (!trimmed) return;
       setMessages((prev) => [...prev, newMessage('user', trimmed)]);
       setPanelOpen(true);
-      dispatchUserUtterance({
+      const result = dispatchUserUtterance({
         text: trimmed,
         pack: asLoadedPack(pack),
         session: sessionRef.current,
@@ -267,9 +271,15 @@ export function UiPilotProvider({
           flashGuideField(guideId);
         },
         parseUtteranceFn,
+        onCoachEvent,
       });
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        void (result as Promise<void>).catch(() => {
+          pushAssistant('Something went wrong parsing that — try again in a moment.');
+        });
+      }
     },
-    [getContext, pack, parseUtteranceFn, pushAssistant]
+    [getContext, onCoachEvent, pack, parseUtteranceFn, pushAssistant]
   );
 
   const value = useMemo<UiPilotContextValue>(

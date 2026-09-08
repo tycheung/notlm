@@ -29,6 +29,7 @@ export function UiPilotHost({
   openModal,
   features,
   parseUtteranceFn,
+  onCoachEvent,
   appearance,
   className,
   classNames,
@@ -44,6 +45,7 @@ export function UiPilotHost({
       openModal={openModal}
       features={features}
       parseUtteranceFn={parseUtteranceFn}
+      onCoachEvent={onCoachEvent}
       appearance={appearance}
       className={className}
       classNames={classNames}
