@@ -65,6 +65,14 @@ Tip: npm may strip `--flags`; prefer `--force=10000` / `--batch=100` form.
 | `@uipilot/mapper` | Playwright control inventory |
 | `@uipilot/author` | Build-time LLM pack drafts (BYO / Ollama / OpenAI-compat) |
 
+## Pack cookbook (start here for hosts)
+
+Human wire-up guide — what each pack JSON file means, the per-step checklist
+(`flow` → binders → controls → intents → corpus → host annotations), and when to
+hand-edit vs run `map` / `tune` / `prepare`:
+
+→ **[`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md)**
+
 ## Host project layout
 
 After install, developers manage **one folder** (default `.uipilot/`):

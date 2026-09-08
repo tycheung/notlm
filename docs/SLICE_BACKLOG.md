@@ -232,6 +232,7 @@ Devs import `@uipilot/react`, train via CLI, and brand the chat/FAB without fork
 
 | ID | Title | Status | Acceptance |
 |----|-------|--------|------------|
+| `docs-001` | Pack wire-up cookbook (human checklist + file guide) | **done** | `docs/PACK_COOKBOOK.md`; linked from README + CONTRIBUTING |
 | `publish-001` | Package names + LICENSE + README install story | **deferred** | README consumer snippet works |
 | `publish-002` | Changesets or manual semver policy ADR | **deferred** | ADR |
 | `publish-003` | Dry-run pack publish | **deferred** | `npm pack` artifacts sane |

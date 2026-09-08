@@ -4,12 +4,15 @@
 
 See `docs/PLAN.md` for goals / non-goals and `ARCHITECTURE.md` for bundle boundaries.
 
+**Pack authors:** start with [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md) — wire-up checklist, file field guide, and day-1 walkthrough (hand-edit or CLI draft → human accept).
+
 ## Status
 
 Implementation in progress (not published). Package scope: `@uipilot/*`. CLI: `uipilotCLI`.
 
 ## Quick links
 
+- Pack cookbook (host wire-up): `docs/PACK_COOKBOOK.md`
 - Cursor constitution: `.cursor/rules/typescript-slice-master.mdc`
 - Progress: `docs/PROGRESS.md`
 - Backlog: `docs/SLICE_BACKLOG.md`

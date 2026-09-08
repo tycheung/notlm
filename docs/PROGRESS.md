@@ -2,11 +2,13 @@
 
 ## Current
 
+- **docs-001** pack cookbook published (`docs/PACK_COOKBOOK.md`)
 - **G5d / G5e / G10 implementation: DONE** (saturation + CLI façade + chrome personalization)
 - Publish (`publish-*`) intentionally deferred
 
 ## Last completed
 
+- **docs-001** — Human pack wire-up cookbook (checklist + file guide + day-1 path); linked from README + CONTRIBUTING
 - Steward pass: deleted dead `stubDispatch` (−~90 LOC); demo-crm + accent Playwright (7 e2e green)
 - **sat-014 / sat-015** — no-lift stop (5×100) + `--force=N` hard augment
 - **P4d–P4f** saturation, CLI façade, chrome personalization
