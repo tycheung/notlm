@@ -29,7 +29,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { UiPilotChromeConfig } from './chromeTypes.js';
-import { DEFAULT_GUIDE_ATTR, flashGuideField } from './fieldFlash.js';
+import { DEFAULT_GUIDE_ATTR, flashGuideField, flashGuideFieldsSequential } from './fieldFlash.js';
 import { applyPrefill } from './fieldPrefill.js';
 import { appearanceToCssVars } from './uipilot.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
@@ -191,6 +191,17 @@ export function UiPilotProvider({
       const mergedPrefill = { ...(nav.prefill ?? {}), ...(opts?.prefill ?? {}) };
       if (Object.keys(mergedPrefill).length > 0) {
         queueMicrotask(() => applyPrefill(mergedPrefill));
+      }
+      const userFill = nav.userFill?.filter(Boolean) ?? [];
+      if (userFill.length > 0) {
+        pushAssistant(
+          userFill.length === 1
+            ? 'Please fill in the highlighted field — I can’t type that for you.'
+            : `Please fill in these ${userFill.length} fields — I’ll highlight each one from top to bottom.`
+        );
+        queueMicrotask(() => {
+          flashGuideFieldsSequential(userFill, { onlyEmpty: false });
+        });
       }
     },
     [features.spotlight, getContext, navigate, pack, pushAssistant, showSpotlight]

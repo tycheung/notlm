@@ -1,8 +1,11 @@
 export {
   flashGuideField,
+  flashGuideFieldsSequential,
+  sortGuideIdsByDocumentOrder,
   DEFAULT_FLASH_CLASS,
   DEFAULT_GUIDE_ATTR,
 } from './fieldFlash.js';
+export type { FlashFieldOpts, SequentialFlashOpts } from './fieldFlash.js';
 export { applyPrefill } from './fieldPrefill.js';
 export { getSpeechRecognitionCtor, isWebSpeechSupported } from './speech.js';
 export { useWebSpeechInput } from './useWebSpeechInput.js';
