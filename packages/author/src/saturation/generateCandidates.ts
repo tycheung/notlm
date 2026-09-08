@@ -10,7 +10,6 @@ export type GenerateCandidatesResult =
     }
   | { ok: false; errors: string[]; checklist: string[] };
 
-/** LLM: propose diverse unlabeled utterance candidates for saturation. */
 export async function generateScenarioCandidates(input: {
   provider: LlmProvider;
   batchSize: number;

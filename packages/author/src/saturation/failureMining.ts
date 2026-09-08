@@ -16,7 +16,7 @@ export type FailureMineResult = {
   };
 };
 
-/** Turn intent-check failures into checklist + draft hints (no pack merge). */
+/** No pack merge — draft hints only. */
 export function mineIntentFailures(
   failures: IntentCheckResult[],
   opts?: { draftIdPrefix?: string }

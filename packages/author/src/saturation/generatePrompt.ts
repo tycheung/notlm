@@ -2,7 +2,6 @@ function jsonBlock(label: string, value: unknown): string {
   return `### ${label}\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
 }
 
-/** Prompt: pack context → diverse unlabeled utterance candidates. */
 export function buildScenarioGeneratePrompt(input: {
   batchSize: number;
   flowSteps: unknown;
@@ -35,7 +34,7 @@ export function buildScenarioGeneratePrompt(input: {
   return parts.join('\n');
 }
 
-/** Prompt: unlabeled candidates → soft expect labels (draft only). */
+/** Soft expect labels only — draft, never merged into pack/. */
 export function buildSoftLabelPrompt(input: {
   candidates: unknown;
   flowSteps: unknown;

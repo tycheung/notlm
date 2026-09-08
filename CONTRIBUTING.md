@@ -12,10 +12,6 @@ npm run lint
 
 Requires Node ≥ 20. Prefer **pnpm** when available (`pnpm-workspace.yaml` is present); **npm workspaces** work out of the box via root `package.json`.
 
-## Docs of record
-
-Before coding: read `docs/PROGRESS.md`, then `docs/SLICE_BACKLOG.md`, then the relevant `docs/PLAN.md` section. Emit a Slice Plan per `.cursor/rules/typescript-slice-master.mdc`.
-
 ## Local CI
 
 ```bash
@@ -73,6 +69,8 @@ hand-edit vs run `map` / `tune` / `prepare`:
 
 → **[`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md)**
 
+Also see `ARCHITECTURE.md` and `SECURITY.md`.
+
 ## Host project layout
 
 After install, developers manage **one folder** (default `.uipilot/`):
@@ -81,7 +79,7 @@ After install, developers manage **one folder** (default `.uipilot/`):
 .uipilot/
   config.json
   scenarios.json    # utterance → expected step/intent (intent tuning)
-  saturation/       # candidate batches + novelty reports (G5d)
+  saturation/       # candidate batches + novelty reports
   inventory.json
   structured-draft.json
   checklist.json
@@ -98,7 +96,7 @@ uipilotCLI init ./my-app
 uipilotCLI prepare ./my-app --llm    # or map / tune separately
 ```
 
-Then mount the Host and brand the chrome (ADR-007):
+Then mount the Host and brand the chrome:
 
 ```ts
 <UiPilotProvider
@@ -117,7 +115,7 @@ Then mount the Host and brand the chrome (ADR-007):
 Layers: (1) override `uipilot-*` classes, (2) `appearance` → CSS variables, (3) `components` slots.
 Appearance is **host app** concern — not stored in `.uipilot/pack/*.json`.
 
-### Operator loop (primary CLI — ADR-006)
+### Operator loop (primary CLI)
 
 Three phases over a codebase:
 
@@ -126,10 +124,10 @@ Three phases over a codebase:
 3. **Tune** — generate examples, fine-tune intents, correct DAG (`uipilotCLI tune`)
 
 ```bash
-uipilotCLI map ./my-app              # (2) basic mechanical map only
-uipilotCLI tune ./my-app             # (3) examples + intent/DAG correction drafts
-uipilotCLI tune ./my-app --force=10000  # (3) hard-add exactly 10000 (ignore similarity)
-uipilotCLI prepare ./my-app          # (2) then (3) back-to-back
+uipilotCLI map ./my-app              # mechanical map only
+uipilotCLI tune ./my-app             # examples + intent/DAG correction drafts
+uipilotCLI tune ./my-app --force=10000  # hard-add exactly 10000 (ignore similarity)
+uipilotCLI prepare ./my-app          # map then tune
 uipilotCLI prepare ./my-app --llm    # domain-aware map, then tune
 uipilotCLI pack accept <draftId> ./my-app
 uipilotCLI intents check ./my-app    # deterministic CI gate
@@ -142,15 +140,10 @@ compose.
 Intent tuning: add or generate scenarios, run `uipilotCLI intents check` (deterministic CI).
 `tune` / `intents tune` propose aliases/corpus under `drafts/`; `--accept` only when check is green.
 
-Scan / `map` / LLM author only write JSON here (ADR-002). LLM keys stay in env, not in this folder.
-
-See `docs/adr/001-build-time-llm-author.md`, `docs/adr/002-host-config-folder.md`,
-`docs/adr/005-scenario-saturation-orthogonality.md`, `docs/adr/006-cli-map-tune-prepare.md`,
-`docs/adr/007-host-chrome-personalization.md`, and `SECURITY.md`.
+Scan / `map` / LLM author only write JSON under `.uipilot/`. LLM keys stay in env, not in this folder.
 
 See `tests/README.md`. Corpus changes are required when intents change.
 
 ## Commits
 
-Conventional prefixes: `feat`, `fix`, `test`, `refactor`, `chore`, `docs`.  
-Do not commit unless asked (agents) / keep slices ≈ commits when possible.
+Conventional prefixes: `feat`, `fix`, `test`, `refactor`, `chore`, `docs`.

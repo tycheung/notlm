@@ -2,7 +2,7 @@ import { DEFAULT_FLASH_CLASS } from './fieldFlash.js';
 
 /**
  * Minimal host chrome styles. Inject once: `style.textContent = UIPILOT_CSS`.
- * Override via CSS variables on `.uipilot-host-root` or `appearance` prop (ADR-007).
+ * Override via CSS variables on `.uipilot-host-root` or `appearance` prop.
  *
  * Stable class contract (hosts may override in their CSS):
  * - uipilot-host-root, uipilot-fab-root, uipilot-fab-btn
@@ -67,7 +67,6 @@ export const UIPILOT_CSS = `
 
 export { DEFAULT_FLASH_CLASS };
 
-/** Appearance tokens → CSS custom properties (ADR-007). */
 export type UiPilotAppearance = {
   accent?: string;
   accentSoft?: string;

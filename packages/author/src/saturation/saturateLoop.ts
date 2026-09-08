@@ -193,7 +193,6 @@ export async function runHardAugment(input: {
   };
 }
 
-/** Default LLM-backed batch generator for CLI. */
 export function llmBatchGenerator(input: {
   provider: LlmProvider;
   flowSteps: unknown;

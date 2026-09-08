@@ -1,5 +1,5 @@
 /**
- * Annotation / checklist helpers only — no TypeScript pack codegen (ADR-002).
+ * Annotation / checklist helpers only — no TypeScript pack codegen.
  */
 export {
   checklistToMarkdown,

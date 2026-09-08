@@ -26,7 +26,6 @@ export function combineNovelty(
   return w * lexical + (1 - w) * parseSig;
 }
 
-/** Score each batch member against the prior pool (utterances + signatures). */
 export function scoreBatchAgainstPrior(input: {
   batchId: string;
   utterances: readonly { id?: string; utterance: string }[];
@@ -102,7 +101,6 @@ export type PlateauState = {
   stopReason?: StopReason;
 };
 
-/** Update plateau + no-lift state after a batch summary. */
 export function updatePlateauState(input: {
   previousConsecutiveLow: number;
   previousConsecutiveNoLift?: number;

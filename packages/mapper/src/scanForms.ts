@@ -1,6 +1,3 @@
-/**
- * Static scan: forms / submit handlers / save CTAs → write candidates (extract-003).
- */
 import { readRelative, walkSourceFiles } from './walkSource.js';
 
 const SCAN_EXTS = new Set(['.tsx', '.ts', '.jsx', '.js']);

@@ -2,10 +2,6 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/**
- * @guide-saturate — typed FAB over demo-todo scenarios / saturation candidates.
- * Uses labeled scenarios from packs/demo-todo (no live LLM).
- */
 test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
   function assertNoProductApi(request: Request) {
     const url = request.url();
@@ -45,7 +41,6 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
     await page.goto('/');
     await openChat(page);
 
-    // Subset: actionable + meta + negative (borders)
     const sample = scenarios.filter((s) =>
       ['s1-create-list', 's3-add-item', 's7-whats-next', 's9-negative'].includes(s.id)
     );
@@ -55,7 +50,6 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
       await sendUtterance(page, s.utterance);
     }
 
-    // After create_list + add_item coach path, UI should show list/item when those ran
     await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible();
   });
 
@@ -70,7 +64,6 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
   test('appearance accent token paints FAB (teal brand)', async ({ page }) => {
     page.on('request', assertNoProductApi);
     await page.goto('/');
-    // demo-todo appearance.accent = #0f766e
     await expect(page.getByTestId('uipilot-fab')).toHaveCSS(
       'background-color',
       'rgb(15, 118, 110)'

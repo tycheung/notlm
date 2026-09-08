@@ -46,7 +46,6 @@ export function validatePiece(piece: PackPieceName, data: unknown): ValidationRe
   return { ok: false, errors: formatErrors(piece, validate.errors) };
 }
 
-/** Validate labeled utterance scenarios (author-011). */
 export function validateScenarios(data: unknown): ValidationResult {
   return validatePiece('scenarios', data);
 }

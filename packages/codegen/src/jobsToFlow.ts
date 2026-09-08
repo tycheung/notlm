@@ -24,7 +24,6 @@ export type FlowStepDraft = {
 };
 
 /**
- * Minimal jobs list → linear flow steps (process-001).
  * Accepts JSON or a tiny YAML subset (`- id:` / `title:` blocks).
  */
 export function jobsToFlowSteps(doc: JobsDocument): FlowStepDraft[] {

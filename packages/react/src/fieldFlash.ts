@@ -1,6 +1,5 @@
 /**
  * Scroll to `[data-guide-id]` and pulse a CSS class (host supplies styles).
- * Trimmed from VB fieldFlash — attribute name configurable later.
  */
 
 const FLASH_PULSE_MS = 700;

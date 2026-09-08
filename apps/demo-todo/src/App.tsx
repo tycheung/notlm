@@ -36,7 +36,6 @@ export function App() {
   }, []);
 
   const navigate = useCallback((path: string) => {
-    // Host wiring for executeStep → UI-actions only (.click on guide control).
     clickGuideByPath(path);
   }, []);
 

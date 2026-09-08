@@ -14,3 +14,21 @@ test-results
 # Saturation / author drafts generated locally (keep pack/ committed)
 **/.uipilot/saturation/
 **/.uipilot/drafts/
+
+# Local AI / agent tooling (not shipped as product)
+.cursor/
+**/.cursor/
+typescript-slice-master.mdc
+**/typescript-slice-master.mdc
+
+# Agent planning ceremony (keep locally; not for the public tree)
+docs/PROGRESS.md
+docs/SLICE_BACKLOG.md
+docs/PLAN.md
+docs/PLAN_GAP.md
+docs/adr/
+
+# Sandbox reference app — local agent/planning noise
+sandboxes/**/.cursor/
+sandboxes/**/docs/adr/
+sandboxes/**/docs/go-live/

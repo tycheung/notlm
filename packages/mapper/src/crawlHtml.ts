@@ -5,10 +5,6 @@ import type { ControlInventory, CrawlHtmlOptions, InventoriedControl } from './t
 const INTERACTIVE_SELECTOR =
   'button, a, input, select, textarea, [role="button"], [data-guide-id]';
 
-/**
- * Parse interactive controls from an HTML string (no Playwright).
- * Suitable for unit tests and `uipilotCLI inventory crawl --html`.
- */
 export function crawlHtml(html: string, options: CrawlHtmlOptions = {}): ControlInventory {
   const url = options.url ?? options.baseUrl ?? '';
   const baseUrl = options.baseUrl ?? options.url ?? '';

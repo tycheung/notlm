@@ -1,5 +1,3 @@
-/** Shared tiny fuzzy helpers (from VB director-guide; domain-agnostic). */
-
 export function editDistance(a: string, b: string): number {
   if (a === b) return 0;
   if (!a.length) return b.length;

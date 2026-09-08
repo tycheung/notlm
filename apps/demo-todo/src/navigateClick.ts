@@ -1,11 +1,10 @@
 /**
- * UI-actions only (ADR-003): the coach never POSTs or calls product APIs.
- * `navigate` from UiPilotHost / executeStep resolves to clicking a
- * `[data-guide-id]` control (path token === guide id in this demo pack).
+ * Coach never POSTs or calls product APIs.
+ * `navigate` from UiPilotHost / executeStep clicks `[data-guide-id]`
+ * (path token === guide id in this demo pack).
  */
 export function clickGuideByPath(path: string): void {
   const trimmed = path.replace(/^\//, '').trim();
-  // Prefer path token as guide id (pack controls use path === id === spotlight).
   const candidates = [trimmed];
   const lastSeg = trimmed.split('/').filter(Boolean).pop();
   if (lastSeg && lastSeg !== trimmed) candidates.push(lastSeg);

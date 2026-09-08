@@ -18,7 +18,7 @@ function walkTs(dir: string): string[] {
   return out;
 }
 
-describe('ADR-003 UI-actions only', () => {
+describe('UI-actions only', () => {
   it('core and react must not import host product API clients', () => {
     const files = [
       ...walkTs(join(root, 'packages/core/src')),

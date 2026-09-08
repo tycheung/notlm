@@ -1,6 +1,5 @@
 /**
- * Record-mode click traces → draft flow steps + intent/corpus seeds (process-003/004/005).
- * extract-006: linear requires from traces always carry `confidence: 'low'`.
+ * Linear `requires` from traces always carry `confidence: 'low'`.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,7 +25,7 @@ export type FlowStepDraft = {
   keywords: string[];
   kind: 'hard' | 'soft' | 'optional' | 'conditional';
   requires: string[];
-  /** Required when requires is non-empty (extract-006). */
+  /** Non-empty requires must use confidence `low`. */
   confidence: 'high' | 'medium' | 'low';
 };
 
@@ -35,7 +34,6 @@ export type TraceFlowDraft = {
   confidence: 'low';
 };
 
-/** Ordered unique guideIds/text → linear steps with low-confidence requires. */
 export function traceToFlowDraft(trace: ClickTrace): TraceFlowDraft {
   const ordered: Array<{ id: string; title: string }> = [];
   const seen = new Set<string>();
@@ -62,7 +60,6 @@ export function traceToFlowDraft(trace: ClickTrace): TraceFlowDraft {
       keywords: [item.title.toLowerCase()],
       kind: 'soft',
       requires,
-      // extract-006: invented linear requires always low confidence
       confidence: 'low',
     });
     prev = item.id;
@@ -78,7 +75,6 @@ export function appendTraceEvent(trace: ClickTrace, event: TraceEvent): ClickTra
   };
 }
 
-/** Write trace JSON under `.uipilot/traces/<id>.json`. */
 export function writeTraceFile(
   uipilotHome: string,
   trace: ClickTrace,
@@ -96,7 +92,6 @@ export type SeededIntents = {
   aliases: Record<string, string[]>;
 };
 
-/** Seed intent aliases from step titles / ids (process-004). */
 export function seedIntentsFromSteps(
   steps: Array<{ id: string; title?: string; keywords?: string[] }>
 ): SeededIntents {
@@ -119,7 +114,7 @@ export type CorpusSeedCase = {
   expect: { stepId: string };
 };
 
-/** Clean corpus only from aliases — no slang invention (process-005). */
+/** Corpus from aliases only — no slang invention. */
 export function seedCorpusFromAliases(
   aliases: Record<string, string[]>
 ): CorpusSeedCase[] {

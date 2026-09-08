@@ -32,16 +32,11 @@ function positionalDir(args: string[]): string | undefined {
   return undefined;
 }
 
-/**
- * `uipilotCLI map [dir] [--src <path>] [--llm] [--html <file>] [--url <url>]`
- * Mechanical extract + dag generate; optional pack author with --llm.
- */
 export async function cmdMap(args: string[]): Promise<void> {
   const dir = positionalDir(args);
   const { home } = resolveUipilotHome(dir);
   const withLlm = hasFlag(args, '--llm');
 
-  // extract static if --src or a bare src-looking path provided via extract's own parser
   const srcIdx = args.indexOf('--src');
   if (srcIdx >= 0 || args.some((a) => a === '--src')) {
     await cmdExtractStatic(args);
@@ -49,8 +44,6 @@ export async function cmdMap(args: string[]): Promise<void> {
     await cmdExtractStatic(['--src', process.env.UIPILOT_MAP_SRC, dir].filter(Boolean) as string[]);
   }
 
-  // Optional inventory crawl flags passthrough is left to atomic command;
-  // map always runs dag generate when home exists (or after init expectation).
   if (!pathExists(home)) {
     console.error(`Missing UiPilot home: ${home} (run uipilotCLI init)`);
     process.exitCode = 1;
@@ -67,8 +60,6 @@ export async function cmdMap(args: string[]): Promise<void> {
 }
 
 /**
- * `uipilotCLI tune [dir] [--fixture] [--batch=N] [--force=N] [--label]`
- * Saturate scenarios then intents tune (compose atomics).
  * `--force=N` hard-adds exactly N candidates (ignore similarity).
  */
 export async function cmdTune(args: string[]): Promise<void> {
@@ -103,9 +94,6 @@ export async function cmdTune(args: string[]): Promise<void> {
   }
 }
 
-/**
- * `uipilotCLI prepare [dir] [--llm] …` — map then tune.
- */
 export async function cmdPrepare(args: string[]): Promise<void> {
   console.log('prepare: map…');
   await cmdMap(stripFlags(args, []) /* keep --llm for map */);

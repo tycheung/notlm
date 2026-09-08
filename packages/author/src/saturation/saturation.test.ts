@@ -214,7 +214,6 @@ describe('runSaturationLoop', () => {
       generateBatch: async ({ batchIndex, batchSize }) =>
         Array.from({ length: batchSize }, (_, i) => ({
           id: `nl-${batchIndex}-${i}`,
-          // Lexically varied but same parse bucket (null / unknown)
           utterance: `utterly distinct weather query number ${batchIndex}-${i} xyz${i}`,
         })),
     });

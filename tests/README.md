@@ -23,4 +23,4 @@
 
 ## Corpus rule
 
-Every step alias and meta intent must have clean (and ideally slang/typo/STT-truncated) cases before a pack slice is done.
+Every step alias and meta intent must have clean (and ideally slang/typo/STT-truncated) cases before the pack is considered ready.

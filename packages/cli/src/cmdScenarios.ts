@@ -239,7 +239,6 @@ export async function cmdScenariosGenerate(args: string[]): Promise<void> {
     ]
       .slice(0, Math.max(1, batchSize))
       .map((utterance, i) => ({ id: `fix-${i}`, utterance }));
-    // Pad fixture to requested batch size with varied strings
     while (raw.length < batchSize) {
       const i = raw.length;
       raw.push({
@@ -367,8 +366,6 @@ export async function cmdScenariosSaturate(args: string[]): Promise<void> {
     );
   }
 
-  // Mine failures from soft-check of unlabeled (signature-only) vs empty expect skip —
-  // if scenarios exist, check them; also soft-label draft optional via --label
   if (Array.isArray(files.scenarios) && files.manifest && files.flow && files.intents) {
     const check = checkIntents({
       pack: {
@@ -401,7 +398,6 @@ export async function cmdScenariosSaturate(args: string[]): Promise<void> {
   if (hasFlag(args, '--label') && !useFixture) {
     await softLabelAndDraft(home, files, result.candidates.slice(-batchSize));
   } else if (hasFlag(args, '--label') && useFixture) {
-    // Fixture soft-label: write draft scenarios from last batch with null expects
     const slice = result.candidates.slice(-batchSize);
     const draftId = `scenarios-${stamp()}`;
     const outDir = join(draftsDir(home), draftId);
@@ -470,7 +466,6 @@ export async function runIntentsTuneIfPossible(dir?: string): Promise<void> {
     return;
   }
   if (process.env.UIPILOT_SATURATE_FIXTURE === '1') {
-    // Still allow tune with fixture LLM mock via env — if no provider, skip
     try {
       createProviderFromEnv();
     } catch {

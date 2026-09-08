@@ -1,4 +1,3 @@
-/** Normalize for lexical comparison. */
 export function normalizeForNovelty(text: string): string {
   return text
     .toLowerCase()

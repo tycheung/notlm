@@ -1,9 +1,5 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
 
-/**
- * Portability + chrome personalization on second host (demo-crm).
- * Coach mutates only via UI clicks (ADR-003).
- */
 test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
   function assertNoProductApi(request: Request) {
     const url = request.url();
@@ -37,7 +33,6 @@ test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
 
     const fab = page.getByTestId('uipilot-fab');
     await expect(fab).toBeVisible();
-    // appearance.accent = #b45309 applied as CSS var on host root
     await expect(fab).toHaveCSS('background-color', 'rgb(180, 83, 9)');
 
     await openChat(page);

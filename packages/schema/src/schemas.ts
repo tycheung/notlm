@@ -1,5 +1,3 @@
-/** JSON Schema definitions for pack folder pieces (draft-07, Ajv). */
-
 const binderLeaf = {
   type: 'object',
   additionalProperties: true,

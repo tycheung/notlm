@@ -1,6 +1,5 @@
 /**
- * Static scan: find `data-guide-id` (and optional `notifyStepCompleted`) in source trees.
- * Lite extract-004 — merges discovered ids into a ControlInventory without Playwright.
+ * Merges discovered ids into a ControlInventory without Playwright.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
@@ -71,7 +70,6 @@ function scanFile(root: string, file: string): GuideIdHit[] {
   return hits;
 }
 
-/** Recursively scan `.tsx` / `.html` (and jsx/htm) under `dir` for guide anchors. */
 export function scanGuideIdsInDir(dir: string): ScanGuideIdsResult {
   const files: string[] = [];
   walkFiles(dir, files);
@@ -111,7 +109,7 @@ function hitToControl(hit: GuideIdHit): InventoriedControl {
   };
 }
 
-/** Build a ControlInventory from `data-guide-id` hits (notify-only hits omitted). */
+/** Notify-only hits omitted. */
 export function guideIdHitsToInventory(
   hits: GuideIdHit[],
   opts?: { baseUrl?: string; capturedAt?: string }
@@ -130,7 +128,6 @@ export function guideIdHitsToInventory(
 }
 
 /**
- * Scan `dir` for `data-guide-id` and merge into `existing` inventory.
  * Preserves prior `existingGuideId` values via mergeInventory; unions by adding scan rows first.
  */
 export function mergeGuideIdScan(
@@ -143,14 +140,12 @@ export function mergeGuideIdScan(
     baseUrl: opts?.baseUrl ?? existing?.baseUrl ?? '',
   });
 
-  // Seed with prior controls so mergeInventory does not drop unscanned rows.
   const seed: ControlInventory = {
     capturedAt: scanned.capturedAt,
     baseUrl: scanned.baseUrl || existing?.baseUrl || '',
     controls: [...(existing?.controls ?? []), ...scanned.controls],
   };
 
-  // Deduplicate by guide id, preferring existingGuideId from either side.
   const byId = new Map<string, InventoriedControl>();
   for (const c of seed.controls) {
     const id = c.existingGuideId ?? c.proposedGuideId;

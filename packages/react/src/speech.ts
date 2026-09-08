@@ -1,6 +1,6 @@
 /**
  * Web Speech API only (Chrome / Edge / Safari). Firefox → unsupported.
- * No Whisper / cloud STT. Trimmed from VB useWebSpeechInput.
+ * No Whisper / cloud STT.
  */
 
 export type SpeechRecognitionLike = {

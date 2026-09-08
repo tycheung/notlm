@@ -60,7 +60,7 @@ describe('runStructuredExtract', () => {
     expect(assertRequiresPolicy(draft.steps)).toBe(true);
   });
 
-  it('marks invented linear requires as confidence low (extract-006)', () => {
+  it('marks invented linear requires as confidence low', () => {
     const draft = runStructuredExtract(extractFixture, {
       inventLinearRequires: true,
     });

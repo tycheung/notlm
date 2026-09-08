@@ -1,5 +1,4 @@
 /**
- * Static scan: React Router / route-table paths → screen candidates (extract-002).
  * Never invents DAG `requires` — callers decide step wiring.
  */
 import { readRelative, walkSourceFiles } from './walkSource.js';

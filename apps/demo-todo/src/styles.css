@@ -101,7 +101,7 @@ kbd {
   background: #fff;
 }
 
-/* Host chrome personalization example (ADR-007) — tokens also set via appearance prop */
+/* Demo host chrome — tokens also set via appearance prop */
 .demo-todo-coach {
   --uipilot-surface-muted: #ecfdf5;
 }

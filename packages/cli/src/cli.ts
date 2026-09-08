@@ -135,12 +135,12 @@ async function main(): Promise<void> {
 
 function usage(): void {
   console.log(`Usage:
-  Primary (ADR-006):
+  Primary:
   uipilotCLI map [dir] [--src <path>] [--llm]
   uipilotCLI tune [dir] [--fixture] [--batch=N] [--force=N] [--label]
   uipilotCLI prepare [dir] [--llm] [--fixture]
 
-  Saturation (ADR-005):
+  Saturation:
   uipilotCLI scenarios generate [dir] --batch=N [--fixture] [--force=N]
   uipilotCLI scenarios saturate [dir] [--batch=100] [--max-batches=N] [--fixture] [--force=N] [--label]
   Tip: npm may strip --flags; prefer --batch=100 / --force=10000 or UIPILOT_SATURATE_FIXTURE=1

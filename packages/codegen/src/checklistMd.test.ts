@@ -25,7 +25,7 @@ describe('checklistToMarkdown', () => {
     expect(md).toContain('- [x] **binders**: Binders reviewed');
   });
 
-  it('supports severity/text shape from VB extract', () => {
+  it('supports severity/text shape', () => {
     const md = checklistToMarkdown({
       items: [{ id: 'parity', severity: 'info', text: 'Compare corpus' }],
     });

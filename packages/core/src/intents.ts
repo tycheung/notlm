@@ -113,7 +113,6 @@ function matchMetaIntent(text: string, enabledMeta?: string[]): string | null {
 
 function matchStep(text: string, pack: IntentParsePack): StepId | null {
   const n = text.includes(' ') || text === text.toLowerCase() ? text : normalizeUtterance(text);
-  // Caller typically passes already-normalized text
   const haystack = normalizeUtterance(n);
   let best: { id: StepId; score: number } | null = null;
 

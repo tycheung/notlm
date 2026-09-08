@@ -2,7 +2,6 @@ function jsonBlock(label: string, value: unknown): string {
   return `### ${label}\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
 }
 
-/** Prompt: inventory + structured draft → pack JSON only. */
 export function buildPackAuthorPrompt(input: {
   inventory: unknown;
   structuredDraft: unknown;
@@ -29,7 +28,6 @@ export {
   buildSoftLabelPrompt,
 } from './saturation/generatePrompt.js';
 
-/** Prompt: current intents + scenarios (+ failures) → intents/corpus JSON only. */
 export function buildIntentTunePrompt(input: {
   currentIntents: unknown;
   scenarios: unknown;

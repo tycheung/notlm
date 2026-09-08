@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 describe('uipilotCLI init', () => {
-  it('creates ADR-002 tree from packs/_template', async () => {
+  it('creates pack tree from packs/_template', async () => {
     const root = mkdtempSync(join(tmpdir(), 'uipilot-init-'));
     temps.push(root);
     await cmdInit(root);

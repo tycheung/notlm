@@ -18,7 +18,6 @@ function bindersArrayToRecord(rows: BinderRow[]): Record<string, BinderPredicate
   return out;
 }
 
-/** Load pack JSON from packs/demo-todo/.uipilot (ADR-002 folder shape). */
 export function loadDemoTodoPack() {
   const manifest = manifestJson as { id: string };
   const flow = flowJson as FlowStepDef[];

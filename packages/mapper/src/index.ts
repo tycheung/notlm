@@ -1,10 +1,3 @@
-/**
- * DOM / HTML control inventory for pack authoring.
- *
- * - `crawlHtml` — parse HTML without Playwright (unit-test friendly)
- * - `crawlWithPlaywright` — optional; requires `playwright` peer install
- */
-
 export type {
   ControlInventory,
   CrawlHtmlOptions,

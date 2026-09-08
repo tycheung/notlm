@@ -4,17 +4,17 @@
 
 ```text
 host-app/
-  .uipilot/     → ALL config + scan/author learnings (JSON only)  [ADR-002]
+  .uipilot/     → ALL config + scan/author learnings (JSON only)
   src/…                    → getContext, data-guide-id, notifyStepCompleted
 
 npm: @uipilot/react  → UI Host (depends on core)
 npm: @uipilot/core   → pure TS runtime; loads/evaluates pack JSON
 CLI: mapper / extract / author  → write JSON into .uipilot/ only
-     primary façade: map | tune | prepare (ADR-006)
+     primary façade: map | tune | prepare
 npm: @uipilot/schema → JSON Schema for the folder format
 ```
 
-### Import rules (enforced later by `boot-003` / `ci`)
+### Import rules
 
 - `core` must not import `react`, `mapper`, `author`, or host app code.
 - `react` may import `core` only — **never** `author`.
@@ -27,7 +27,7 @@ npm: @uipilot/schema → JSON Schema for the folder format
 |------|------|
 | ~400 LOC / module | 1000 LOC / module (CI fail) |
 
-Prefer extract/split over growing god files (`dispatchUserUtterance` lesson from VB).
+Prefer extract/split over growing god files.
 
 ## Runtime data flow
 
@@ -40,13 +40,13 @@ User utterance / palette pick
   → host save → notifyStepCompleted → queue advance
 ```
 
-## Host folder (canonical — ADR-002)
+## Host folder
 
 ```text
 .uipilot/
   config.json
-  scenarios.json           # labeled utterances for intent tuning (ADR-001)
-  saturation/              # G5d / ADR-005 — candidates, novelty reports, batches
+  scenarios.json           # labeled utterances for intent tuning
+  saturation/              # candidates, novelty reports, batches
   inventory.json
   structured-draft.json
   checklist.json
@@ -64,7 +64,7 @@ User utterance / palette pick
 
 **Invariant:** scan / LLM assist / dag generate update **only** this tree (JSON). They do not emit application TypeScript learnings.
 
-## Binder DSL (sketch — locked in schema-* slices)
+## Binder DSL
 
 ```json
 {
@@ -85,11 +85,11 @@ Core evaluates these against `RuntimeContext.data` from the host’s `getContext
 Default attribute: `data-guide-id="<id>"` (set in `config.json` → `guideAttr`).  
 Spotlight and flash **only** query this contract.
 
-**UI-actions only (ADR-003):** `executeStep` resolves to path / modal / spotlight / prefill.
+**UI-actions only:** `executeStep` resolves to path / modal / spotlight / prefill.
 The coach must not import host `*API` clients or issue domain HTTP. Playwright demos
 **click** annotated controls.
 
-**Chrome personalization (ADR-007 / G10):** Hosts brand FAB/chat/palette via CSS variables
+**Chrome personalization:** Hosts brand FAB/chat/palette via CSS variables
 (`appearance` prop), stable `uipilot-*` classes, and optional `components` slots.
 Pack JSON does not store brand colors. Dispatch and guide-id coaching stay unchanged.
 

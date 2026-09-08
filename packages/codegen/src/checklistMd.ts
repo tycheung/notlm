@@ -1,5 +1,5 @@
 /**
- * Markdown export of checklist.json for PRs (annotate-002).
+ * Markdown export of checklist.json for PRs.
  * Docs / review aid only — never emits application TypeScript.
  */
 
@@ -25,7 +25,6 @@ function itemMeta(item: ChecklistItem): string {
   return [item.kind, item.severity].filter(Boolean).join(' · ');
 }
 
-/** Render checklist JSON (or bare item array) as GitHub-friendly markdown. */
 export function checklistToMarkdown(checklist: ChecklistJson | ChecklistItem[]): string {
   const items = Array.isArray(checklist) ? checklist : (checklist.items ?? []);
   const lines: string[] = ['# UiPilot checklist', ''];

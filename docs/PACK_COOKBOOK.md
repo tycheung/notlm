@@ -91,7 +91,7 @@ Host-only work (never put secrets or brand tokens in pack JSON):
 3. Implement `navigate(path)` so it finds that guide id and **clicks** (or focuses) it — same as a user.
 4. Expose completeness fields on `getContext().data` that binders read.
 5. On the save/confirm path that finishes a step, call `useUiPilot().notifyStepCompleted(stepId)` when you use the session queue.
-6. Keep chrome look in React (`appearance` / CSS) — not in pack JSON (ADR-007).
+6. Keep chrome look in React (`appearance` / CSS) — not in pack JSON.
 
 ---
 
@@ -325,9 +325,5 @@ CLI never auto-merges into `pack/` without an explicit accept path. That is inte
 | Doc | Role |
 |-----|------|
 | `ARCHITECTURE.md` | Bundle boundaries, folder contract |
-| `docs/adr/002-host-config-folder.md` | Why JSON-only under `.uipilot/` |
-| `docs/adr/003-ui-actions-only.md` | No host product API writes |
-| `docs/adr/006-cli-map-tune-prepare.md` | Operator CLI façade |
-| `docs/adr/007-host-chrome-personalization.md` | Branding without pack JSON |
 | `CONTRIBUTING.md` | Setup, `map` / `tune` / `prepare`, saturation |
 | `SECURITY.md` | Secrets, BYO LLM, production checklist |

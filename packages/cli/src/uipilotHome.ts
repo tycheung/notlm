@@ -17,7 +17,6 @@ export type UipilotHome = {
   home: string;
 };
 
-/** Resolve UiPilot home: `dir` or cwd; use existing `.uipilot` or its path. */
 export function resolveUipilotHome(dir?: string): UipilotHome {
   const projectRoot = resolve(dir ?? process.cwd());
   if (basenameIsUipilot(projectRoot)) {

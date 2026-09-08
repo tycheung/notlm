@@ -24,7 +24,6 @@ function basenameIsUipilot(p: string): boolean {
   return base === UIPILOT_DIRNAME;
 }
 
-/** Resolve project root + UiPilot home from a project dir or the `.uipilot` path itself. */
 export function resolveUipilotHomeDir(dir: string): { projectRoot: string; home: string } {
   const projectRoot = resolve(dir);
   if (basenameIsUipilot(projectRoot)) {
@@ -54,7 +53,6 @@ export function normalizeBindersMap(raw: unknown): Record<string, BinderPredicat
   return out;
 }
 
-/** Read `home/pack/*.json` into PackJsonInput (binders normalized to object map). */
 export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const pack = join(home, 'pack');
   const pieces: Record<string, unknown> = {};

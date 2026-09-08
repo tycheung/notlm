@@ -17,7 +17,6 @@ export type SoftLabelResult =
   | { ok: true; scenarios: SoftLabeledScenario[]; raw: unknown }
   | { ok: false; errors: string[]; checklist: string[] };
 
-/** LLM soft-labels candidates → draft scenarios (never merges pack/). */
 export async function softLabelCandidates(input: {
   provider: LlmProvider;
   candidates: Array<{ id?: string; utterance: string }>;

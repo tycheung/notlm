@@ -1,5 +1,5 @@
 /**
- * UI-actions only (ADR-003): coach never POSTs / never calls product APIs.
+ * Coach never POSTs or calls product APIs.
  * Host `navigate` clicks `[data-guide-id]` (path token === guide id).
  */
 export function clickGuideByPath(path: string): void {

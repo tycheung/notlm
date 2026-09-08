@@ -1,7 +1,6 @@
 /**
- * Combine guide-id / route / form static scans into one structured draft (extract-002/003/006).
- * Policy (extract-006): never invent non-empty `requires` unless `confidence: 'low'`
- * is set on that step. Prefer `requires: []`.
+ * Never invent non-empty `requires` unless `confidence: 'low'` is set on that step.
+ * Prefer `requires: []`.
  */
 import { scanForms, type FormHit } from './scanForms.js';
 import { scanGuideIdsInDir } from './scanGuideIds.js';
@@ -28,14 +27,12 @@ export type StructuredExtract = {
 
 export type RunStructuredExtractOptions = {
   /**
-   * If true, invent linear requires between auto steps.
-   * extract-006: each such step MUST carry `confidence: 'low'`.
+   * If true, invent linear requires between auto steps (each step gets `confidence: 'low'`).
    * Default false — prefer empty requires.
    */
   inventLinearRequires?: boolean;
 };
 
-/** Run all static extractors under `dir` and assemble a structured draft. */
 export function runStructuredExtract(
   dir: string,
   opts?: RunStructuredExtractOptions
@@ -98,7 +95,6 @@ function buildSteps(args: {
     return steps;
   }
 
-  // extract-006: invented edges only with confidence low.
   let prev: string | null = null;
   return steps.map((s) => {
     const requires = prev ? [prev] : [];
@@ -111,7 +107,7 @@ function buildSteps(args: {
   });
 }
 
-/** Assert extract-006: non-empty requires ⇒ confidence is low. */
+/** Non-empty requires ⇒ confidence is low. */
 export function assertRequiresPolicy(steps: StructuredStep[]): boolean {
   return steps.every(
     (s) => s.requires.length === 0 || s.confidence === 'low'

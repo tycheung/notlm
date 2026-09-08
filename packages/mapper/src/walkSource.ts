@@ -1,6 +1,3 @@
-/**
- * Shared recursive walk for static extractors.
- */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 

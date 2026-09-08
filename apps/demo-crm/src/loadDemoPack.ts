@@ -1,6 +1,5 @@
 import { loadPackFromJson } from '@uipilot/core';
 
-/** Inline pack — proves core/react portability without the todo pack. */
 export function loadDemoCrmPack() {
   return loadPackFromJson({
     manifest: { id: 'demo-crm' },

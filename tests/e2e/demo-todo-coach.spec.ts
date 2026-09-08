@@ -1,9 +1,5 @@
 import { expect, test, type Page, type Request } from '@playwright/test';
 
-/**
- * ui-003 / react-009 — coach mutates demo-todo state only via UI button clicks
- * (ADR-003), never via product `/api` fetches.
- */
 test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
   function assertNoProductApi(request: Request) {
     const url = request.url();
@@ -41,10 +37,8 @@ test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
     await openChat(page);
     await sendUtterance(page, 'create list');
 
-    // navigate → clickGuideByPath('guide-create-list') pressed Create list
     await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible();
 
-    // Optional second step: add item after list exists
     await sendUtterance(page, 'add item');
     await expect(page.getByRole('listitem').filter({ hasText: 'Milk' })).toBeVisible();
   });

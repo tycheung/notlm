@@ -1,4 +1,3 @@
-/** Unlabeled (or soft-labeled) utterance candidate from saturation. */
 export type ScenarioCandidate = {
   id: string;
   utterance: string;
@@ -28,7 +27,7 @@ export type PlateauConfig = {
   lexicalWeight: number;
   /**
    * No-lift hard stop: consecutive batches with lift below noLiftEpsilon.
-   * Normative: 5 passes of 100 (ADR-005) — stop even if wording still looks diverse.
+   * Normative: 5 consecutive passes of 100 — stop even if wording still looks diverse.
    */
   noLiftPasses: number;
   /** Recommended / default batch size for the no-lift rule (100). */

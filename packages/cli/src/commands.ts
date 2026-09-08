@@ -705,7 +705,6 @@ export async function cmdPackAccept(draftId: string, dir?: string): Promise<void
     forced: force,
   });
 
-  // Mark accepted
   writeJsonFile(metaPath, { ...meta, checked: true, acceptedAt: new Date().toISOString() });
 
   console.log(`Accepted ${draftId} → ${pack} (backup: ${backupDir})`);
@@ -729,7 +728,6 @@ function appendChecklist(home: string, items: Array<Record<string, unknown>>): v
   writeJsonFile(path, { items: list });
 }
 
-/** First positional arg that is not a flag or a flag value. */
 function positionalDir(args: string[], flagNames: Set<string>): string | undefined {
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
