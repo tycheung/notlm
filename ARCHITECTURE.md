@@ -124,6 +124,18 @@ corpus-trained tiny hashed-ngram ranker:
 `onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
 back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
+## Conversational maturity (G11 / ADR-008)
+
+Runtime stays deterministic. LLM-*feel* comes from:
+
+- **Repair banks** (`repair.*` in `replies.json`) for blocked / ambiguous / unknown / low-confidence
+- **Confidence tiers** on rule parse (`high` / `mid` / `low`) — low asks before acting
+- **Discourse** anaphora + light repair (“again”, “change the name”, “undo that”)
+- **Gate policy** — chat launches honor slots/confirm; packed/queue/`executeStep` resume skip; proactive Yes skips confirm (ADR-008)
+- **Telemetry** — optional `onCoachEvent` for hosts (intent/pending/blocked/launched; no secrets)
+- **Optional ranker** — demo-todo may enable JSON/ORT hybrid via `features.onnxRanker` / env
+
 ## Voice
 
 `packages/react` Web Speech wrapper only. Product policy: Chrome / Edge / Safari; Firefox type-only; no cloud STT.
+Corpus includes truncated-STT utterances; Playwright Firefox project is type-only smoke.

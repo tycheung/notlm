@@ -418,6 +418,17 @@ Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.
 
 ---
 
+## Gate policy (slots / confirm)
+
+See ADR-008. Chat launches honor `intents.slots` / `confirm`. Packed “A then B”
+and queue auto-resume skip those gates. Proactive **Yes** skips confirm (already
+affirmed); a typed step alias after a proactive offer still runs gates.
+
+## STT-truncated corpus
+
+Add truncated utterances to `.uipilot/scenarios.json` (and optional `pack/corpus.json`)
+so `uipilotCLI intents check` gates fuzzy / prefix matches used by Web Speech.
+
 ## Related docs
 
 | Doc | Role |
