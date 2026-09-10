@@ -136,6 +136,9 @@ Runtime stays deterministic. LLM-*feel* comes from:
 - **Optional ranker** — demo-todo may enable JSON/ORT hybrid via `features.onnxRanker` / env
 - **Queue algebra** — head-stable merge, rewrite (clear / skip / cancel X / jump Y), packed prereq expansion
 - **Coach-create** — `controls[].coachCreate` (+ `openModal`) re-opens forms on re-ask; slot elicit + multi-slot salvage
+- **Context-tree NLU** — authoring auto-detects muddy alias clashes and splits saturation
+  batches into reduced focus sets (`.uipilot/saturation/context-tree.json`); runtime
+  shortlists via pathname + availability (`shortlistStepIds` / `filterCandidatesByContext`)
 
 ## SPA interactables (coach target taxonomy)
 

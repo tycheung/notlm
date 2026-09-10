@@ -190,8 +190,8 @@ function usage(): void {
   uipilotCLI prepare [dir] [--llm] [--fixture]
 
   Saturation:
-  uipilotCLI scenarios generate [dir] --batch=N [--fixture] [--force=N] [--mode=flow|user-ask] [--blurb="..."]
-  uipilotCLI scenarios saturate [dir] [--batch=100] [--max-batches=N] [--fixture] [--force=N] [--mode=user-ask] [--blurb="..."] [--label]
+  uipilotCLI scenarios generate [dir] --batch=N [--fixture] [--force=N] [--mode=flow|user-ask] [--blurb="..."] [--no-split-context]
+  uipilotCLI scenarios saturate [dir] [--batch=100] [--max-batches=N] [--fixture] [--force=N] [--mode=user-ask] [--blurb="..."] [--label] [--no-split-context]
   uipilotCLI scenarios ask [dir] --force=5000..10000 --blurb="..." [--label-pool] [--fixture]
   uipilotCLI scenarios label-pool [dir] [--chunk=50] [--fixture]
   Tip: npm may strip --flags; prefer --batch=100 / --force=10000 or UIPILOT_SATURATE_FIXTURE=1

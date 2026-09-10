@@ -1,5 +1,6 @@
 import { pickReply } from './replies.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
+import { filterCandidatesByContext } from './candidateTree.js';
 import { pathMatchesStep } from './pageContext.js';
 import type { LoadedPack, SessionSlots, StepId, StepStatus } from './types.js';
 
@@ -31,19 +32,22 @@ export function resolveKeywordCollision(
 ): StepId | null {
   if (candidates.length <= 1) return candidates[0] ?? null;
 
-  const pathHits = candidates.filter((id) => pathMatchesStep(ctx.pathname, id));
+  const narrowed = filterCandidatesByContext(candidates, pack, ctx, session);
+  if (narrowed.length === 1) return narrowed[0] ?? null;
+
+  const pathHits = narrowed.filter((id) => pathMatchesStep(ctx.pathname, id));
   if (pathHits.length === 1) return pathHits[0] ?? null;
 
   const statuses = evaluateFlowStatuses(pack, ctx, session.stale);
   const byId = new Map(statuses.map((s) => [s.id, s]));
 
-  const availableIncomplete = candidates.filter((id) => {
+  const availableIncomplete = narrowed.filter((id) => {
     const s = byId.get(id);
     return Boolean(s?.available && !s.complete);
   });
   if (availableIncomplete.length === 1) return availableIncomplete[0] ?? null;
 
-  const available = candidates.filter((id) => byId.get(id)?.available);
+  const available = narrowed.filter((id) => byId.get(id)?.available);
   if (available.length === 1) return available[0] ?? null;
 
   return null;

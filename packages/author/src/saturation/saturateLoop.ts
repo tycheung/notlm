@@ -7,6 +7,11 @@ import {
   updatePlateauState,
 } from './novelty.js';
 import { parseSignature } from './parseSignatureNovelty.js';
+import {
+  buildContextTreePlan,
+  packSliceForMode,
+  pickContextMode,
+} from './contextTree.js';
 import type {
   NoveltyReport,
   PlateauConfig,
@@ -201,6 +206,7 @@ export function llmBatchGenerator(input: {
   structuredDraft?: unknown;
   productBlurb?: string;
   mode?: import('./generatePrompt.js').ScenarioGenerateMode;
+  contextHint?: import('./generatePrompt.js').ContextGenerateHint;
 }): BatchGenerator {
   return async (ctx) => {
     const result = await generateScenarioCandidates({
@@ -213,10 +219,73 @@ export function llmBatchGenerator(input: {
       priorUtterances: ctx.priorUtterances,
       productBlurb: input.productBlurb,
       mode: input.mode,
+      contextHint: input.contextHint,
     });
     if (!result.ok) {
       throw new Error(result.errors.join('; '));
     }
     return result.candidates;
+  };
+}
+
+/**
+ * When the pack is muddy, rotate context-tree modes across batches so each
+ * LLM batch only sees a reduced candidate set (auto clash-split).
+ */
+export function splitContextBatchGenerator(input: {
+  pack: IntentParsePack;
+  provider: LlmProvider;
+  inventory?: unknown;
+  structuredDraft?: unknown;
+  productBlurb?: string;
+  /** When false, behave like a normal flow generator. */
+  enabled?: boolean;
+}): { generateBatch: BatchGenerator; plan: import('./contextTree.js').ContextTreePlan } {
+  const plan = buildContextTreePlan(input.pack);
+  const enabled = input.enabled !== false && plan.muddy;
+
+  if (!enabled) {
+    return {
+      plan,
+      generateBatch: llmBatchGenerator({
+        provider: input.provider,
+        flowSteps: input.pack.steps,
+        intents: { aliases: input.pack.aliases },
+        inventory: input.inventory,
+        structuredDraft: input.structuredDraft,
+        productBlurb: input.productBlurb,
+        mode: 'flow',
+      }),
+    };
+  }
+
+  return {
+    plan,
+    generateBatch: async (ctx) => {
+      const mode = pickContextMode(plan, ctx.batchIndex);
+      const slice = packSliceForMode(input.pack, mode);
+      const result = await generateScenarioCandidates({
+        provider: input.provider,
+        batchSize: ctx.batchSize,
+        flowSteps: slice.flowSteps,
+        intents: slice.intents,
+        inventory: input.inventory,
+        structuredDraft: input.structuredDraft,
+        priorUtterances: ctx.priorUtterances,
+        productBlurb: input.productBlurb,
+        mode: 'context',
+        contextHint: {
+          modeId: mode.id,
+          focusStepIds: mode.focusStepIds,
+          pathnameHints: mode.pathnameHints,
+          triggerPhrases: mode.triggerPhrases,
+          reason: mode.reason,
+        },
+      });
+      if (!result.ok) {
+        throw new Error(result.errors.join('; '));
+      }
+      return result.candidates;
+    },
   };
 }

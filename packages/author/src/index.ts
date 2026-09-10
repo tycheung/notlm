@@ -74,6 +74,7 @@ export {
   buildScenarioGeneratePrompt,
   buildSoftLabelPrompt,
   type ScenarioGenerateMode,
+  type ContextGenerateHint,
 } from './saturation/generatePrompt.js';
 export {
   generateScenarioCandidates,
@@ -91,11 +92,20 @@ export {
 } from './saturation/failureMining.js';
 export {
   llmBatchGenerator,
+  splitContextBatchGenerator,
   runHardAugment,
   runSaturationLoop,
   type BatchGenerator,
   type SaturateLoopResult,
 } from './saturation/saturateLoop.js';
+export {
+  buildContextTreePlan,
+  packSliceForMode,
+  pickContextMode,
+  type ContextTreeMode,
+  type ContextTreePlan,
+} from './saturation/contextTree.js';
+export { detectClashes, clashDensity, type ClashGroup } from './detectClashes.js';
 
 export { draftConversationalCopy } from './draftTalk.js';
 export type { DraftTalkResult } from './draftTalk.js';

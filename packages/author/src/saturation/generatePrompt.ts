@@ -2,7 +2,15 @@ function jsonBlock(label: string, value: unknown): string {
   return `### ${label}\n\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``;
 }
 
-export type ScenarioGenerateMode = 'flow' | 'user-ask';
+export type ScenarioGenerateMode = 'flow' | 'user-ask' | 'context';
+
+export type ContextGenerateHint = {
+  modeId: string;
+  focusStepIds: string[];
+  pathnameHints: string[];
+  triggerPhrases: string[];
+  reason: string;
+};
 
 export function buildScenarioGeneratePrompt(input: {
   batchSize: number;
@@ -13,11 +21,14 @@ export function buildScenarioGeneratePrompt(input: {
   priorUtterances: string[];
   /** 30-second product description — drives naturalistic user questions. */
   productBlurb?: string;
-  /** `user-ask` ignores DAG bias; models what users ask from the blurb alone. */
+  /** `user-ask` ignores DAG bias; `context` uses a reduced clash-split tree. */
   mode?: ScenarioGenerateMode;
+  /** When mode is context (or flow with split), narrow the leaf classifier set. */
+  contextHint?: ContextGenerateHint;
 }): string {
   const mode = input.mode ?? 'flow';
   const blurb = input.productBlurb?.trim();
+  const ctx = input.contextHint;
 
   if (mode === 'user-ask') {
     const parts = [
@@ -36,13 +47,43 @@ export function buildScenarioGeneratePrompt(input: {
           'Generic web app — invent plausible user questions for a productivity SPA.'
       ),
     ];
-    // Optional context only as background — model must still prefer blurb-led questions.
     if (input.flowSteps !== undefined) {
       parts.push(
         '',
         'Optional background (do not bias toward checklist phrasing):',
         jsonBlock('flowSteps (background only)', input.flowSteps)
       );
+    }
+    const prior = input.priorUtterances.slice(-80);
+    parts.push('', jsonBlock('priorUtterances (sample)', prior));
+    return parts.join('\n');
+  }
+
+  if (mode === 'context' || ctx) {
+    const parts = [
+      'You generate diverse natural-language prompts for a UI coach.',
+      'CONTEXT-TREE MODE: only the focus steps below are in scope for this batch.',
+      'Disambiguate soft/shared verbs using the pathnameHints and longer distinctive phrases.',
+      `Avoid bare shared triggers (${(ctx?.triggerPhrases ?? []).slice(0, 8).join(', ') || 'create/add/open'}) unless the utterance clearly picks ONE focus step.`,
+      `Propose exactly ${input.batchSize} candidate utterances (or as close as possible).`,
+      'Cover: clean aliases, slang, typos, truncated STT, negatives that should NOT hit focus steps.',
+      'Avoid near-duplicates of priorUtterances.',
+      'Respond with JSON only: { "candidates": [ { "id": "c1", "utterance": "..." }, ... ] }',
+      'Do not invent secrets or API keys.',
+      '',
+      jsonBlock('contextMode', {
+        id: ctx?.modeId ?? 'context',
+        reason: ctx?.reason ?? 'context-tree split',
+        focusStepIds: ctx?.focusStepIds ?? [],
+        pathnameHints: ctx?.pathnameHints ?? [],
+        triggerPhrases: ctx?.triggerPhrases ?? [],
+      }),
+      '',
+      jsonBlock('flowSteps (focus only)', input.flowSteps),
+    ];
+    if (blurb) parts.push('', jsonBlock('productBlurb', blurb));
+    if (input.intents !== undefined) {
+      parts.push('', jsonBlock('intents (focus aliases only)', input.intents));
     }
     const prior = input.priorUtterances.slice(-80);
     parts.push('', jsonBlock('priorUtterances (sample)', prior));

@@ -2,13 +2,14 @@ import {
   checkIntents,
   createProviderFromEnv,
   faqDraftFromSoftLabels,
-  generateScenarioCandidates,
   llmBatchGenerator,
   mineIntentFailures,
   runHardAugment,
   runSaturationLoop,
   scoreBatchAgainstPrior,
   softLabelCandidates,
+  splitContextBatchGenerator,
+  buildContextTreePlan,
   type ScenarioCandidate,
 } from '@uipilot/author';
 import {
@@ -74,17 +75,43 @@ export async function cmdScenariosGenerate(args: string[]): Promise<void> {
     : undefined;
 
   const fixtureSeed = mode === 'user-ask' ? USER_ASK_FIXTURE_SEED : FIXTURE_SEED;
-  const generateBatch = useFixture
-    ? fixtureBatchGenerator(fixtureSeed)
-    : llmBatchGenerator({
-        provider: createProviderFromEnv(),
-        flowSteps: files.flow,
-        intents: files.intents,
-        inventory,
-        structuredDraft,
-        productBlurb,
-        mode,
-      });
+  const wantSplit = mode === 'flow' && !hasFlag(args, '--no-split-context');
+  const treePlan = buildContextTreePlan(pack);
+  let generateBatch;
+  let splitNote = 'off';
+  if (useFixture) {
+    generateBatch = fixtureBatchGenerator(fixtureSeed);
+    splitNote = 'fixture';
+  } else if (wantSplit) {
+    const split = splitContextBatchGenerator({
+      pack,
+      provider: createProviderFromEnv(),
+      inventory,
+      structuredDraft,
+      productBlurb,
+      enabled: true,
+    });
+    generateBatch = split.generateBatch;
+    splitNote = split.plan.muddy
+      ? `auto(${split.plan.modes.length} modes, ${split.plan.sharedPhraseCount} shared phrases)`
+      : 'auto(clean)';
+  } else {
+    generateBatch = llmBatchGenerator({
+      provider: createProviderFromEnv(),
+      flowSteps: files.flow,
+      intents: files.intents,
+      inventory,
+      structuredDraft,
+      productBlurb,
+      mode,
+    });
+  }
+  ensureDir(saturationDir(home));
+  writeJsonFile(join(saturationDir(home), 'context-tree.json'), {
+    updatedAt: new Date().toISOString(),
+    ...treePlan,
+    splitNote,
+  });
 
   if (forceCount !== undefined) {
     const result = await runHardAugment({
@@ -100,7 +127,7 @@ export async function cmdScenariosGenerate(args: string[]): Promise<void> {
       productBlurb: productBlurb ?? null,
     });
     console.log(
-      `Hard augment --force=${forceCount} mode=${mode}: pool=${result.candidates.length} (stop=${result.stopReason}) → ${saturationDir(home)}`
+      `Hard augment --force=${forceCount} mode=${mode} split=${splitNote}: pool=${result.candidates.length} (stop=${result.stopReason}) → ${saturationDir(home)}`
     );
     return;
   }
@@ -109,35 +136,22 @@ export async function cmdScenariosGenerate(args: string[]): Promise<void> {
   const priorSignatures = prior.map((c) => c.parseSignature ?? 'null');
 
   let raw: Array<{ id?: string; utterance: string }>;
-  if (useFixture) {
-    raw = [...fixtureSeed]
-      .slice(0, Math.max(1, batchSize))
-      .map((utterance, i) => ({ id: `fix-${i}`, utterance }));
-    while (raw.length < batchSize) {
-      const i = raw.length;
-      raw.push({
-        id: `fix-pad-${i}`,
-        utterance: `fixture pad utterance ${i} unique ${stamp()}`,
-      });
-    }
-  } else {
-    const gen = await generateScenarioCandidates({
-      provider: createProviderFromEnv(),
-      batchSize,
-      flowSteps: files.flow,
-      intents: files.intents,
-      inventory,
-      structuredDraft,
+  try {
+    raw = await generateBatch({
+      batchIndex: 0,
+      batchSize: Math.max(1, batchSize),
       priorUtterances,
-      productBlurb,
-      mode,
     });
-    if (!gen.ok) {
-      console.error(gen.errors.join('\n'));
-      process.exitCode = 1;
-      return;
-    }
-    raw = gen.candidates;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(msg);
+    process.exitCode = 1;
+    return;
+  }
+  if (raw.length === 0) {
+    console.error('No candidates generated');
+    process.exitCode = 1;
+    return;
   }
 
   const batchId = `batch-${stamp()}`;
@@ -154,6 +168,7 @@ export async function cmdScenariosGenerate(args: string[]): Promise<void> {
     generatedAt: new Date().toISOString(),
     mode: useFixture ? `fixture:${mode}` : mode,
     productBlurb: productBlurb ?? null,
+    splitNote,
     batches: [summary],
     plateau: false,
     priorPoolSize: prior.length,
@@ -161,7 +176,8 @@ export async function cmdScenariosGenerate(args: string[]): Promise<void> {
   };
   writeSaturationArtifacts(home, candidates, report, batchId, scored);
   console.log(
-    `Generated ${scored.length} candidates mode=${mode} (lift=${summary.lift.toFixed(3)}, incremental=${summary.incrementalNovelty.toFixed(3)}) → ${saturationDir(home)}`
+    `Generated ${scored.length} candidates mode=${mode} split=${splitNote} ` +
+      `(lift=${summary.lift.toFixed(3)}, incremental=${summary.incrementalNovelty.toFixed(3)}) → ${saturationDir(home)}`
   );
 }
 
@@ -254,17 +270,43 @@ export async function cmdScenariosSaturate(args: string[]): Promise<void> {
     : undefined;
 
   const fixtureSeed = mode === 'user-ask' ? USER_ASK_FIXTURE_SEED : FIXTURE_SEED;
-  const generateBatch = useFixture
-    ? fixtureBatchGenerator(fixtureSeed)
-    : llmBatchGenerator({
-        provider: createProviderFromEnv(),
-        flowSteps: files.flow,
-        intents: files.intents,
-        inventory,
-        structuredDraft,
-        productBlurb,
-        mode,
-      });
+  const wantSplit = mode === 'flow' && !hasFlag(args, '--no-split-context');
+  const treePlan = buildContextTreePlan(pack);
+  let generateBatch;
+  let splitNote = 'off';
+  if (useFixture) {
+    generateBatch = fixtureBatchGenerator(fixtureSeed);
+    splitNote = 'fixture';
+  } else if (wantSplit) {
+    const split = splitContextBatchGenerator({
+      pack,
+      provider: createProviderFromEnv(),
+      inventory,
+      structuredDraft,
+      productBlurb,
+      enabled: true,
+    });
+    generateBatch = split.generateBatch;
+    splitNote = split.plan.muddy
+      ? `auto(${split.plan.modes.length} modes, ${split.plan.sharedPhraseCount} shared phrases)`
+      : 'auto(clean)';
+  } else {
+    generateBatch = llmBatchGenerator({
+      provider: createProviderFromEnv(),
+      flowSteps: files.flow,
+      intents: files.intents,
+      inventory,
+      structuredDraft,
+      productBlurb,
+      mode,
+    });
+  }
+  ensureDir(saturationDir(home));
+  writeJsonFile(join(saturationDir(home), 'context-tree.json'), {
+    updatedAt: new Date().toISOString(),
+    ...treePlan,
+    splitNote,
+  });
 
   const result =
     forceCount !== undefined
@@ -290,7 +332,7 @@ export async function cmdScenariosSaturate(args: string[]): Promise<void> {
   });
   console.log(
     `Saturate: ${result.batchesRun} batches, pool=${result.candidates.length}, mode=${mode}, ` +
-      `stop=${result.stopReason}, plateau=${result.plateau}, noLift=${result.noLiftStop}`
+      `split=${splitNote}, stop=${result.stopReason}, plateau=${result.plateau}, noLift=${result.noLiftStop}`
   );
   for (const b of result.report.batches) {
     console.log(

@@ -4,6 +4,9 @@ import type { ParseSignatureBucket } from './types.js';
 export function parseSignatureFromResult(result: ParseUtteranceResult): ParseSignatureBucket {
   if (result.goBack) return 'go_back';
   if (result.isCorrection) return 'correction';
+  if (result.rawIntent === 'ambiguous' || (result.candidates && result.candidates.length >= 2)) {
+    return 'clash';
+  }
   if (result.stepId) return `step:${result.stepId}`;
   if (result.rawIntent && result.rawIntent !== 'unknown') {
     return `meta:${result.rawIntent}`;

@@ -27,10 +27,15 @@ export function pathMatchesStep(pathname: string, stepId: StepId): boolean {
 export function biasStepByPageContext(
   stepId: StepId | null,
   pathname: string,
-  steps: FlowStepDef[]
+  steps: FlowStepDef[],
+  candidates?: StepId[]
 ): StepId | null {
   if (stepId) return stepId;
-  for (const step of steps) {
+  const pool =
+    candidates && candidates.length > 0
+      ? steps.filter((s) => candidates.includes(s.id))
+      : steps;
+  for (const step of pool) {
     if (pathMatchesStep(pathname, step.id)) return step.id;
   }
   return null;

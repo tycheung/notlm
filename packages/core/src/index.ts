@@ -8,6 +8,7 @@ export * from './intents.js';
 export * from './packUtterance.js';
 export * from './searchNav.js';
 export * from './pageContext.js';
+export * from './candidateTree.js';
 export * from './queueAdvance.js';
 export * from './glossary.js';
 export * from './entityLookup.js';
