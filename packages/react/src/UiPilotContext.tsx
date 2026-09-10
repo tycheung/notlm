@@ -89,6 +89,10 @@ export type UiPilotContextValue = {
   checklistOpen: boolean;
   spotlight: SpotlightState;
   handleUserUtterance: (text: string) => void;
+  pushAssistant: (
+    text: string,
+    opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
+  ) => void;
   executeStep: (stepId: StepId, opts?: ExecuteStepOpts) => void;
   notifyStepCompleted: (stepId: StepId) => void;
   setPanelOpen: (open: boolean) => void;
@@ -451,6 +455,7 @@ export function UiPilotProvider({
       checklistOpen,
       spotlight,
       handleUserUtterance,
+      pushAssistant,
       executeStep,
       notifyStepCompleted,
       setPanelOpen,
@@ -469,6 +474,7 @@ export function UiPilotProvider({
       features,
       getContext,
       handleUserUtterance,
+      pushAssistant,
       hostRootClassName,
       hostRootStyle,
       messages,

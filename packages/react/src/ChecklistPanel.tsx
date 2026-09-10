@@ -38,10 +38,10 @@ export function ChecklistPanel() {
       <div
         className="uipilot-checklist-panel"
         role="dialog"
-        aria-label="Checklist"
+        aria-label="Event checklist"
       >
         <div className="uipilot-checklist-header">
-          <strong>Checklist</strong>
+          <strong>Event checklist</strong>
           <button
             type="button"
             className="uipilot-checklist-close"

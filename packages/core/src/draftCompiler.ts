@@ -43,10 +43,11 @@ export function runDraftCompiler(opts: {
   if (!compiled) {
     return { handled: false, session };
   }
-  const next = patchStepSlots(session, stepId, {
-    ...compiled.draft,
-    ...(draftKey ? { [draftKey]: compiled.draft } : {}),
-  });
+  const bag: SlotBag = { ...compiled.draft };
+  if (draftKey && bag[draftKey] === undefined) {
+    bag[draftKey] = compiled.draft;
+  }
+  const next = patchStepSlots(session, stepId, bag);
   const missing = compiler.listMissing(compiled.draft);
   return {
     handled: true,
