@@ -6,6 +6,7 @@ import { handlePendingUtterance } from './dispatchTalk.js';
 import { resolveGoBackStep, stepTitle } from './dispatchResolve.js';
 import { pickReply } from './replies.js';
 import { goBackToStep } from './slots.js';
+import { runDraftCompiler } from './draftCompiler.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import { dispatchParsed } from './dispatchParsed.js';
@@ -23,6 +24,47 @@ function trackSession(deps: DispatchDeps): DispatchDeps {
     },
   };
   return tracked;
+}
+
+function tryDraftCompilers(live: DispatchDeps): boolean {
+  if (!live.draftCompilers) return false;
+  const stepId =
+    live.session.activeStep ??
+    live.session.actionQueue[0]?.stepId ??
+    null;
+  const candidates = new Set<string>();
+  if (stepId) candidates.add(stepId);
+  for (const step of live.pack.steps) {
+    const nav = live.pack.resolveNav(step.id, live.ctx);
+    if (nav?.compilerId) candidates.add(step.id);
+  }
+  for (const id of candidates) {
+    const nav = live.pack.resolveNav(id, live.ctx);
+    const run = runDraftCompiler({
+      text: live.text,
+      stepId: id,
+      compilerId: nav?.compilerId,
+      draftKey: nav?.draftKey,
+      compilers: live.draftCompilers,
+      session: live.session,
+    });
+    if (!run.handled) continue;
+    live.setSession(() => run.session);
+    if (run.summary) live.pushAssistant(run.summary);
+    if (run.missing && run.missing.length > 0) {
+      live.pushAssistant(`Still need: ${run.missing.map((m) => m.label).join(', ')}.`);
+      live.executeStep(id, { prefill: run.draft, skipCoach: true, coachCreate: true });
+      return true;
+    }
+    if (run.finishRequested && run.draftKey && run.draft) {
+      void live.onApplyDraft?.(run.draftKey, run.draft);
+      live.pushAssistant('Applying your draft now.');
+      return true;
+    }
+    live.executeStep(id, { prefill: run.draft, skipCoach: true, coachCreate: true });
+    return true;
+  }
+  return false;
 }
 
 export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> {
@@ -70,6 +112,8 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     }
     return;
   }
+
+  if (tryDraftCompilers(live)) return;
 
   const discourse = resolveDiscourse(trimmed, live.session.discourse);
   if (discourse.kind === 'undo') {
