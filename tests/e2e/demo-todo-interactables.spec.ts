@@ -14,7 +14,7 @@ test.describe('@guide-nlu demo-todo interactables', () => {
     await expect(page.locator('[data-guide-id="guide-upload"]')).toBeVisible();
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(
-      dialog.getByText(/won.?t fill that automatically|Select a file yourself/i)
+      dialog.getByText(/Select a file yourself|won.?t fill that automatically|won.?t upload/i).first()
     ).toBeVisible();
   });
 

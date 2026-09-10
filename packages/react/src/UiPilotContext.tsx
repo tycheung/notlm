@@ -231,8 +231,14 @@ export function UiPilotProvider({
       const skipCoach =
         Boolean(opts?.skipCoach) || coachCreate || Boolean(nav.openModal);
       const roleCopy = coachCopyForRole(nav, stepId);
-      if (!skipCoach && nav.coachMessage) pushAssistant(nav.coachMessage);
-      else if (!skipCoach && roleCopy) pushAssistant(roleCopy);
+      let coached = false;
+      if (!skipCoach && nav.coachMessage) {
+        pushAssistant(nav.coachMessage);
+        coached = true;
+      } else if (!skipCoach && roleCopy) {
+        pushAssistant(roleCopy);
+        coached = true;
+      }
       if (!coachCreate && nav.spotlight && features.spotlight !== false) {
         showSpotlight(nav.spotlight, nav.coachMessage ?? roleCopy ?? `Focus: ${stepId}`);
       }
@@ -264,9 +270,10 @@ export function UiPilotProvider({
       } else if (coachCreate && nav.openModal) {
         // Re-open path: brief coach nudge when form has no userFill list.
         pushAssistant('Opening the form — fill what’s needed, then save.');
-      } else if (spotlightOnly && nav.spotlight) {
+      } else if (spotlightOnly && nav.spotlight && !coached) {
         pushAssistant(
-          roleCopy ??
+          nav.coachMessage ??
+            roleCopy ??
             'Use the highlighted control yourself — I won’t fill that automatically.'
         );
       }
