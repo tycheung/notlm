@@ -19,6 +19,8 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
       return {
         path: control.path,
         openModal: control.openModal,
+        openSurface: control.openSurface,
+        surfaceStep: control.surfaceStep,
         spotlight: control.spotlight,
         coachMessage: control.coachMessage,
         prefill: control.prefill,
@@ -29,7 +31,8 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
         beforeOpen: control.beforeOpen,
         openMenu: control.openMenu,
         confirmDialog: control.confirmDialog,
-        spotlightOnly: control.spotlightOnly,
+        spotlightOnly: control.spotlightOnly ?? control.instructOnly,
+        instructOnly: control.instructOnly,
         wizardId: control.wizardId,
         wizardPage: control.wizardPage,
       };

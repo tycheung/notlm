@@ -43,6 +43,13 @@ export type NavResolve = {
   path: string;
   search?: string;
   openModal?: string;
+  /**
+   * Host-defined non-modal surface key (drawer, wizard, upload panel).
+   * Hosts bridge via `openSurface` on UiPilotProvider.
+   */
+  openSurface?: string;
+  /** Optional step id associated with the openSurface request. */
+  surfaceStep?: string;
   spotlight?: string;
   coachMessage?: string;
   prefill?: SlotBag;
@@ -64,6 +71,11 @@ export type NavResolve = {
   confirmDialog?: string;
   /** Never auto-fill (file upload / ambiguous combobox). */
   spotlightOnly?: boolean;
+  /**
+   * Instruct-only: spotlight / message the user; never auto-submit uploads
+   * or pick ambiguous combobox values. Implies spotlight-only behavior.
+   */
+  instructOnly?: boolean;
   wizardId?: string;
   wizardPage?: number;
 };
@@ -258,6 +270,8 @@ export type ControlDef = {
   stepId: StepId;
   path?: string;
   openModal?: string;
+  openSurface?: string;
+  surfaceStep?: string;
   spotlight?: string;
   coachMessage?: string;
   role?: ControlRole;
@@ -271,6 +285,7 @@ export type ControlDef = {
   openMenu?: string;
   confirmDialog?: string;
   spotlightOnly?: boolean;
+  instructOnly?: boolean;
   wizardId?: string;
   wizardPage?: number;
 };

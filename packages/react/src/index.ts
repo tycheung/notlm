@@ -52,8 +52,10 @@ export {
   type UiPilotProviderProps,
   type ExecuteStepOpts,
   type OpenModalFn,
+  type OpenSurfaceFn,
 } from './UiPilotContext.js';
 export { useGuideModal } from './useGuideModal.js';
+export { useGuideSurfaceBridge } from './useGuideSurface.js';
 export { CommandPalette } from './CommandPalette.js';
 export { UiPilotFab } from './UiPilotFab.js';
 export { SpotlightOverlay } from './SpotlightOverlay.js';

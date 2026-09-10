@@ -11,7 +11,11 @@
       "upgrade",
       "renew",
       "payment",
-      "pay ment"
+      "pay ment",
+      "shopping cart",
+      "open the shopping cart",
+      "open cart",
+      "cart drawer"
     ],
     "bowling_center": [
       "bowling center",
@@ -86,6 +90,7 @@
     "side_actions": [
       "side action",
       "side actions",
+      "side act",
       "sideaction",
       "side-action",
       "sa pot",

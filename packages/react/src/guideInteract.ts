@@ -24,7 +24,7 @@ export function runBeforeOpen(nav: NavResolve): number {
 }
 
 export function isSpotlightOnly(nav: NavResolve): boolean {
-  if (nav.spotlightOnly) return true;
+  if (nav.spotlightOnly || nav.instructOnly) return true;
   return nav.role === 'upload' || nav.role === 'combobox';
 }
 

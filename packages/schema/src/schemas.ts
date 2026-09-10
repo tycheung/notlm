@@ -87,6 +87,8 @@ export const controlsSchema = {
       stepId: { type: 'string' },
       path: { type: 'string' },
       openModal: { type: 'string' },
+      openSurface: { type: 'string' },
+      surfaceStep: { type: 'string' },
       spotlight: { type: 'string' },
       coachMessage: { type: 'string' },
       role: {
@@ -113,6 +115,7 @@ export const controlsSchema = {
       openMenu: { type: 'string', minLength: 1 },
       confirmDialog: { type: 'string', minLength: 1 },
       spotlightOnly: { type: 'boolean' },
+      instructOnly: { type: 'boolean' },
       wizardId: { type: 'string', minLength: 1 },
       wizardPage: { type: 'integer', minimum: 0 },
     },

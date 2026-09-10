@@ -45,6 +45,8 @@ import { useSpotlightController, type SpotlightState } from './useSpotlightContr
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
 /** Host opens a pack-declared modal key (UI-actions only — no product APIs). */
 export type OpenModalFn = (modalKey: string) => void;
+/** Host opens a pack-declared surface key (drawer / upload / wizard). */
+export type OpenSurfaceFn = (surfaceKey: string, surfaceStep?: string) => void;
 
 export type ExecuteStepOpts = {
   prefill?: SlotBag;
@@ -114,9 +116,16 @@ export type UiPilotProviderProps = {
   navigate: NavigateFn;
   /** Optional: open host modal by key from controls.json `openModal`. */
   openModal?: OpenModalFn;
+  /** Optional: open host surface by key from controls.json `openSurface`. */
+  openSurface?: OpenSurfaceFn;
   features?: AssistantFeatures;
   /** Optional hybrid / ONNX ranker parser (feature-flagged by host). */
   parseUtteranceFn?: ParseUtteranceFn;
+  /**
+   * Host adapter hook (format NLU, entity open, …).
+   * Return true to skip core dispatch for this utterance.
+   */
+  tryHandleUtterance?: (text: string) => boolean | Promise<boolean>;
   /** Optional structured coach telemetry (no secrets). */
   onCoachEvent?: (event: CoachEvent) => void;
   children: ReactNode;
@@ -127,8 +136,10 @@ export function UiPilotProvider({
   getContext,
   navigate,
   openModal,
+  openSurface,
   features: featuresProp,
   parseUtteranceFn,
+  tryHandleUtterance,
   onCoachEvent,
   appearance,
   className,
@@ -218,6 +229,9 @@ export function UiPilotProvider({
       runBeforeOpen(nav);
       if (nav.path) navigate(nav.path, nav.search ? { search: nav.search } : undefined);
       if (nav.openModal) openModal?.(nav.openModal);
+      if (nav.openSurface) {
+        openSurface?.(nav.openSurface, nav.surfaceStep ?? stepId);
+      }
       if (nav.confirmDialog) {
         queueMicrotask(() => {
           requestAnimationFrame(() => {
@@ -229,7 +243,10 @@ export function UiPilotProvider({
       const coachCreate = Boolean(opts?.coachCreate || nav.coachCreate || nav.openModal);
       const spotlightOnly = isSpotlightOnly(nav);
       const skipCoach =
-        Boolean(opts?.skipCoach) || coachCreate || Boolean(nav.openModal);
+        Boolean(opts?.skipCoach) ||
+        coachCreate ||
+        Boolean(nav.openModal) ||
+        Boolean(nav.openSurface);
       const roleCopy = coachCopyForRole(nav, stepId);
       let coached = false;
       if (!skipCoach && nav.coachMessage) {
@@ -278,7 +295,7 @@ export function UiPilotProvider({
         );
       }
     },
-    [features.spotlight, getContext, navigate, openModal, pack, pushAssistant, showSpotlight]
+    [features.spotlight, getContext, navigate, openModal, openSurface, pack, pushAssistant, showSpotlight]
   );
 
   const executeStepRef = useRef(executeStep);
@@ -324,36 +341,51 @@ export function UiPilotProvider({
       if (!trimmed) return;
       setMessages((prev) => [...prev, newMessage('user', trimmed)]);
       setPanelOpen(true);
-      const result = dispatchUserUtterance({
-        text: trimmed,
-        pack: asLoadedPack(pack),
-        session: sessionRef.current,
-        ctx: getContext(),
-        pushAssistant,
-        executeStep: executeStepRef.current,
-        setSession: (updater) => {
-          setSession((prev) => {
-            const next = updater(prev);
-            sessionRef.current = next;
-            return next;
-          });
-        },
-        flashField: (guideId) => {
-          flashGuideField(guideId);
-        },
-        clickField: (guideId) => {
-          clickGuide(guideId);
-        },
-        parseUtteranceFn,
-        onCoachEvent,
-      });
-      if (result && typeof (result as Promise<unknown>).then === 'function') {
-        void (result as Promise<void>).catch(() => {
-          pushAssistant('Something went wrong parsing that — try again in a moment.');
+
+      const runCore = () => {
+        const result = dispatchUserUtterance({
+          text: trimmed,
+          pack: asLoadedPack(pack),
+          session: sessionRef.current,
+          ctx: getContext(),
+          pushAssistant,
+          executeStep: executeStepRef.current,
+          setSession: (updater) => {
+            setSession((prev) => {
+              const next = updater(prev);
+              sessionRef.current = next;
+              return next;
+            });
+          },
+          flashField: (guideId) => {
+            flashGuideField(guideId);
+          },
+          clickField: (guideId) => {
+            clickGuide(guideId);
+          },
+          parseUtteranceFn,
+          onCoachEvent,
         });
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          void (result as Promise<void>).catch(() => {
+            pushAssistant('Something went wrong parsing that — try again in a moment.');
+          });
+        }
+      };
+
+      if (tryHandleUtterance) {
+        const intercepted = tryHandleUtterance(trimmed);
+        if (intercepted && typeof (intercepted as Promise<unknown>).then === 'function') {
+          void (intercepted as Promise<boolean>).then((handled) => {
+            if (!handled) runCore();
+          });
+          return;
+        }
+        if (intercepted) return;
       }
+      runCore();
     },
-    [getContext, onCoachEvent, pack, parseUtteranceFn, pushAssistant]
+    [getContext, onCoachEvent, pack, parseUtteranceFn, pushAssistant, tryHandleUtterance]
   );
 
   const value = useMemo<UiPilotContextValue>(

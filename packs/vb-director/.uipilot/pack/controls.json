@@ -2,106 +2,133 @@
   {
     "id": "guide-subscription",
     "stepId": "billing_ready",
-    "path": "/",
+    "path": "/director/subscription",
     "spotlight": "guide-subscription",
-    "coachMessage": "Open “Subscription / access” via the highlighted control (UI click only)."
+    "openSurface": "billingCartDrawer",
+    "role": "drawer",
+    "coachMessage": "Manage subscription or open your cart from here."
   },
   {
     "id": "guide-bowling-centers",
     "stepId": "bowling_center",
-    "path": "/",
-    "spotlight": "guide-bowling-centers",
-    "coachMessage": "Open “Bowling centers” via the highlighted control (UI click only)."
+    "path": "/director/bowling-centers",
+    "spotlight": "guide-add-bowling-center",
+    "openModal": "centerCreate",
+    "coachCreate": true,
+    "draftKey": "bowling_center",
+    "coachMessage": "Add a bowling center — fill the form, then save."
   },
   {
     "id": "guide-create-tournament",
     "stepId": "create_tournament",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-create-tournament",
-    "coachMessage": "Open “Create tournament” via the highlighted control (UI click only)."
+    "openModal": "tournamentCreate",
+    "openSurface": "centerCombobox",
+    "coachCreate": true,
+    "draftKey": "tournament",
+    "coachMessage": "Use Create Tournament — search the center combobox, fill the form, then submit."
   },
   {
     "id": "guide-create-event",
     "stepId": "create_event",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-create-event",
-    "coachMessage": "Open “Create event” via the highlighted control (UI click only)."
+    "openModal": "eventCreate",
+    "coachCreate": true,
+    "draftKey": "event",
+    "coachMessage": "Click Add Event to open the create-event form."
   },
   {
-    "id": "guide-tab-format",
+    "id": "guide-format-wizard",
     "stepId": "apply_format",
-    "path": "/",
-    "spotlight": "guide-tab-format",
-    "coachMessage": "Open “Event format” via the highlighted control (UI click only)."
+    "path": "/director/event-formats/wizard",
+    "spotlight": "guide-format-wizard",
+    "openSurface": "formatRoundEditor",
+    "role": "step",
+    "coachMessage": "Open the format wizard to build rounds and advancement, then save and apply to this event."
   },
   {
     "id": "guide-tab-side-actions",
     "stepId": "side_actions",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-tab-side-actions",
-    "coachMessage": "Open “Side actions” via the highlighted control (UI click only)."
+    "openModal": "createSideAction",
+    "coachMessage": "Open Side Actions to configure pots, or skip if you do not need them."
   },
   {
     "id": "guide-tab-participants",
     "stepId": "register_participants",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-tab-participants",
-    "coachMessage": "Open “Register participants” via the highlighted control (UI click only)."
+    "openModal": "addParticipants",
+    "coachMessage": "Open Participant Management to add or approve bowlers."
   },
   {
-    "id": "guide-tab-side-actions",
+    "id": "guide-sa-signups",
     "stepId": "sa_signups",
-    "path": "/",
-    "spotlight": "guide-tab-side-actions",
-    "coachMessage": "Open “Side action signups” via the highlighted control (UI click only)."
+    "path": "/director/tournaments",
+    "spotlight": "guide-tab-participants",
+    "coachMessage": "Use Participant Management side-action signup mode to enter pots."
   },
   {
     "id": "guide-tab-squads",
     "stepId": "assign_squads",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-tab-squads",
-    "coachMessage": "Open “Assign squads” via the highlighted control (UI click only)."
+    "openSurface": "squadMoveMenu",
+    "role": "menu",
+    "coachMessage": "Assign approved participants to squads — select rows then Move selected."
   },
   {
     "id": "guide-tab-lanes",
     "stepId": "assign_lanes",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-tab-lanes",
-    "coachMessage": "Open “Lane assignments” via the highlighted control (UI click only)."
+    "coachMessage": "Assign lanes for squad participants here."
   },
   {
     "id": "guide-lock-squad",
     "stepId": "lock_squads",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-lock-squad",
-    "coachMessage": "Open “Lock squads” via the highlighted control (UI click only)."
+    "coachMessage": "Lock a squad to create game shells before scoring."
   },
   {
     "id": "guide-lock-sa-entries",
     "stepId": "lock_sa_entries",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-lock-sa-entries",
-    "coachMessage": "Open “Lock SA entries” via the highlighted control (UI click only)."
+    "openSurface": "confirmLockSaEntries",
+    "role": "dialog",
+    "coachMessage": "Lock all side action entries before scoring when required — confirm when prompted."
   },
   {
-    "id": "guide-tab-scoring",
+    "id": "guide-upload-scores-csv",
     "stepId": "enter_scores",
-    "path": "/",
-    "spotlight": "guide-tab-scoring",
-    "coachMessage": "Open “Enter scores” via the highlighted control (UI click only)."
+    "path": "/director/tournaments",
+    "spotlight": "guide-upload-scores-csv",
+    "openSurface": "scoresCsvUpload",
+    "instructOnly": true,
+    "spotlightOnly": true,
+    "role": "upload",
+    "coachMessage": "Enter scores on Game Scoring — or Upload scores CSV when you are ready (I will not pick the file)."
   },
   {
-    "id": "guide-tab-scoring",
+    "id": "guide-advance-round",
     "stepId": "advance_rounds",
-    "path": "/",
-    "spotlight": "guide-tab-scoring",
-    "coachMessage": "Open “Advance / complete rounds” via the highlighted control (UI click only)."
+    "path": "/director/tournaments",
+    "spotlight": "guide-advance-round",
+    "coachMessage": "Use the event flow view to advance or complete rounds."
   },
   {
     "id": "guide-event-reports",
     "stepId": "run_reports",
-    "path": "/",
+    "path": "/director/tournaments",
     "spotlight": "guide-event-reports",
-    "coachMessage": "Open “Reports” via the highlighted control (UI click only)."
+    "openModal": "eventReports",
+    "openSurface": "eventReportsWizard",
+    "surfaceStep": "menu",
+    "coachMessage": "Open Reports from Event Info — pick a report type from the menu."
   }
 ]

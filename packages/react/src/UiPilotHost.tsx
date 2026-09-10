@@ -27,8 +27,10 @@ export function UiPilotHost({
   getContext,
   navigate,
   openModal,
+  openSurface,
   features,
   parseUtteranceFn,
+  tryHandleUtterance,
   onCoachEvent,
   appearance,
   className,
@@ -43,8 +45,10 @@ export function UiPilotHost({
       getContext={getContext}
       navigate={navigate}
       openModal={openModal}
+      openSurface={openSurface}
       features={features}
       parseUtteranceFn={parseUtteranceFn}
+      tryHandleUtterance={tryHandleUtterance}
       onCoachEvent={onCoachEvent}
       appearance={appearance}
       className={className}
