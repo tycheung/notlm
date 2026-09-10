@@ -93,16 +93,40 @@ export function matchEntityLookup(
   const normalized = normalizeUtterance(raw);
 
   for (const def of lookups) {
+    if (def.filterPath) {
+      const gate = readDataPath(ctx.data, def.filterPath);
+      if (!gate) continue;
+    }
     if (!looksLikeLookup(normalized, def)) continue;
     const query = extractLookupName(raw, def);
     if (!query) {
       return { kind: 'miss', lookupId: def.id, query: '' };
     }
-    const rows = asEntityRows(
+    let rows = asEntityRows(
       readDataPath(ctx.data, def.dataPath),
       def.nameKey ?? 'name',
       def.idKey ?? 'id'
     );
+    if (def.statusField && def.statusAllow?.length) {
+      const rawList = readDataPath(ctx.data, def.dataPath);
+      if (Array.isArray(rawList)) {
+        const allow = new Set(def.statusAllow.map((s) => s.toLowerCase()));
+        const idKey = def.idKey ?? 'id';
+        const nameKey = def.nameKey ?? 'name';
+        rows = [];
+        for (const row of rawList) {
+          if (row == null || typeof row !== 'object' || Array.isArray(row)) continue;
+          const rec = row as Record<string, unknown>;
+          const status = rec[def.statusField];
+          if (typeof status === 'string' && !allow.has(status.toLowerCase())) continue;
+          const id = rec[idKey];
+          const name = rec[nameKey];
+          if (typeof id === 'string' && id && typeof name === 'string' && name.trim()) {
+            rows.push({ id, name: name.trim() });
+          }
+        }
+      }
+    }
     if (!rows.length) {
       return { kind: 'miss', lookupId: def.id, query };
     }
@@ -146,4 +170,12 @@ export function matchEntityLookup(
   }
 
   return { kind: 'none' };
+}
+
+export function resolveOpenPath(
+  template: string | undefined,
+  id: string
+): string | undefined {
+  if (!template) return undefined;
+  return template.replace(/\{\{\s*id\s*\}\}/gi, id);
 }

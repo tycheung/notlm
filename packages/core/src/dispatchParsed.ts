@@ -157,6 +157,7 @@ export function dispatchParsed(
   const lookup = matchEntityLookup(trimmed, pack.lookups, ctx);
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
+    const def = pack.lookups?.find((l) => l.id === lookup.lookupId);
     pushAssistant(`Found “${entity.name}”.`);
     setSession((s) => ({
       ...s,
@@ -171,6 +172,8 @@ export function dispatchParsed(
       flashField?.(entity.guideId);
       clickField?.(entity.guideId);
     }
+    const openPath = def?.openPathTemplate?.replace(/\{\{\s*id\s*\}\}/gi, entity.id);
+    if (openPath) deps.navigate?.(openPath);
     if (entity.stepId) executeStep(entity.stepId);
     return;
   }
@@ -232,8 +235,20 @@ export function dispatchParsed(
       const offer = faqHit.stepId
         ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
         : '';
+      const links =
+        faqHit.href || faqHit.action
+          ? [
+              {
+                label: faqHit.label ?? 'Learn more',
+                href: faqHit.href,
+                action: faqHit.action,
+              },
+            ]
+          : undefined;
       pushAssistant(`${faqHit.text}${offer}`, {
         choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+        links,
+        intentKey: faqHit.id,
       });
       return;
     }
