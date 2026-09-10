@@ -18,6 +18,8 @@ import {
   type SlotBag,
   type StepId,
   type StepStatus,
+  type DraftCompiler,
+  type ChatMessageLink,
 } from '@uipilot/core';
 import {
   createContext,
@@ -47,6 +49,8 @@ type NavigateFn = (path: string, opts?: { search?: string }) => void;
 export type OpenModalFn = (modalKey: string) => void;
 /** Host opens a pack-declared surface key (drawer / upload / wizard). */
 export type OpenSurfaceFn = (surfaceKey: string, surfaceStep?: string) => void;
+export type OnWizardPageFn = (wizardId: string, page: number) => void;
+export type EnrichStatusesFn = (statuses: StepStatus[], ctx: RuntimeContextBase) => StepStatus[];
 
 export type ExecuteStepOpts = {
   prefill?: SlotBag;
@@ -82,12 +86,14 @@ export type UiPilotContextValue = {
   statuses: StepStatus[];
   panelOpen: boolean;
   paletteOpen: boolean;
+  checklistOpen: boolean;
   spotlight: SpotlightState;
   handleUserUtterance: (text: string) => void;
   executeStep: (stepId: StepId, opts?: ExecuteStepOpts) => void;
   notifyStepCompleted: (stepId: StepId) => void;
   setPanelOpen: (open: boolean) => void;
   setPaletteOpen: (open: boolean) => void;
+  setChecklistOpen: (open: boolean) => void;
   clearSpotlight: () => void;
   chrome: UiPilotChromeConfig;
   hostRootStyle: CSSProperties;
@@ -99,7 +105,8 @@ const UiPilotContext = createContext<UiPilotContextValue | null>(null);
 function newMessage(
   role: ChatMessage['role'],
   text: string,
-  choices?: ChatChoice[]
+  choices?: ChatChoice[],
+  extra?: { links?: ChatMessage['links']; intentKey?: string }
 ): ChatMessage {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -107,6 +114,8 @@ function newMessage(
     text,
     at: Date.now(),
     ...(choices?.length ? { choices } : {}),
+    ...(extra?.links?.length ? { links: extra.links } : {}),
+    ...(extra?.intentKey ? { intentKey: extra.intentKey } : {}),
   };
 }
 
@@ -118,6 +127,13 @@ export type UiPilotProviderProps = {
   openModal?: OpenModalFn;
   /** Optional: open host surface by key from controls.json `openSurface`. */
   openSurface?: OpenSurfaceFn;
+  /** Optional: host wizard page switch from controls wizardId/wizardPage. */
+  onWizardPage?: OnWizardPageFn;
+  /** Optional: enrich statuses with phase labels for checklist. */
+  enrichStatuses?: EnrichStatusesFn;
+  /** Host draft compilers keyed by control compilerId. */
+  draftCompilers?: Record<string, DraftCompiler>;
+  onApplyDraft?: (draftKey: string, draft: SlotBag) => void | Promise<void>;
   features?: AssistantFeatures;
   /** Optional hybrid / ONNX ranker parser (feature-flagged by host). */
   parseUtteranceFn?: ParseUtteranceFn;
@@ -137,6 +153,10 @@ export function UiPilotProvider({
   navigate,
   openModal,
   openSurface,
+  onWizardPage,
+  enrichStatuses,
+  draftCompilers,
+  onApplyDraft,
   features: featuresProp,
   parseUtteranceFn,
   tryHandleUtterance,
@@ -182,17 +202,30 @@ export function UiPilotProvider({
   ]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const { spotlight, showSpotlight, clearSpotlight } = useSpotlightController(DEFAULT_GUIDE_ATTR);
 
   const ctx = getContext();
-  const statuses = useMemo(
-    () => evaluateFlowStatuses(pack, ctx, session.stale),
-    [pack, ctx, session.stale]
-  );
+  const statuses = useMemo(() => {
+    const base = evaluateFlowStatuses(pack, ctx, session.stale);
+    return enrichStatuses ? enrichStatuses(base, ctx) : base;
+  }, [pack, ctx, session.stale, enrichStatuses]);
 
-  const pushAssistant = useCallback((text: string, opts?: { choices?: ChatChoice[] }) => {
-    setMessages((prev) => [...prev, newMessage('assistant', text, opts?.choices)]);
-  }, []);
+  const pushAssistant = useCallback(
+    (
+      text: string,
+      opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
+    ) => {
+      setMessages((prev) => [
+        ...prev,
+        newMessage('assistant', text, opts?.choices, {
+          links: opts?.links,
+          intentKey: opts?.intentKey,
+        }),
+      ]);
+    },
+    []
+  );
 
   const executeStep = useCallback(
     (stepId: StepId, opts?: ExecuteStepOpts) => {
@@ -231,6 +264,9 @@ export function UiPilotProvider({
       if (nav.openModal) openModal?.(nav.openModal);
       if (nav.openSurface) {
         openSurface?.(nav.openSurface, nav.surfaceStep ?? stepId);
+      }
+      if (nav.wizardId != null && nav.wizardPage != null) {
+        onWizardPage?.(nav.wizardId, nav.wizardPage);
       }
       if (nav.confirmDialog) {
         queueMicrotask(() => {
@@ -295,7 +331,7 @@ export function UiPilotProvider({
         );
       }
     },
-    [features.spotlight, getContext, navigate, openModal, openSurface, pack, pushAssistant, showSpotlight]
+    [features.spotlight, getContext, navigate, openModal, openSurface, onWizardPage, pack, pushAssistant, showSpotlight]
   );
 
   const executeStepRef = useRef(executeStep);
@@ -363,7 +399,10 @@ export function UiPilotProvider({
           clickField: (guideId) => {
             clickGuide(guideId);
           },
+          navigate: (path) => navigate(path),
           parseUtteranceFn,
+          draftCompilers,
+          onApplyDraft,
           onCoachEvent,
         });
         if (result && typeof (result as Promise<unknown>).then === 'function') {
@@ -385,7 +424,17 @@ export function UiPilotProvider({
       }
       runCore();
     },
-    [getContext, onCoachEvent, pack, parseUtteranceFn, pushAssistant, tryHandleUtterance]
+    [
+      draftCompilers,
+      getContext,
+      navigate,
+      onApplyDraft,
+      onCoachEvent,
+      pack,
+      parseUtteranceFn,
+      pushAssistant,
+      tryHandleUtterance,
+    ]
   );
 
   const value = useMemo<UiPilotContextValue>(
@@ -399,18 +448,21 @@ export function UiPilotProvider({
       statuses,
       panelOpen,
       paletteOpen,
+      checklistOpen,
       spotlight,
       handleUserUtterance,
       executeStep,
       notifyStepCompleted,
       setPanelOpen,
       setPaletteOpen,
+      setChecklistOpen,
       clearSpotlight,
       chrome,
       hostRootStyle,
       hostRootClassName,
     }),
     [
+      checklistOpen,
       chrome,
       clearSpotlight,
       executeStep,

@@ -10,6 +10,7 @@ export function UiPilotFab() {
   const {
     panelOpen,
     setPanelOpen,
+    setChecklistOpen,
     messages,
     handleUserUtterance,
     features,
@@ -89,6 +90,36 @@ export function UiPilotFab() {
                   {c.label}
                 </button>
               ))}
+            </div>
+          )}
+          {m.role === 'assistant' && m.links && m.links.length > 0 && (
+            <div className="uipilot-chat-links" role="group" aria-label="Help links">
+              {m.links.map((link, i) =>
+                link.href ? (
+                  <a
+                    key={`${link.label}-${i}`}
+                    className="uipilot-chat-link"
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <button
+                    key={`${link.label}-${i}`}
+                    type="button"
+                    className="uipilot-chat-link"
+                    onClick={() => {
+                      if (link.action === 'open_checklist') {
+                        setChecklistOpen(true);
+                      }
+                    }}
+                  >
+                    {link.label}
+                  </button>
+                )
+              )}
             </div>
           )}
         </div>
