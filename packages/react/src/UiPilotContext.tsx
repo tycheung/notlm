@@ -32,6 +32,13 @@ import {
 import type { UiPilotChromeConfig } from './chromeTypes.js';
 import { DEFAULT_GUIDE_ATTR, flashGuideField, flashGuideFieldsSequential } from './fieldFlash.js';
 import { applyPrefill } from './fieldPrefill.js';
+import { clickGuide } from './clickGuide.js';
+import { writeDraft } from './draftBridge.js';
+import {
+  coachCopyForRole,
+  isSpotlightOnly,
+  runBeforeOpen,
+} from './guideInteract.js';
 import { appearanceToCssVars } from './uipilot.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
 
@@ -47,6 +54,8 @@ export type ExecuteStepOpts = {
    * when getContext binders have not flushed yet).
    */
   assumeComplete?: StepId[];
+  /** Force coach-create / modal open + missing-field tour. */
+  coachCreate?: boolean;
 };
 
 function asLoadedPack(pack: PackRuntime): LoadedPack {
@@ -200,20 +209,49 @@ export function UiPilotProvider({
         return next;
       });
 
+      const mergedPrefill = { ...(nav.prefill ?? {}), ...(opts?.prefill ?? {}) };
+      // Persist draft before CTA click so host controlled inputs see slots.
+      if (nav.draftKey && Object.keys(mergedPrefill).length > 0) {
+        writeDraft(pack.id, nav.draftKey, mergedPrefill);
+      }
+
+      runBeforeOpen(nav);
       if (nav.path) navigate(nav.path, nav.search ? { search: nav.search } : undefined);
       if (nav.openModal) openModal?.(nav.openModal);
-      if (!opts?.skipCoach && nav.coachMessage) pushAssistant(nav.coachMessage);
-      if (nav.spotlight && features.spotlight !== false) {
-        showSpotlight(nav.spotlight, nav.coachMessage ?? `Focus: ${stepId}`);
+      if (nav.confirmDialog) {
+        queueMicrotask(() => {
+          requestAnimationFrame(() => {
+            flashGuideField(nav.confirmDialog!);
+            clickGuide(nav.confirmDialog!);
+          });
+        });
+      }
+      const coachCreate = Boolean(opts?.coachCreate || nav.coachCreate || nav.openModal);
+      const spotlightOnly = isSpotlightOnly(nav);
+      const skipCoach =
+        Boolean(opts?.skipCoach) || coachCreate || Boolean(nav.openModal);
+      const roleCopy = coachCopyForRole(nav, stepId);
+      if (!skipCoach && nav.coachMessage) pushAssistant(nav.coachMessage);
+      else if (!skipCoach && roleCopy) pushAssistant(roleCopy);
+      if (!coachCreate && nav.spotlight && features.spotlight !== false) {
+        showSpotlight(nav.spotlight, nav.coachMessage ?? roleCopy ?? `Focus: ${stepId}`);
       }
       if (nav.spotlight) {
         flashGuideField(nav.spotlight);
       }
-      const mergedPrefill = { ...(nav.prefill ?? {}), ...(opts?.prefill ?? {}) };
+      const draftOpts =
+        nav.draftKey != null
+          ? { packId: pack.id, draftKey: nav.draftKey }
+          : undefined;
       if (Object.keys(mergedPrefill).length > 0) {
-        queueMicrotask(() => applyPrefill(mergedPrefill));
+        queueMicrotask(() =>
+          applyPrefill(mergedPrefill, {
+            draft: draftOpts,
+            skipDom: spotlightOnly,
+          })
+        );
       }
-      const userFill = nav.userFill?.filter(Boolean) ?? [];
+      const userFill = spotlightOnly ? [] : (nav.userFill?.filter(Boolean) ?? []);
       if (userFill.length > 0) {
         pushAssistant(
           userFill.length === 1
@@ -223,6 +261,14 @@ export function UiPilotProvider({
         queueMicrotask(() => {
           flashGuideFieldsSequential(userFill, { onlyEmpty: false });
         });
+      } else if (coachCreate && nav.openModal) {
+        // Re-open path: brief coach nudge when form has no userFill list.
+        pushAssistant('Opening the form — fill what’s needed, then save.');
+      } else if (spotlightOnly && nav.spotlight) {
+        pushAssistant(
+          roleCopy ??
+            'Use the highlighted control yourself — I won’t fill that automatically.'
+        );
       }
     },
     [features.spotlight, getContext, navigate, openModal, pack, pushAssistant, showSpotlight]
@@ -287,6 +333,9 @@ export function UiPilotProvider({
         },
         flashField: (guideId) => {
           flashGuideField(guideId);
+        },
+        clickField: (guideId) => {
+          clickGuide(guideId);
         },
         parseUtteranceFn,
         onCoachEvent,

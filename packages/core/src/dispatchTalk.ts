@@ -1,4 +1,4 @@
-import { extractSlotAnswer } from './discourse.js';
+import { extractMultiSlotPatches, extractSlotAnswer } from './discourse.js';
 import { isAffirmative, isNegative, pickReply } from './replies.js';
 import { patchStepSlots } from './slots.js';
 import type {
@@ -107,12 +107,18 @@ export function handlePendingUtterance(
   if (!pending) return { handled: false };
 
   if (pending.kind === 'ask_slot') {
-    const value = extractSlotAnswer(text);
-    if (!value) {
+    const knownKeys = (pack.slots?.[pending.stepId] ?? []).map((d) => d.key);
+    const multi = extractMultiSlotPatches(text, knownKeys);
+    const singleVal = extractSlotAnswer(text);
+    let slots = { ...pending.slots };
+    if (Object.keys(multi).length > 0) {
+      slots = { ...slots, ...multi };
+    } else if (singleVal) {
+      slots = { ...slots, [pending.slotKey]: singleVal };
+    } else {
       sink.pushAssistant(pending.slotKey ? `Please provide a value.` : 'Go ahead…');
       return { handled: true };
     }
-    const slots = { ...pending.slots, [pending.slotKey]: value };
     let next: SessionSlots = patchStepSlots(
       { ...session, pending: null },
       pending.stepId,

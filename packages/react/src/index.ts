@@ -7,6 +7,26 @@ export {
 } from './fieldFlash.js';
 export type { FlashFieldOpts, SequentialFlashOpts } from './fieldFlash.js';
 export { applyPrefill } from './fieldPrefill.js';
+export type { ApplyPrefillOpts } from './fieldPrefill.js';
+export {
+  clickGuide,
+  clickGuideByPath,
+  createGuideNavigate,
+} from './clickGuide.js';
+export type { ClickGuideOpts } from './clickGuide.js';
+export {
+  draftStorageKey,
+  readDraft,
+  writeDraft,
+  clearDraft,
+} from './draftBridge.js';
+export { useDraftBridge } from './useDraftBridge.js';
+export {
+  resolveBeforeOpenIds,
+  runBeforeOpen,
+  isSpotlightOnly,
+  coachCopyForRole,
+} from './guideInteract.js';
 export { getSpeechRecognitionCtor, isWebSpeechSupported } from './speech.js';
 export { useWebSpeechInput } from './useWebSpeechInput.js';
 export { useSpotlightController, type SpotlightState } from './useSpotlightController.js';

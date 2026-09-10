@@ -14,8 +14,12 @@ export * from './entityLookup.js';
 export * from './replies.js';
 export * from './discourse.js';
 export * from './dispatchTalk.js';
+export * from './queueOps.js';
+export * from './queueRewrite.js';
 export * from './coachEvents.js';
 export * from './dispatch.js';
+export * from './dispatchLaunch.js';
+export * from './dispatchParsed.js';
 export * from './loadPack.js';
 // Node-only FS loader lives at `@uipilot/core/loadFolder` (not in the
 // browser barrel — importing it here pulls `node:fs` into Vite client bundles).

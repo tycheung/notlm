@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { CoachEvent, RuntimeContextBase } from '@uipilot/core';
-import { UiPilotHost, useUiPilot } from '@uipilot/react';
+import { UiPilotHost, createGuideNavigate, useUiPilot } from '@uipilot/react';
 import { loadDemoHelloPack } from './loadDemoPack';
-import { clickGuideByPath } from './navigateClick';
 
 type ContextBag = { helloCount: number };
 
@@ -41,9 +40,7 @@ export function App() {
     return { pathname: '/', data: { ...bagRef.current } };
   }, []);
 
-  const navigate = useCallback((path: string) => {
-    clickGuideByPath(path);
-  }, []);
+  const navigate = useMemo(() => createGuideNavigate(), []);
 
   return (
     <UiPilotHost

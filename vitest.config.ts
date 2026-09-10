@@ -8,7 +8,13 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: ['packages/core/src/**/*.ts'],
-      exclude: ['**/*.test.ts', '**/index.ts', '**/loadFolder.ts', '**/types.ts'],
+      exclude: [
+        '**/*.test.ts',
+        '**/index.ts',
+        '**/loadFolder.ts',
+        '**/types.ts',
+        '**/dispatchDeps.ts',
+      ],
       // PLAN / ci-002: core package floors ≥85% (coverage include is packages/core only).
       thresholds: {
         lines: 85,

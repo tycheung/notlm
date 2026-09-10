@@ -1,6 +1,13 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@uipilot/core';
-import { UiPilotHost, useUiPilot } from '@uipilot/react';
+import {
+  UiPilotHost,
+  createGuideNavigate,
+  readDraft,
+  useDraftBridge,
+  useGuideModal,
+  useUiPilot,
+} from '@uipilot/react';
 import {
   createHybridUtteranceParser,
   createRankerSession,
@@ -8,7 +15,6 @@ import {
   type RankerModelJson,
 } from '@uipilot/ranker';
 import { loadDemoTodoPack } from './loadDemoPack';
-import { clickGuideByPath } from './navigateClick';
 import rankerJson from '../../../packs/demo-todo/.uipilot/pack/ranker.json';
 
 type TodoList = { id: string; name: string };
@@ -17,7 +23,16 @@ type ContextBag = {
   listCount: number;
   itemCount: number;
   completedCount: number;
+  hasLists: boolean;
   lists: Array<{ id: string; name: string }>;
+  labTab: 'details' | 'files';
+  labExported: boolean;
+  labUploaded: boolean;
+  labPriority: string;
+  labCleared: boolean;
+  labDrawerOpen: boolean;
+  wizardPage: number;
+  wizardDone: boolean;
 };
 
 let idSeq = 0;
@@ -26,18 +41,263 @@ function nextId(prefix: string) {
   return `${prefix}-${idSeq}`;
 }
 
-function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }) {
+const emptyBag = (): ContextBag => ({
+  listCount: 0,
+  itemCount: 0,
+  completedCount: 0,
+  hasLists: false,
+  lists: [],
+  labTab: 'details',
+  labExported: false,
+  labUploaded: false,
+  labPriority: '',
+  labCleared: false,
+  labDrawerOpen: false,
+  wizardPage: 0,
+  wizardDone: false,
+});
+
+function InteractablesLab({
+  bagRef,
+  pendingModal,
+  clearModal,
+}: {
+  bagRef: React.MutableRefObject<ContextBag>;
+  pendingModal: string | null;
+  clearModal: () => void;
+}) {
+  const { notifyStepCompleted } = useUiPilot();
+  const [tab, setTab] = useState<'details' | 'files'>('details');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [priority, setPriority] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [wizardPage, setWizardPage] = useState(0);
+  const { draft, patchDraft, clear: clearWizardDraft } = useDraftBridge(
+    'demo-todo',
+    'wizard_draft'
+  );
+  const wizardName = String(draft.name ?? '');
+
+  const patchBag = (partial: Partial<ContextBag>) => {
+    bagRef.current = { ...bagRef.current, ...partial };
+  };
+
+  useEffect(() => {
+    if (pendingModal !== 'lab_drawer') return;
+    setDrawerOpen(true);
+    patchBag({ labDrawerOpen: true });
+    clearModal();
+    queueMicrotask(() => notifyStepCompleted('open_lab_drawer'));
+  }, [pendingModal, clearModal, notifyStepCompleted, bagRef]);
+
+  return (
+    <section className="demo-panel" data-guide-id="guide-nav-lab">
+      <h2>Interactables lab</h2>
+      <div className="demo-row">
+        <button
+          type="button"
+          data-guide-id="guide-tab-details"
+          aria-pressed={tab === 'details'}
+          onClick={() => {
+            setTab('details');
+            patchBag({ labTab: 'details' });
+          }}
+        >
+          Details
+        </button>
+        <button
+          type="button"
+          data-guide-id="guide-tab-files"
+          aria-pressed={tab === 'files'}
+          onClick={() => {
+            setTab('files');
+            patchBag({ labTab: 'files' });
+            queueMicrotask(() => notifyStepCompleted('open_files_tab'));
+          }}
+        >
+          Files
+        </button>
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            data-guide-id="guide-menu-actions"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            Actions
+          </button>
+          {true && (
+            <button
+              type="button"
+              data-guide-id="guide-menu-export"
+              hidden={!menuOpen}
+              onClick={() => {
+                setMenuOpen(false);
+                patchBag({ labExported: true });
+                queueMicrotask(() => notifyStepCompleted('export_via_menu'));
+              }}
+            >
+              Export
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          data-guide-id="guide-open-drawer"
+          onClick={() => {
+            setDrawerOpen(true);
+            patchBag({ labDrawerOpen: true });
+            queueMicrotask(() => notifyStepCompleted('open_lab_drawer'));
+          }}
+        >
+          Open drawer
+        </button>
+        <button
+          type="button"
+          data-guide-id="guide-lab-clear"
+          onClick={() => setDialogOpen(true)}
+        >
+          Clear lab
+        </button>
+      </div>
+
+      {tab === 'details' && (
+        <div className="demo-row">
+          <label>
+            Priority
+            <select
+              data-guide-id="guide-priority"
+              value={priority}
+              onChange={(e) => {
+                setPriority(e.target.value);
+                patchBag({ labPriority: e.target.value });
+                if (e.target.value) {
+                  queueMicrotask(() => notifyStepCompleted('pick_priority'));
+                }
+              }}
+            >
+              <option value="">Choose…</option>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+      )}
+
+      {tab === 'files' && (
+        <div className="demo-row">
+          <input
+            type="file"
+            data-guide-id="guide-upload"
+            aria-label="Upload attachment"
+            onChange={(e) => {
+              if (e.target.files?.length) {
+                patchBag({ labUploaded: true });
+                queueMicrotask(() => notifyStepCompleted('upload_attachment'));
+              }
+            }}
+          />
+        </div>
+      )}
+
+      <div className="demo-row">
+        {wizardPage === 0 ? (
+          <>
+            <input
+              data-guide-id="guide-wizard-name"
+              aria-label="Wizard name"
+              value={wizardName}
+              onChange={(e) => patchDraft({ name: e.target.value })}
+            />
+            <button
+              type="button"
+              data-guide-id="guide-wizard-next"
+              onClick={() => {
+                setWizardPage(1);
+                patchBag({ wizardPage: 1 });
+                queueMicrotask(() => notifyStepCompleted('wizard_name'));
+              }}
+            >
+              Next
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            data-guide-id="guide-wizard-finish"
+            onClick={() => {
+              patchBag({ wizardDone: true });
+              clearWizardDraft();
+              queueMicrotask(() => notifyStepCompleted('wizard_finish'));
+            }}
+          >
+            Finish wizard
+          </button>
+        )}
+      </div>
+
+      {dialogOpen && (
+        <div role="dialog" aria-label="Confirm clear" data-guide-id="guide-confirm-clear">
+          <p>Clear lab flags?</p>
+          <button
+            type="button"
+            onClick={() => {
+              setDialogOpen(false);
+              patchBag({
+                labCleared: true,
+                labExported: false,
+                labUploaded: false,
+                labPriority: '',
+              });
+              setPriority('');
+              queueMicrotask(() => notifyStepCompleted('confirm_clear_lab'));
+            }}
+          >
+            Confirm
+          </button>
+          <button type="button" onClick={() => setDialogOpen(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {drawerOpen && (
+        <aside className="demo-draft" data-guide-id="guide-lab-drawer-panel">
+          <p>Lab drawer open.</p>
+          <button type="button" onClick={() => setDrawerOpen(false)}>
+            Close
+          </button>
+        </aside>
+      )}
+    </section>
+  );
+}
+
+function TodoWorkspace({
+  bagRef,
+  pendingModal,
+  clearModal,
+}: {
+  bagRef: React.MutableRefObject<ContextBag>;
+  pendingModal: string | null;
+  clearModal: () => void;
+}) {
   const { notifyStepCompleted } = useUiPilot();
   const [lists, setLists] = useState<TodoList[]>([]);
   const [items, setItems] = useState<TodoItem[]>([]);
-  const [draftName, setDraftName] = useState('Shopping');
-  const [draftItem, setDraftItem] = useState('Milk');
+  const listDraft = useDraftBridge('demo-todo', 'list_draft');
+  const itemDraft = useDraftBridge('demo-todo', 'item_draft');
+  const draftName = String(listDraft.draft.name ?? 'Shopping');
+  const draftItem = String(itemDraft.draft.name ?? itemDraft.draft.text ?? 'Milk');
 
   const syncBag = (nextLists: TodoList[], nextItems: TodoItem[]) => {
     bagRef.current = {
+      ...bagRef.current,
       listCount: nextLists.length,
       itemCount: nextItems.length,
       completedCount: nextItems.filter((i) => i.done).length,
+      hasLists: nextLists.length > 0,
       lists: nextLists.map((l) => ({ id: l.id, name: l.name })),
     };
   };
@@ -45,7 +305,9 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
   const activeListId = lists[0]?.id;
 
   const createList = () => {
-    const name = draftName.trim() || `List ${lists.length + 1}`;
+    const fromDraft = readDraft('demo-todo', 'list_draft');
+    const name =
+      String(fromDraft.name ?? draftName).trim() || `List ${lists.length + 1}`;
     setLists((prev) => {
       const next = [...prev, { id: nextId('list'), name }];
       syncBag(next, items);
@@ -56,7 +318,10 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
 
   const addItem = () => {
     if (!activeListId) return;
-    const text = draftItem.trim() || `Item ${items.length + 1}`;
+    const fromDraft = readDraft('demo-todo', 'item_draft');
+    const text =
+      String(fromDraft.text ?? fromDraft.name ?? draftItem).trim() ||
+      `Item ${items.length + 1}`;
     setItems((prev) => {
       const next = [...prev, { id: nextId('item'), listId: activeListId, text, done: false }];
       syncBag(lists, next);
@@ -81,17 +346,32 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
       <header className="demo-header">
         <h1>demo-todo</h1>
         <p>
-          Local <code>useState</code> only — coach never fetches. Open chat or press{' '}
+          Local <code>useState</code> + draft bridge — coach never fetches. Open chat or press{' '}
           <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd>.
         </p>
       </header>
+
+      {lists.length === 0 && (
+        <section className="demo-panel">
+          <button
+            type="button"
+            data-guide-id="guide-empty-start"
+            onClick={() => {
+              listDraft.patchDraft({ name: 'Starter' });
+              queueMicrotask(() => notifyStepCompleted('empty_start'));
+            }}
+          >
+            Get started
+          </button>
+        </section>
+      )}
 
       <section className="demo-panel">
         <h2>Lists</h2>
         <div className="demo-row">
           <input
             value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
+            onChange={(e) => listDraft.patchDraft({ name: e.target.value })}
             aria-label="New list name"
             data-guide-id="guide-list-name"
           />
@@ -114,7 +394,7 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
         <div className="demo-row">
           <input
             value={draftItem}
-            onChange={(e) => setDraftItem(e.target.value)}
+            onChange={(e) => itemDraft.patchDraft({ text: e.target.value, name: e.target.value })}
             aria-label="New todo text"
             data-guide-id="guide-item-text"
             disabled={!activeListId}
@@ -146,28 +426,24 @@ function TodoWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> 
           {items.length === 0 && <li className="muted">No items yet</li>}
         </ul>
       </section>
+
+      <InteractablesLab bagRef={bagRef} pendingModal={pendingModal} clearModal={clearModal} />
     </main>
   );
 }
 
 export function App() {
   const pack = useMemo(() => loadDemoTodoPack(), []);
-  const bagRef = useRef<ContextBag>({
-    listCount: 0,
-    itemCount: 0,
-    completedCount: 0,
-    lists: [],
-  });
+  const bagRef = useRef<ContextBag>(emptyBag());
+  const { pendingModal, openModal, clearModal } = useGuideModal();
   const onnxRanker = isOnnxRankerEnabled({
     onnxRanker:
       typeof import.meta !== 'undefined' &&
-      // Vite: set VITE_UIPILOT_ONNX_RANKER=1 to prefer corpus ranker
       (import.meta as { env?: { VITE_UIPILOT_ONNX_RANKER?: string } }).env
         ?.VITE_UIPILOT_ONNX_RANKER === '1',
   });
   const parseUtteranceFn = useMemo(() => {
     if (!onnxRanker) return undefined;
-    // preferOnnx: try ORT when installed; always falls back to JSON infer.
     const session = createRankerSession(rankerJson as RankerModelJson, {
       preferOnnx: true,
     });
@@ -178,15 +454,20 @@ export function App() {
     return { pathname: '/', data: { ...bagRef.current } };
   }, []);
 
-  const navigate = useCallback((path: string) => {
-    clickGuideByPath(path);
-  }, []);
+  const navigate = useMemo(
+    () =>
+      createGuideNavigate({
+        onMiss: (path) => console.warn(`[demo-todo] No control for path="${path}"`),
+      }),
+    []
+  );
 
   return (
     <UiPilotHost
       pack={pack}
       getContext={getContext}
       navigate={navigate}
+      openModal={openModal}
       parseUtteranceFn={parseUtteranceFn}
       features={{
         chat: true,
@@ -221,7 +502,7 @@ export function App() {
         ),
       }}
     >
-      <TodoWorkspace bagRef={bagRef} />
+      <TodoWorkspace bagRef={bagRef} pendingModal={pendingModal} clearModal={clearModal} />
     </UiPilotHost>
   );
 }

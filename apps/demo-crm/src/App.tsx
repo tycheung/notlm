@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@uipilot/core';
-import { UiPilotHost, useGuideModal, useUiPilot } from '@uipilot/react';
+import {
+  UiPilotHost,
+  createGuideNavigate,
+  useDraftBridge,
+  useGuideModal,
+  useUiPilot,
+} from '@uipilot/react';
 import { loadDemoCrmPack } from './loadDemoPack';
-import { clickGuideByPath } from './navigateClick';
 
 type Contact = { id: string; name: string; email: string };
 type ContextBag = { contactCount: number; draftOpen: boolean };
@@ -25,8 +30,12 @@ function CrmWorkspace({
   const { notifyStepCompleted } = useUiPilot();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [draftOpen, setDraftOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const { draft, patchDraft, clear: clearDraftBag } = useDraftBridge(
+    'demo-crm',
+    'contact_draft'
+  );
+  const name = String(draft.name ?? '');
+  const email = String(draft.email ?? '');
 
   const syncBag = (nextContacts: Contact[], open: boolean) => {
     bagRef.current = { contactCount: nextContacts.length, draftOpen: open };
@@ -41,8 +50,8 @@ function CrmWorkspace({
 
   const addContact = () => {
     setDraftOpen(true);
-    if (!name) setName('Alex Rivera');
-    if (!email) setEmail('alex@example.com');
+    if (!name) patchDraft({ name: 'Alex Rivera' });
+    if (!email) patchDraft({ email: 'alex@example.com' });
     syncBag(contacts, true);
     queueMicrotask(() => notifyStepCompleted('add_contact'));
   };
@@ -58,8 +67,7 @@ function CrmWorkspace({
       return next;
     });
     setDraftOpen(false);
-    setName('');
-    setEmail('');
+    clearDraftBag();
   };
 
   return (
@@ -68,7 +76,7 @@ function CrmWorkspace({
         <h1>demo-crm</h1>
         <p>
           Second host app — same <code>UiPilotHost</code> pattern. Coach clicks buttons only; no
-          CRM API calls.
+          CRM API calls. Drafts share <code>useDraftBridge</code>.
         </p>
       </header>
 
@@ -86,7 +94,7 @@ function CrmWorkspace({
               Name
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => patchDraft({ name: e.target.value })}
                 aria-label="Contact name"
                 data-guide-id="guide-contact-name"
               />
@@ -95,7 +103,7 @@ function CrmWorkspace({
               Email
               <input
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => patchDraft({ email: e.target.value })}
                 aria-label="Contact email"
                 data-guide-id="guide-contact-email"
               />
@@ -128,9 +136,13 @@ export function App() {
     return { pathname: '/', data: { ...bagRef.current } };
   }, []);
 
-  const navigate = useCallback((path: string) => {
-    clickGuideByPath(path);
-  }, []);
+  const navigate = useMemo(
+    () =>
+      createGuideNavigate({
+        onMiss: (path) => console.warn(`[demo-crm] No control for path="${path}"`),
+      }),
+    []
+  );
 
   return (
     <UiPilotHost

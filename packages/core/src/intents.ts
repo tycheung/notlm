@@ -34,6 +34,25 @@ const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
     ],
   },
   {
+    intent: 'cancel_all',
+    patterns: [
+      /\bcancel all\b/i,
+      /\bclear (?:the )?(?:queue|plan)\b/i,
+      /\breset (?:the )?(?:queue|plan)\b/i,
+      /\bstart over\b/i,
+    ],
+  },
+  {
+    intent: 'do_it',
+    patterns: [
+      /^\s*do it\b/i,
+      /^\s*go ahead\b/i,
+      /^\s*click (?:it|that|the button)\b/i,
+      /^\s*press (?:it|that|the button)\b/i,
+      /^\s*submit\b/i,
+    ],
+  },
+  {
     intent: 'skip_side_actions',
     patterns: [
       /\bskip side actions?\b/i,
@@ -178,6 +197,8 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
     meta === 'whats_next' ||
     meta === 'explain_field' ||
     meta === 'help' ||
+    meta === 'cancel_all' ||
+    meta === 'do_it' ||
     meta === 'skip_side_actions' ||
     meta === 'lookup_participant';
 
@@ -202,6 +223,8 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
   else if (meta === 'whats_next') rawIntent = 'whats_next';
   else if (meta === 'explain_field') rawIntent = 'explain_field';
   else if (meta === 'help') rawIntent = 'help';
+  else if (meta === 'cancel_all') rawIntent = 'cancel_all';
+  else if (meta === 'do_it') rawIntent = 'do_it';
   else if (meta === 'skip_side_actions') rawIntent = 'skip_side_actions';
   else if (meta === 'lookup_participant') rawIntent = 'lookup_participant';
   else if (candidates && candidates.length >= 2) rawIntent = 'ambiguous';

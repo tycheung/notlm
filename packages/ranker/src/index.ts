@@ -2,6 +2,14 @@ export type { RankerModelJson, RankerInferResult, RankerIntentScore, RankerSlotS
 export { featurizeUtterance, hashToken } from './features.js';
 export { inferRankerJson } from './infer.js';
 export {
+  evaluateRankerSoftScore,
+  DEFAULT_RANKER_SOFT_HIT_RATE,
+  DEFAULT_RANKER_MIN_PROB,
+  type RankerEvalCase,
+  type RankerEvalFail,
+  type RankerEvalResult,
+} from './evaluate.js';
+export {
   trainRanker,
   examplesFromCorpus,
   type TrainExample,

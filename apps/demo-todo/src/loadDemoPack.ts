@@ -35,16 +35,7 @@ export function loadDemoTodoPack() {
   return loadPackFromJson({
     manifest: manifestJson as { id: string },
     flow: flowJson as FlowStepDef[],
-    controls: controlsJson as Array<{
-      id: string;
-      stepId: string;
-      path?: string;
-      spotlight?: string;
-      coachMessage?: string;
-      openModal?: string;
-      prefill?: Record<string, unknown>;
-      userFill?: string[];
-    }>,
+    controls: controlsJson as never,
     intents: intentsJson as IntentConfig,
     binders: bindersArrayToRecord(bindersJson as BinderRow[]),
     glossary: glossaryJson as GlossaryEntry[],

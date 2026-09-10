@@ -97,25 +97,34 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     });
   });
 
-  test('packed queue blocks on DAG gap then injects and resumes', async ({ page }) => {
+  test('packed queue expands prereqs and auto-advances', async ({ page }) => {
     await page.goto('/');
     await openChat(page);
 
-    // Packed path launches the first step without slot gate; create uses form default name.
+    // Expands create_list → add_item → complete_item; first step uses form default name.
     await sendUtterance(page, 'create list then complete item');
 
-    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible();
-
-    const dialog = page.getByRole('dialog', { name: 'Assistant' });
-    await expect(dialog.getByText(/blocked/i)).toBeVisible({ timeout: 10_000 });
-    await expect(dialog.getByText(/Add item/i)).toBeVisible();
-
-    await sendUtterance(page, 'add item');
-    await expect(page.getByRole('listitem').filter({ hasText: 'Milk' })).toBeVisible();
-
+    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByRole('listitem').filter({ hasText: 'Milk' })).toBeVisible({
+      timeout: 10_000,
+    });
     // Queue auto-resume of complete_item bypasses confirm (executeStep path).
     await expect(page.locator('li.done').filter({ hasText: 'Milk' })).toBeVisible({
       timeout: 10_000,
     });
+  });
+
+  test('clear the queue drops the plan', async ({ page }) => {
+    await page.goto('/');
+    await openChat(page);
+    await sendUtterance(page, 'create list then add item');
+    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible({
+      timeout: 10_000,
+    });
+    await sendUtterance(page, 'clear the queue');
+    const dialog = page.getByRole('dialog', { name: 'Assistant' });
+    await expect(dialog.getByText(/cleared the queue/i)).toBeVisible();
   });
 });

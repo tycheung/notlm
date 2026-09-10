@@ -79,3 +79,56 @@ export function extractSlotAnswer(utterance: string): string {
   if (named?.[1]) return named[1].trim().replace(/^["']|["']$/g, '');
   return trimmed;
 }
+
+/**
+ * Salvage multiple slot-like values from one utterance (key=value, “quoted”,
+ * “called X”, “with N lanes”). Keys are pack slot keys when provided.
+ */
+export function extractMultiSlotPatches(
+  utterance: string,
+  knownKeys: string[] = []
+): Record<string, string> {
+  const slots: Record<string, string> = {};
+  const text = utterance.trim();
+  if (!text) return slots;
+
+  for (const m of text.matchAll(/\b([a-zA-Z_][\w]*)\s*[:=]\s*["']?([^"'`,]+?)["']?(?=$|,|;|\s{2})/g)) {
+    const key = m[1]?.toLowerCase();
+    const val = m[2]?.trim();
+    if (key && val) slots[key] = val;
+  }
+
+  const called = text.match(
+    /\b(?:called|named|name(?:\s+it)?|it(?:'s| is))\s+["']?([^"',]+?)["']?(?=$|,|;|\s+with\b|\s+at\b)/i
+  );
+  if (called?.[1]) {
+    const nameKey =
+      knownKeys.find((k) => k === 'name' || k.endsWith('_name') || k === 'title') ?? 'name';
+    slots[nameKey] = called[1].trim();
+  }
+
+  const lanes = text.match(/\b(\d+)\s+lanes?\b/i);
+  if (lanes?.[1] && (knownKeys.includes('lanes') || knownKeys.length === 0)) {
+    slots.lanes = lanes[1];
+  }
+
+  const atPlace = text.match(/\bat\s+([A-Za-z][\w\s'-]{0,40})(?=$|,|;|\s+with\b)/);
+  if (atPlace?.[1] && (knownKeys.includes('center_hint') || knownKeys.includes('center'))) {
+    const key = knownKeys.includes('center_hint') ? 'center_hint' : 'center';
+    slots[key] = atPlace[1].trim();
+  }
+
+  if (/\bteams?\b/i.test(text) && knownKeys.includes('event_format')) {
+    slots.event_format = 'teams';
+  } else if (/\bsingles?\b/i.test(text) && knownKeys.includes('event_format')) {
+    slots.event_format = 'singles';
+  }
+
+  // Bare answer with a single known required key left → map whole utterance.
+  if (Object.keys(slots).length === 0 && knownKeys.length === 1) {
+    const only = extractSlotAnswer(text);
+    if (only) slots[knownKeys[0]!] = only;
+  }
+
+  return slots;
+}

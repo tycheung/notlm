@@ -26,6 +26,7 @@ import {
   cmdScenariosLabelPool,
 } from './cmdScenariosAsk.js';
 import { cmdRankerTrain } from './cmdRanker.js';
+import { cmdRankerCheck } from './cmdRankerCheck.js';
 import { cmdTalkDraft } from './cmdTalkDraft.js';
 
 async function main(): Promise<void> {
@@ -156,6 +157,8 @@ async function main(): Promise<void> {
       case 'ranker':
         if (sub === 'train') {
           await cmdRankerTrain(rest);
+        } else if (sub === 'check') {
+          await cmdRankerCheck(rest);
         } else {
           usage();
           process.exitCode = 1;
@@ -215,6 +218,7 @@ function usage(): void {
   uipilotCLI pack accept <draftId> [dir]
   uipilotCLI talk draft [dir] [--fixture]
   uipilotCLI ranker train [dir] [--epochs=40] [--dim=128]
+  uipilotCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]
 `);
 }
 

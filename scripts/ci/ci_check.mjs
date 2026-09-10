@@ -37,6 +37,7 @@ run(pm, ['run', 'test:coverage']);
 // Pack schema gate (ci-004) + demo intent regression (no live LLM).
 run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-todo']);
 run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', 'packs/demo-todo']);
+run(pm, ['run', 'uipilotCLI', '--', 'ranker', 'check', 'packs/demo-todo']);
 if (existsPack('packs/demo-crm')) {
   run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-crm']);
 }

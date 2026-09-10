@@ -57,4 +57,42 @@ describe('loadPackFromJson', () => {
     });
     expect(pack.resolveNav('add_item', { pathname: '/', data: {} })).toBeNull();
   });
+
+  it('passes interactable orchestration fields through resolveNav', () => {
+    const pack = loadPackFromJson({
+      manifest: { id: 'lab' },
+      flow,
+      controls: [
+        {
+          id: 'nav-create-list',
+          stepId: 'create_list',
+          path: '/lists/new',
+          role: 'menu',
+          draftKey: 'list_draft',
+          openMenu: 'guide-menu',
+          beforeOpen: ['guide-tab'],
+          confirmDialog: 'guide-confirm',
+          spotlightOnly: true,
+          wizardId: 'wiz',
+          wizardPage: 0,
+          coachCreate: true,
+          openModal: 'sheet',
+        },
+      ],
+      intents: { aliases: { create_list: ['make a list'] } },
+      binders: {},
+    });
+    expect(pack.resolveNav('create_list', { pathname: '/', data: {} })).toMatchObject({
+      role: 'menu',
+      draftKey: 'list_draft',
+      openMenu: 'guide-menu',
+      beforeOpen: ['guide-tab'],
+      confirmDialog: 'guide-confirm',
+      spotlightOnly: true,
+      wizardId: 'wiz',
+      wizardPage: 0,
+      coachCreate: true,
+      openModal: 'sheet',
+    });
+  });
 });

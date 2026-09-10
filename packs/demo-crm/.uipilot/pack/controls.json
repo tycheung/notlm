@@ -5,10 +5,14 @@
     "path": "guide-add-contact",
     "spotlight": "guide-add-contact",
     "openModal": "contact_draft",
+    "coachCreate": true,
+    "draftKey": "contact_draft",
+    "role": "drawer",
     "coachMessage": "Click Add contact — coach only presses UI (no CRM API)."
   },
   {
     "id": "guide-save-contact",
+    "role": "cta",
     "stepId": "save_contact",
     "path": "guide-save-contact",
     "spotlight": "guide-save-contact",

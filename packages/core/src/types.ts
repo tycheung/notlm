@@ -22,6 +22,23 @@ export type FlowStepDef = {
   hideWhen?: string[];
 };
 
+/** Stable SPA interactable roles (pack `controls[].role`). */
+export const CONTROL_ROLES = [
+  'cta',
+  'field',
+  'tab',
+  'nav',
+  'row',
+  'drawer',
+  'menu',
+  'dialog',
+  'step',
+  'combobox',
+  'upload',
+] as const;
+
+export type ControlRole = (typeof CONTROL_ROLES)[number];
+
 export type NavResolve = {
   path: string;
   search?: string;
@@ -31,6 +48,24 @@ export type NavResolve = {
   prefill?: SlotBag;
   /** Guide ids the user must fill — coach tours them (cannot type for the user). */
   userFill?: string[];
+  /**
+   * When true, launch opens the create/edit surface (modal) and coaches missing
+   * fields rather than only spotlighting a CTA.
+   */
+  coachCreate?: boolean;
+  role?: ControlRole;
+  /** Session draft bag key shared by coach prefill + host forms. */
+  draftKey?: string;
+  /** Guide ids to click before navigate/spotlight (tabs, menu openers). */
+  beforeOpen?: string[];
+  /** Menu trigger guide id (prepended to beforeOpen). */
+  openMenu?: string;
+  /** Host confirm dialog guide id (distinct from chat confirm gate). */
+  confirmDialog?: string;
+  /** Never auto-fill (file upload / ambiguous combobox). */
+  spotlightOnly?: boolean;
+  wizardId?: string;
+  wizardPage?: number;
 };
 
 export type RuntimeContextBase = {
@@ -225,9 +260,19 @@ export type ControlDef = {
   openModal?: string;
   spotlight?: string;
   coachMessage?: string;
+  role?: ControlRole;
   prefill?: SlotBag;
   /** Fields the coach cannot fill — sequential blink tour on step launch. */
   userFill?: string[];
+  /** Open form/modal and coach required fills (create/edit flows). */
+  coachCreate?: boolean;
+  draftKey?: string;
+  beforeOpen?: string[];
+  openMenu?: string;
+  confirmDialog?: string;
+  spotlightOnly?: boolean;
+  wizardId?: string;
+  wizardPage?: number;
 };
 
 export type IntentConfig = {

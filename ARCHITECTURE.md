@@ -134,6 +134,34 @@ Runtime stays deterministic. LLM-*feel* comes from:
 - **Gate policy** — chat launches honor slots/confirm; packed/queue/`executeStep` resume skip; proactive Yes skips confirm (ADR-008)
 - **Telemetry** — optional `onCoachEvent` for hosts (intent/pending/blocked/launched; no secrets)
 - **Optional ranker** — demo-todo may enable JSON/ORT hybrid via `features.onnxRanker` / env
+- **Queue algebra** — head-stable merge, rewrite (clear / skip / cancel X / jump Y), packed prereq expansion
+- **Coach-create** — `controls[].coachCreate` (+ `openModal`) re-opens forms on re-ask; slot elicit + multi-slot salvage
+
+## SPA interactables (coach target taxonomy)
+
+Beyond pages + create/edit modals, pack controls declare stable `data-guide-id`s
+and a `role`. Runtime honors orchestration fields on `controls` / `NavResolve`:
+`beforeOpen`, `openMenu`, `confirmDialog`, `spotlightOnly`, `draftKey`,
+`wizardId` / `wizardPage`, `coachCreate` / `openModal` (drawer/sheet).
+
+| Surface | Role | Notes |
+|---------|------|-------|
+| Primary / secondary CTAs | `cta` | Save, submit, continue; `do_it` launches queue head |
+| Form fields | `field` | Prefer `userFill` for PII; draft via `draftKey` + `useDraftBridge` |
+| Tabs / segmented controls | `tab` | `beforeOpen` / path click switches pane before fields |
+| Nav links / sidebars | `nav` | Route via `createGuideNavigate` click — not silent `history.push` |
+| Table / list rows | `row` | Lookup hit flashes + clicks `guideIdTemplate` |
+| Drawers / sheets | `drawer` | Same `openModal` + `useGuideModal` bridge as modals |
+| Menus / popovers | `menu` | `openMenu` then nested item (`beforeOpen` / path) |
+| Dialogs (confirm) | `dialog` | `confirmDialog` guide id — distinct from chat confirm gate |
+| Wizards / steppers | `step` | One flow step per wizard page (`wizardId` + `wizardPage`) |
+| Combobox / typeahead | `combobox` | Spotlight-only by default — no auto-pick |
+| File upload | `upload` | Never auto-upload; `spotlightOnly` |
+| Empty states / gated CTAs | `cta` | Availability via binders + `hideWhen` |
+
+Shared primitives: `clickGuide` / `createGuideNavigate`, `readDraft`/`writeDraft` /
+`useDraftBridge`, `runBeforeOpen`. Non-goals: toasts, skeletons, decorative icons,
+raw canvas ink, iframe internals (host must bridge).
 
 ## Voice
 
