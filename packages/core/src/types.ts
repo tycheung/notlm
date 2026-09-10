@@ -18,8 +18,18 @@ export type FlowStepDef = {
   requires: StepId[];
   /** Soft preferences; also used for stale fan-out after corrections. */
   prefers?: StepId[];
-  /** Pack-defined hide rules evaluated against RuntimeContext. */
-  hideWhen?: string[];
+  /**
+   * Hide when any rule matches. String = truthy `ctx.data[key]`;
+   * object = binder predicate (`path` / `all` / `any`).
+   */
+  hideWhen?: Array<string | BinderPredicate>;
+  /**
+   * Show only when every rule matches (same rule shapes as hideWhen).
+   * Combined with hideWhen: hide wins if both would apply.
+   */
+  showWhen?: Array<string | BinderPredicate>;
+  /** Nested subgraph id (see PackJsonInput.subgraphs). */
+  subgraph?: string;
 };
 
 /** Stable SPA interactable roles (pack `controls[].role`). */
@@ -63,6 +73,8 @@ export type NavResolve = {
   role?: ControlRole;
   /** Session draft bag key shared by coach prefill + host forms. */
   draftKey?: string;
+  /** Pluggable draft compiler id registered by the host. */
+  compilerId?: string;
   /** Guide ids to click before navigate/spotlight (tabs, menu openers). */
   beforeOpen?: string[];
   /** Menu trigger guide id (prepended to beforeOpen). */
@@ -95,6 +107,9 @@ export type StepStatus = {
   available: boolean;
   blockedReason: string | null;
   stale: boolean;
+  /** Optional lifecycle phase (setup vs run) for checklist chrome. */
+  phase?: string;
+  phaseLabel?: string;
 };
 
 /** Clickable reply options (disambiguation / next-up). */
@@ -134,12 +149,21 @@ export type SlotAskDef = {
 /** Pack reply banks — keys like `launch`, `launch.create_list`, `confirm`, `proactive`. */
 export type ReplyBank = Record<string, string[]>;
 
+export type ChatMessageLink = {
+  label: string;
+  href?: string;
+  /** Host/chrome action — e.g. open_checklist. */
+  action?: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: 'assistant' | 'user' | 'system';
   text: string;
   at: number;
   choices?: ChatChoice[];
+  links?: ChatMessageLink[];
+  intentKey?: string;
 };
 
 /** Optional pack glossary for explain_field. */
@@ -157,6 +181,11 @@ export type FaqEntry = {
   text: string;
   /** Optional: offer to take the user to this step after answering. */
   stepId?: StepId;
+  /** Optional help link rendered in chat. */
+  href?: string;
+  /** Optional chrome action (e.g. open_checklist). */
+  action?: string;
+  label?: string;
 };
 
 /** Pack-declared entity lookup against host-published RuntimeContext.data arrays. */
@@ -172,6 +201,14 @@ export type LookupDef = {
   guideIdTemplate?: string;
   /** Optional nav step after a hit. */
   stepId?: StepId;
+  /** Dot path on each entity for optional status filter. */
+  statusField?: string;
+  /** Allowed status values when statusField is set. */
+  statusAllow?: string[];
+  /** Dot path under ctx.data; when truthy, lookup is enabled. */
+  filterPath?: string;
+  /** Navigate template with `{{id}}` after a hit (host navigate). */
+  openPathTemplate?: string;
 };
 
 export type LookupEntityHit = {
@@ -230,6 +267,10 @@ export type SessionSlots = {
   flags: Record<string, unknown>;
   pending?: PendingPrompt | null;
   discourse?: DiscourseState;
+  /** Nested DAG currently scoping NLU / availability. */
+  activeSubgraphId?: string | null;
+  /** Stack of parent step ids that opened nested subgraphs. */
+  subgraphStack?: StepId[];
 };
 
 export type AssistantFeatures = {
@@ -237,6 +278,7 @@ export type AssistantFeatures = {
   palette?: boolean;
   spotlight?: boolean;
   voice?: boolean;
+  checklist?: boolean;
   /**
    * When true (or UIPILOT_ONNX_RANKER=1), prefer the corpus-trained ONNX/JSON
    * intent+slot ranker instead of rules-only parseUtterance.
@@ -249,6 +291,8 @@ export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
 export type PackRuntime = {
   id: string;
   steps: FlowStepDef[];
+  /** Nested flows keyed by subgraph id (parent step.subgraph). */
+  subgraphs?: Record<string, FlowStepDef[]>;
   isComplete: Record<StepId, CompletenessFn>;
   resolveNav: (stepId: StepId, ctx: RuntimeContextBase) => NavResolve | null;
   unavailableReason?: (stepId: StepId, ctx: RuntimeContextBase) => string | null;
@@ -281,6 +325,8 @@ export type ControlDef = {
   /** Open form/modal and coach required fills (create/edit flows). */
   coachCreate?: boolean;
   draftKey?: string;
+  /** Pluggable draft compiler id (host registers DraftCompiler). */
+  compilerId?: string;
   beforeOpen?: string[];
   openMenu?: string;
   confirmDialog?: string;
@@ -326,6 +372,22 @@ export type PackJsonInput = {
   faq?: FaqEntry[];
   lookups?: LookupDef[];
   replies?: ReplyBank;
+  /** Nested DAGs keyed by id; referenced via FlowStepDef.subgraph. */
+  subgraphs?: Record<string, FlowStepDef[]>;
+};
+
+/** Host-registered NL → draft patch compiler (no domain types in core). */
+export type DraftCompileResult = {
+  draft: SlotBag;
+  summary?: string;
+  finishRequested?: boolean;
+};
+
+export type DraftCompiler = {
+  id: string;
+  match: (text: string) => boolean;
+  compile: (text: string, current: SlotBag | null) => DraftCompileResult | null;
+  listMissing: (draft: SlotBag) => Array<{ key: string; label: string }>;
 };
 
 export type IntentParsePack = {

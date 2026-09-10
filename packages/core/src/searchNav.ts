@@ -1,3 +1,4 @@
+import { isStepVisible } from './visibility.js';
 import type { FlowStepDef, NavSkipEntry, RuntimeContextBase, StepId } from './types.js';
 
 export function searchNavSkips(
@@ -8,12 +9,7 @@ export function searchNavSkips(
 ): NavSkipEntry[] {
   const q = query.trim().toLowerCase();
   return steps
-    .filter((step) => {
-      for (const rule of step.hideWhen ?? []) {
-        if (ctx.data[rule]) return false;
-      }
-      return isAvailable(step.id, ctx);
-    })
+    .filter((step) => isStepVisible(step, ctx) && isAvailable(step.id, ctx))
     .filter((step) => {
       if (!q) return true;
       if (step.title.toLowerCase().includes(q)) return true;

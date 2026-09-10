@@ -1,3 +1,4 @@
+import { isStepVisible } from './visibility.js';
 import type { PackRuntime, RuntimeContextBase, StepId, StepStatus } from './types.js';
 
 function missingRequires(
@@ -25,15 +26,11 @@ export function evaluateFlowStatuses(
 ): StepStatus[] {
   const stale = new Set(staleSteps);
   return pack.steps
-    .filter((step) => {
-      for (const rule of step.hideWhen || []) {
-        if (ctx.data[rule]) return false;
-      }
-      return true;
-    })
+    .filter((step) => isStepVisible(step, ctx))
     .map((step) => {
       const complete = (pack.isComplete[step.id]?.(ctx) ?? false) && !stale.has(step.id);
-      const blockedReason = missingRequires(pack, step.id, ctx, stale);
+      const hostBlocked = pack.unavailableReason?.(step.id, ctx) ?? null;
+      const blockedReason = hostBlocked ?? missingRequires(pack, step.id, ctx, stale);
       const available = blockedReason == null;
       return {
         id: step.id,

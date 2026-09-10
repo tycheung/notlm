@@ -70,7 +70,25 @@ export const flowSchema = {
       requires: { type: 'array', items: { type: 'string' } },
       keywords: { type: 'array', items: { type: 'string' } },
       prefers: { type: 'array', items: { type: 'string' } },
-      hideWhen: { type: 'array', items: { type: 'string' } },
+      hideWhen: {
+        type: 'array',
+        items: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'object', additionalProperties: true },
+          ],
+        },
+      },
+      showWhen: {
+        type: 'array',
+        items: {
+          oneOf: [
+            { type: 'string' },
+            { type: 'object', additionalProperties: true },
+          ],
+        },
+      },
+      subgraph: { type: 'string', minLength: 1 },
     },
   },
 } as const;
@@ -111,6 +129,7 @@ export const controlsSchema = {
       userFill: { type: 'array', items: { type: 'string', minLength: 1 } },
       coachCreate: { type: 'boolean' },
       draftKey: { type: 'string', minLength: 1 },
+      compilerId: { type: 'string', minLength: 1 },
       beforeOpen: { type: 'array', items: { type: 'string', minLength: 1 } },
       openMenu: { type: 'string', minLength: 1 },
       confirmDialog: { type: 'string', minLength: 1 },
