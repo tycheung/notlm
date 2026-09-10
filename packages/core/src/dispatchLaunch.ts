@@ -10,6 +10,7 @@ import {
 import { patchQueuedStepSlots } from './queueOps.js';
 import { pickReply } from './replies.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
+import { enterSubgraph } from './subgraph.js';
 import { stepTitle } from './dispatchResolve.js';
 import type { GuideAction, StepId } from './types.js';
 
@@ -52,6 +53,11 @@ export function launchStep(
       emitCoachEvent(deps, { type: 'confirm_ask', stepId: targetStep });
     }
     return;
+  }
+
+  const parentStep = pack.steps.find((s) => s.id === targetStep);
+  if (parentStep?.subgraph) {
+    setSession((s) => enterSubgraph(s, targetStep, parentStep.subgraph!));
   }
 
   const action: GuideAction = {
