@@ -43,6 +43,7 @@ export type {
   UiPilotChromeClassNames,
   UiPilotChromeComponents,
   UiPilotChromeConfig,
+  UiPilotChromeLabels,
 } from './chromeTypes.js';
 export {
   UiPilotProvider,

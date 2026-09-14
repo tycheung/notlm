@@ -169,6 +169,7 @@ export function UiPilotProvider({
   className,
   classNames,
   components,
+  labels,
   style,
   children,
 }: UiPilotProviderProps) {
@@ -184,8 +185,8 @@ export function UiPilotProvider({
   );
 
   const chrome = useMemo<UiPilotChromeConfig>(
-    () => ({ appearance, className, classNames, components, style }),
-    [appearance, className, classNames, components, style]
+    () => ({ appearance, className, classNames, components, labels, style }),
+    [appearance, className, classNames, components, labels, style]
   );
 
   const hostRootStyle = useMemo<CSSProperties>(

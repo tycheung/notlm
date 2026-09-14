@@ -46,7 +46,31 @@
     "spotlight": "guide-format-wizard",
     "openSurface": "formatRoundEditor",
     "role": "step",
-    "coachMessage": "Open the format wizard to build rounds and advancement, then save and apply to this event."
+    "draftKey": "formatDraft",
+    "compilerId": "event_format",
+    "wizardId": "event_format",
+    "wizardPage": 0,
+    "coachMessage": "Open the format wizard. From each round, use Advance to Additional Round or Advance to Final Standings (payouts), then save and apply."
+  },
+  {
+    "id": "guide-format-add-stage",
+    "stepId": "format_add_stage",
+    "path": "/director/event-formats/wizard",
+    "spotlight": "guide-format-add-stage",
+    "openSurface": "formatRoundEditor",
+    "wizardId": "event_format",
+    "wizardPage": 0,
+    "coachMessage": "Add a stage, then set who advances with Advance to Additional Round or Advance to Final Standings."
+  },
+  {
+    "id": "guide-format-save-apply",
+    "stepId": "format_save_apply",
+    "path": "/director/event-formats/wizard",
+    "spotlight": "guide-format-apply-to-event",
+    "openSurface": "confirmApplyFormat",
+    "wizardId": "event_format",
+    "wizardPage": 1,
+    "coachMessage": "Save the format and apply it to the focused event. Every chain must end in Final Standings."
   },
   {
     "id": "guide-tab-side-actions",

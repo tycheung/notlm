@@ -64,6 +64,11 @@ export function CommandPalette() {
 
   if (!paletteOpen) return null;
 
+  const labels = chrome.labels;
+  const paletteAriaLabel = labels?.paletteAriaLabel ?? 'Workflow command palette';
+  const palettePlaceholder = labels?.palettePlaceholder ?? 'Jump to a step…';
+  const paletteSearchAriaLabel = labels?.paletteSearchAriaLabel ?? 'Search workflow steps';
+
   const run = (index: number) => {
     const item = results[index];
     if (!item || !item.available) return;
@@ -88,7 +93,7 @@ export function CommandPalette() {
       <div
         className={['uipilot-palette-panel', classNames?.palettePanel].filter(Boolean).join(' ')}
         role="dialog"
-        aria-label="Workflow command palette"
+        aria-label={paletteAriaLabel}
       >
         <input
           ref={inputRef}
@@ -110,8 +115,8 @@ export function CommandPalette() {
               run(activeIndex);
             }
           }}
-          placeholder="Jump to a step…"
-          aria-label="Search workflow steps"
+          placeholder={palettePlaceholder}
+          aria-label={paletteSearchAriaLabel}
         />
         <ul className="uipilot-palette-list" role="listbox">
           {results.length === 0 && (
@@ -133,7 +138,7 @@ export function CommandPalette() {
                 <span>{item.title}</span>
                 {item.complete && <span> · Done</span>}
                 {!item.available && item.blockedReason && (
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{item.blockedReason}</div>
+                  <div className="uipilot-palette-item-meta">{item.blockedReason}</div>
                 )}
               </button>
             </li>

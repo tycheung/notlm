@@ -30,12 +30,21 @@ export type UiPilotChromeComponents = {
 
 export type UiPilotChromeClassNames = Partial<Record<UiPilotChromeSlot, string>>;
 
+export type UiPilotChromeLabels = {
+  assistantTitle?: string;
+  paletteAriaLabel?: string;
+  palettePlaceholder?: string;
+  paletteSearchAriaLabel?: string;
+};
+
 export type UiPilotChromeConfig = {
   appearance?: UiPilotAppearance;
   /** Extra class on each `.uipilot-host-root` surface. */
   className?: string;
   classNames?: UiPilotChromeClassNames;
   components?: UiPilotChromeComponents;
+  /** Copy overrides for built-in chrome (palette / chat titles). */
+  labels?: UiPilotChromeLabels;
   /** Inline style merged after appearance CSS vars (advanced). */
   style?: CSSProperties;
 };

@@ -43,16 +43,18 @@ export function UiPilotFab() {
   const FabButton = components?.FabButton;
   const ChatHeader = components?.ChatHeader;
   const ChatPanel = components?.ChatPanel;
+  const labels = chrome.labels;
+  const assistantTitle = labels?.assistantTitle ?? 'Assistant';
 
   const headerNode: ReactNode = ChatHeader ? (
     <ChatHeader
-      title="Assistant"
+      title={assistantTitle}
       onClose={() => setPanelOpen(false)}
       className={cx('uipilot-chat-header', classNames?.chatHeader)}
     />
   ) : (
     <div className={cx('uipilot-chat-header', classNames?.chatHeader)}>
-      <span>Assistant</span>
+      <span>{assistantTitle}</span>
       <button
         type="button"
         className="uipilot-chat-close"
@@ -194,7 +196,7 @@ export function UiPilotFab() {
     <div
       className={cx('uipilot-chat-panel', classNames?.chatPanel)}
       role="dialog"
-      aria-label="Assistant"
+      aria-label={assistantTitle}
     >
       {headerNode}
       {messagesNode}
@@ -225,8 +227,17 @@ export function UiPilotFab() {
           aria-label={panelOpen ? 'Close assistant' : 'Open assistant'}
           data-guide-id="guide-assistant-fab"
           data-testid="uipilot-fab"
+          data-assistant-open={panelOpen ? 'true' : 'false'}
         >
-          ?
+          <svg
+            className="uipilot-fab-icon"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            {/* Brain / psychology mark — default FAB glyph */}
+            <path d="M13 3c-1.95 0-3.64 1.16-4.38 2.82C7.97 5.3 7.03 5 6 5 3.79 5 2 6.79 2 9c0 1.48.81 2.77 2 3.46V19c0 1.1.9 2 2 2h7c1.1 0 2-.9 2-2v-1.54c1.19-.69 2-1.98 2-3.46 0-.34-.04-.67-.1-.99.66-.55 1.1-1.36 1.1-2.28 0-1.31-.84-2.41-2-2.83V8c0-2.76-2.24-5-5-5zm-1 14.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-5.5c-.83 0-1.5-.67-1.5-1.5S12.67 9 13.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM8.5 12C7.67 12 7 11.33 7 10.5S7.67 9 8.5 9s1.5.67 1.5 1.5S9.33 12 8.5 12z" />
+          </svg>
         </button>
       )}
     </div>
