@@ -15,11 +15,13 @@ import { DEFAULT_FLASH_CLASS } from './fieldFlash.js';
  * - font: --font-ui | --font-family
  *
  * Stable class contract (hosts may override in their CSS):
- * - uipilot-host-root, uipilot-fab-root, uipilot-fab-btn
+ * - uipilot-host-root, uipilot-fab-root, uipilot-fab-btn, uipilot-fab-btn-secondary
+ * - uipilot-checklist-fab (stacked above assistant in fab-root)
  * - uipilot-chat-panel, uipilot-chat-header, uipilot-chat-close
  * - uipilot-chat-messages, uipilot-chat-bubble, uipilot-chat-bubble-user|assistant
  * - uipilot-chat-turn, uipilot-chat-choices, uipilot-chat-choice
  * - uipilot-chat-input-row, uipilot-chat-input, uipilot-chat-btn, uipilot-chat-btn-primary|listening
+ * - uipilot-checklist-root|backdrop|panel|header|close|list|item|row|title|phase|state
  * - uipilot-palette-backdrop|scrim|panel|input|list|item|item-active
  * - uipilot-spotlight-root|scrim|ring|card
  */
@@ -80,8 +82,24 @@ export const UIPILOT_CSS = `
 .uipilot-chat-btn-primary { background: var(--uipilot-accent); color: var(--uipilot-on-accent); border-color: var(--uipilot-accent); font-weight: 600; }
 .uipilot-chat-btn-listening { background: var(--uipilot-danger-bg); color: var(--uipilot-danger-text); }
 .uipilot-fab-btn { border-radius: 9999px; border: 0; width: 3.25rem; height: 3.25rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.25); background: var(--uipilot-accent); color: var(--uipilot-on-accent); font-size: 1.25rem; padding: 0; }
-.uipilot-fab-btn[data-assistant-open="true"] { filter: brightness(1.08); }
+.uipilot-fab-btn-secondary { background: var(--uipilot-surface-muted); color: var(--uipilot-text); border: 1px solid var(--uipilot-border); }
+.uipilot-fab-btn[data-assistant-open="true"],
+.uipilot-fab-btn[data-checklist-open="true"] { filter: brightness(1.08); background: var(--uipilot-accent); color: var(--uipilot-on-accent); border-color: transparent; }
 .uipilot-fab-icon { width: 1.5rem; height: 1.5rem; display: block; }
+.uipilot-checklist-root { position: fixed; inset: 0; z-index: 11040; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 1rem 5.5rem; pointer-events: none; }
+.uipilot-checklist-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); border: 0; cursor: pointer; pointer-events: auto; }
+.uipilot-checklist-panel { position: relative; pointer-events: auto; width: min(100%, 28rem); max-height: min(60vh, 32rem); display: flex; flex-direction: column; border-radius: var(--uipilot-radius); border: 1px solid var(--uipilot-border); background: var(--uipilot-surface); box-shadow: 0 20px 40px rgba(0,0,0,0.35); overflow: hidden; }
+.uipilot-checklist-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--uipilot-border-muted); background: var(--uipilot-surface-muted); color: var(--uipilot-text); }
+.uipilot-checklist-close { border: 0; background: transparent; cursor: pointer; color: var(--uipilot-text-muted); font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.5rem; }
+.uipilot-checklist-list { flex: 1; overflow-y: auto; margin: 0; padding: 0.25rem 0; list-style: none; min-height: 0; }
+.uipilot-checklist-item { border-bottom: 1px solid var(--uipilot-border-muted); }
+.uipilot-checklist-item:last-child { border-bottom: 0; }
+.uipilot-checklist-row { width: 100%; text-align: left; padding: 0.625rem 0.75rem; border: 0; background: transparent; cursor: pointer; color: var(--uipilot-text); display: flex; flex-direction: column; gap: 0.25rem; }
+.uipilot-checklist-row:hover:not(:disabled) { background: var(--uipilot-surface-hover); }
+.uipilot-checklist-row:disabled { opacity: 0.7; cursor: default; }
+.uipilot-checklist-title { font-size: 0.875rem; font-weight: 600; }
+.uipilot-checklist-phase { font-size: 0.6875rem; color: var(--uipilot-text-muted); }
+.uipilot-checklist-state { font-size: 0.75rem; color: var(--uipilot-accent); }
 .uipilot-spotlight-root { position: fixed; inset: 0; z-index: 80; }
 .uipilot-spotlight-scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.5); border: 0; cursor: default; }
 .uipilot-spotlight-ring { pointer-events: none; position: absolute; border-radius: var(--uipilot-radius-sm); box-shadow: 0 0 0 4px var(--uipilot-accent), 0 0 0 9999px rgba(0,0,0,0.45); }

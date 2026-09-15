@@ -9,36 +9,15 @@ import {
   type UiPilotProviderProps,
 } from './UiPilotContext.js';
 
-function ChecklistFab() {
-  const { features, checklistOpen, setChecklistOpen, setPanelOpen, setPaletteOpen } =
-    useUiPilot();
-  if (features.checklist === false) return null;
-  return (
-    <button
-      type="button"
-      className="uipilot-checklist-fab"
-      data-guide-id="guide-checklist-fab"
-      data-testid="uipilot-checklist-fab"
-      aria-label={checklistOpen ? 'Close checklist' : 'Open checklist'}
-      onClick={() => {
-        setPanelOpen(false);
-        setPaletteOpen(false);
-        setChecklistOpen(!checklistOpen);
-      }}
-    >
-      List
-    </button>
-  );
-}
-
 function UiPilotChrome() {
   const { features, spotlight, clearSpotlight } = useUiPilot();
+  const showFabDock = features.chat !== false || features.checklist !== false;
 
   return (
     <>
       {features.palette !== false && <CommandPalette />}
-      {features.chat !== false && <UiPilotFab />}
-      <ChecklistFab />
+      {/* Single dock: checklist above assistant; checklist alone when chat is off. */}
+      {showFabDock && <UiPilotFab />}
       <ChecklistPanel />
       {features.spotlight !== false && (
         <SpotlightOverlay spotlight={spotlight} onDismiss={clearSpotlight} />

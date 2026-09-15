@@ -10,6 +10,7 @@ export function UiPilotFab() {
   const {
     panelOpen,
     setPanelOpen,
+    checklistOpen,
     setChecklistOpen,
     messages,
     handleUserUtterance,
@@ -205,29 +206,46 @@ export function UiPilotFab() {
     </div>
   );
 
+  const chatEnabled = features.chat !== false;
+  const checklistEnabled = features.checklist !== false;
+  if (!chatEnabled && !checklistEnabled) return null;
+
+  const toggleChecklist = () => {
+    setPanelOpen(false);
+    setChecklistOpen(!checklistOpen);
+  };
+
+  const toggleAssistant = () => {
+    setChecklistOpen(false);
+    setPanelOpen(!panelOpen);
+  };
+
   return (
     <div
       className={cx(hostRootClassName, 'uipilot-fab-root', classNames?.fabRoot)}
       style={hostRootStyle}
+      data-testid="uipilot-fab-dock"
+      data-chat-enabled={chatEnabled ? 'true' : 'false'}
     >
-      {panelOpen && panelInner}
+      {chatEnabled && panelOpen && panelInner}
 
-      {FabButton ? (
-        <FabButton
-          open={panelOpen}
-          onToggle={() => setPanelOpen(!panelOpen)}
-          className={cx('uipilot-fab-btn', classNames?.fabButton)}
-        />
-      ) : (
+      {/* Checklist sits above the assistant; alone it anchors at the dock bottom. */}
+      {checklistEnabled && (
         <button
           type="button"
-          className={cx('uipilot-fab-btn', classNames?.fabButton)}
-          onClick={() => setPanelOpen(!panelOpen)}
-          aria-expanded={panelOpen}
-          aria-label={panelOpen ? 'Close assistant' : 'Open assistant'}
-          data-guide-id="guide-assistant-fab"
-          data-testid="uipilot-fab"
-          data-assistant-open={panelOpen ? 'true' : 'false'}
+          className={cx(
+            'uipilot-fab-btn',
+            'uipilot-fab-btn-secondary',
+            'uipilot-checklist-fab',
+            classNames?.fabButton
+          )}
+          onClick={toggleChecklist}
+          aria-expanded={checklistOpen}
+          aria-label={checklistOpen ? 'Close checklist' : 'Open checklist'}
+          data-guide-id="guide-checklist-fab"
+          data-testid="uipilot-checklist-fab"
+          data-checklist-open={checklistOpen ? 'true' : 'false'}
+          title="Checklist (setup & run status)"
         >
           <svg
             className="uipilot-fab-icon"
@@ -235,11 +253,40 @@ export function UiPilotFab() {
             fill="currentColor"
             aria-hidden="true"
           >
-            {/* Brain / psychology mark — default FAB glyph */}
-            <path d="M13 3c-1.95 0-3.64 1.16-4.38 2.82C7.97 5.3 7.03 5 6 5 3.79 5 2 6.79 2 9c0 1.48.81 2.77 2 3.46V19c0 1.1.9 2 2 2h7c1.1 0 2-.9 2-2v-1.54c1.19-.69 2-1.98 2-3.46 0-.34-.04-.67-.1-.99.66-.55 1.1-1.36 1.1-2.28 0-1.31-.84-2.41-2-2.83V8c0-2.76-2.24-5-5-5zm-1 14.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-5.5c-.83 0-1.5-.67-1.5-1.5S12.67 9 13.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM8.5 12C7.67 12 7 11.33 7 10.5S7.67 9 8.5 9s1.5.67 1.5 1.5S9.33 12 8.5 12z" />
+            <path d="M3 5h2v2H3V5zm4 0h14v2H7V5zM3 11h2v2H3v-2zm4 0h14v2H7v-2zM3 17h2v2H3v-2zm4 0h14v2H7v-2z" />
           </svg>
         </button>
       )}
+
+      {chatEnabled &&
+        (FabButton ? (
+          <FabButton
+            open={panelOpen}
+            onToggle={toggleAssistant}
+            className={cx('uipilot-fab-btn', classNames?.fabButton)}
+          />
+        ) : (
+          <button
+            type="button"
+            className={cx('uipilot-fab-btn', classNames?.fabButton)}
+            onClick={toggleAssistant}
+            aria-expanded={panelOpen}
+            aria-label={panelOpen ? 'Close assistant' : 'Open assistant'}
+            data-guide-id="guide-assistant-fab"
+            data-testid="uipilot-fab"
+            data-assistant-open={panelOpen ? 'true' : 'false'}
+          >
+            <svg
+              className="uipilot-fab-icon"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              {/* Brain / psychology mark — default FAB glyph */}
+              <path d="M13 3c-1.95 0-3.64 1.16-4.38 2.82C7.97 5.3 7.03 5 6 5 3.79 5 2 6.79 2 9c0 1.48.81 2.77 2 3.46V19c0 1.1.9 2 2 2h7c1.1 0 2-.9 2-2v-1.54c1.19-.69 2-1.98 2-3.46 0-.34-.04-.67-.1-.99.66-.55 1.1-1.36 1.1-2.28 0-1.31-.84-2.41-2-2.83V8c0-2.76-2.24-5-5-5zm-1 14.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-5.5c-.83 0-1.5-.67-1.5-1.5S12.67 9 13.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM8.5 12C7.67 12 7 11.33 7 10.5S7.67 9 8.5 9s1.5.67 1.5 1.5S9.33 12 8.5 12z" />
+            </svg>
+          </button>
+        ))}
     </div>
   );
 }

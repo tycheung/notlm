@@ -12,7 +12,9 @@ describe('UIPILOT_CSS tokens', () => {
     expect(UIPILOT_CSS).toMatch(/uipilot-chat-panel/);
     expect(UIPILOT_CSS).toMatch(/uipilot-chat-choice/);
     expect(UIPILOT_CSS).toMatch(/uipilot-fab-btn/);
+    expect(UIPILOT_CSS).toMatch(/uipilot-fab-btn-secondary/);
     expect(UIPILOT_CSS).toMatch(/uipilot-fab-icon/);
+    expect(UIPILOT_CSS).toMatch(/uipilot-checklist-panel/);
   });
 
   it('maps appearance to CSS vars', () => {
