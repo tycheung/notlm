@@ -79,6 +79,8 @@ export const UIPILOT_CSS = `
 .uipilot-chat-input { flex: 1; resize: none; border-radius: var(--uipilot-radius-sm); border: 1px solid var(--uipilot-border); padding: 0.375rem 0.5rem; font-size: 0.8125rem; background: var(--uipilot-surface); color: var(--uipilot-text); }
 .uipilot-chat-input::placeholder { color: var(--uipilot-text-muted); }
 .uipilot-chat-btn { border-radius: var(--uipilot-radius-sm); border: 1px solid var(--uipilot-border); padding: 0.375rem 0.625rem; cursor: pointer; background: var(--uipilot-surface); color: var(--uipilot-text); }
+.uipilot-chat-btn-mic { display: inline-flex; align-items: center; justify-content: center; padding: 0.375rem 0.5rem; min-width: 2.25rem; }
+.uipilot-mic-icon { display: block; flex-shrink: 0; }
 .uipilot-chat-btn-primary { background: var(--uipilot-accent); color: var(--uipilot-on-accent); border-color: var(--uipilot-accent); font-weight: 600; }
 .uipilot-chat-btn-listening { background: var(--uipilot-danger-bg); color: var(--uipilot-danger-text); }
 .uipilot-fab-btn { border-radius: 9999px; border: 0; width: 3.25rem; height: 3.25rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.25); background: var(--uipilot-accent); color: var(--uipilot-on-accent); font-size: 1.25rem; padding: 0; }
