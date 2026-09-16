@@ -1,4 +1,5 @@
 import { editDistance } from './fuzzyText.js';
+import { buildTypoLexicon, correctTypos } from './typoFix.js';
 import type { IntentParsePack, ParseUtteranceResult, StepId } from './types.js';
 
 const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
@@ -188,7 +189,7 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
     };
   }
 
-  const normalized = normalizeUtterance(text);
+  const normalized = correctTypos(normalizeUtterance(text), buildTypoLexicon(pack));
   const meta = matchMetaIntent(normalized, pack.meta);
   const goBack = meta === 'go_back';
   const isCorrection = !goBack && CORRECTION_RE.test(normalized);

@@ -115,6 +115,28 @@ describe('parseUtterance', () => {
     expect(result.rawIntent).toBe('goto:add_item');
     expect(result.candidates).toBeUndefined();
   });
+
+  it('corrects OOV typos before matching step phrases', () => {
+    const typed = {
+      ...pack,
+      aliases: {
+        ...pack.aliases,
+        create_list: [...(pack.aliases.create_list ?? []), 'create tournament list'],
+      },
+    };
+    // "tornament" → "tournament" via lexicon, then matches the multi-word alias.
+    expect(parseUtterance('create tornament list', typed).stepId).toBe('create_list');
+  });
+
+  it('keeps step on correction only with a strong multi-word phrase', () => {
+    const withStep = parseUtterance('actually create list', pack);
+    expect(withStep.isCorrection).toBe(true);
+    expect(withStep.stepId).toBe('create_list');
+
+    const meant = parseUtterance('i meant create list', pack);
+    expect(meant.stepId).toBe('create_list');
+    expect(meant.isCorrection).toBe(true);
+  });
 });
 
 describe('parsePackedUtterance', () => {
