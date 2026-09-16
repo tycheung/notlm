@@ -3,6 +3,7 @@ import { useUiPilot } from './UiPilotContext.js';
 
 /**
  * Portable checklist over evaluateFlowStatuses (+ optional phase labels).
+ * Applies host-root tokens so surface/text vars resolve outside nested chrome.
  */
 export function ChecklistPanel() {
   const {
@@ -11,6 +12,8 @@ export function ChecklistPanel() {
     setChecklistOpen,
     statuses,
     executeStep,
+    hostRootClassName,
+    hostRootStyle,
   } = useUiPilot();
 
   useEffect(() => {
@@ -28,7 +31,11 @@ export function ChecklistPanel() {
   if (features.checklist === false || !checklistOpen) return null;
 
   return (
-    <div className="uipilot-checklist-root" data-testid="uipilot-checklist">
+    <div
+      className={[hostRootClassName, 'uipilot-checklist-root'].filter(Boolean).join(' ')}
+      style={hostRootStyle}
+      data-testid="uipilot-checklist"
+    >
       <button
         type="button"
         className="uipilot-checklist-backdrop"

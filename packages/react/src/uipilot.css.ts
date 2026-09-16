@@ -90,18 +90,18 @@ export const UIPILOT_CSS = `
 .uipilot-fab-icon { width: 1.5rem; height: 1.5rem; display: block; }
 .uipilot-checklist-root { position: fixed; inset: 0; z-index: 11040; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 1rem 5.5rem; pointer-events: none; }
 .uipilot-checklist-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); border: 0; cursor: pointer; pointer-events: auto; }
-.uipilot-checklist-panel { position: relative; pointer-events: auto; width: min(100%, 28rem); max-height: min(60vh, 32rem); display: flex; flex-direction: column; border-radius: var(--uipilot-radius); border: 1px solid var(--uipilot-border); background: var(--uipilot-surface); box-shadow: 0 20px 40px rgba(0,0,0,0.35); overflow: hidden; }
-.uipilot-checklist-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--uipilot-border-muted); background: var(--uipilot-surface-muted); color: var(--uipilot-text); }
-.uipilot-checklist-close { border: 0; background: transparent; cursor: pointer; color: var(--uipilot-text-muted); font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.5rem; }
-.uipilot-checklist-list { flex: 1; overflow-y: auto; margin: 0; padding: 0.25rem 0; list-style: none; min-height: 0; }
-.uipilot-checklist-item { border-bottom: 1px solid var(--uipilot-border-muted); }
+.uipilot-checklist-panel { position: relative; pointer-events: auto; width: min(100%, 28rem); max-height: min(60vh, 32rem); display: flex; flex-direction: column; border-radius: var(--uipilot-radius); border: 1px solid var(--uipilot-border, var(--color-border, #d1d5db)); background: var(--uipilot-surface, var(--color-surface, #ffffff)); box-shadow: 0 20px 40px rgba(0,0,0,0.35); overflow: hidden; color: var(--uipilot-text, var(--color-text, #111827)); }
+.uipilot-checklist-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--uipilot-border-muted, var(--color-border-muted, #e5e7eb)); background: var(--uipilot-surface-muted, var(--color-surface-muted, var(--color-surface-light, #f9fafb))); color: var(--uipilot-text, var(--color-text, #111827)); }
+.uipilot-checklist-close { border: 0; background: transparent; cursor: pointer; color: var(--uipilot-text-muted, var(--color-text-muted, #6b7280)); font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.5rem; }
+.uipilot-checklist-list { flex: 1; overflow-y: auto; margin: 0; padding: 0.25rem 0; list-style: none; min-height: 0; background: var(--uipilot-surface, var(--color-surface, #ffffff)); }
+.uipilot-checklist-item { border-bottom: 1px solid var(--uipilot-border-muted, var(--color-border-muted, #e5e7eb)); }
 .uipilot-checklist-item:last-child { border-bottom: 0; }
-.uipilot-checklist-row { width: 100%; text-align: left; padding: 0.625rem 0.75rem; border: 0; background: transparent; cursor: pointer; color: var(--uipilot-text); display: flex; flex-direction: column; gap: 0.25rem; }
-.uipilot-checklist-row:hover:not(:disabled) { background: var(--uipilot-surface-hover); }
+.uipilot-checklist-row { width: 100%; text-align: left; padding: 0.625rem 0.75rem; border: 0; background: transparent; cursor: pointer; color: var(--uipilot-text, var(--color-text, #111827)); display: flex; flex-direction: column; gap: 0.25rem; }
+.uipilot-checklist-row:hover:not(:disabled) { background: var(--uipilot-surface-hover, var(--color-surface-hover, var(--color-surface-light, #f3f4f6))); }
 .uipilot-checklist-row:disabled { opacity: 0.7; cursor: default; }
 .uipilot-checklist-title { font-size: 0.875rem; font-weight: 600; }
-.uipilot-checklist-phase { font-size: 0.6875rem; color: var(--uipilot-text-muted); }
-.uipilot-checklist-state { font-size: 0.75rem; color: var(--uipilot-accent); }
+.uipilot-checklist-phase { font-size: 0.6875rem; color: var(--uipilot-text-muted, var(--color-text-muted, #6b7280)); }
+.uipilot-checklist-state { font-size: 0.75rem; color: var(--uipilot-accent, var(--color-primary, #2563eb)); }
 .uipilot-spotlight-root { position: fixed; inset: 0; z-index: 80; }
 .uipilot-spotlight-scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.5); border: 0; cursor: default; }
 .uipilot-spotlight-ring { pointer-events: none; position: absolute; border-radius: var(--uipilot-radius-sm); box-shadow: 0 0 0 4px var(--uipilot-accent), 0 0 0 9999px rgba(0,0,0,0.45); }
