@@ -12,6 +12,9 @@ export {
   lookupsSchema,
   intentsSchema,
   manifestSchema,
+  missExchangeListSchema,
+  missExchangeSchema,
+  missRecordListSchema,
   missRecordSchema,
   PACK_PIECE_SCHEMAS,
   repliesSchema,
@@ -20,6 +23,10 @@ export {
 export type { PackPieceName } from './schemas.js';
 
 export {
+  validateMissExchange,
+  validateMissExchangeList,
+  validateMissRecord,
+  validateMissRecordList,
   validatePackFolder,
   validatePiece,
   validateScenarios,

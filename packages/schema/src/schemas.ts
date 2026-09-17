@@ -293,11 +293,15 @@ export const configSchema = {
   },
 } as const;
 
-/** Portable HTTP body for miss-log ingest (any host backend). */
+/**
+ * Portable MissRecord wire shape (POST ingest + GET/export list items).
+ * Hosts may attach extra admin fields (id, userId, consumedAt, …);
+ * snake_case aliases (utterance, pack_id, …) are not part of this contract.
+ */
 export const missRecordSchema = {
   $id: 'https://uipilot.dev/schemas/miss-record.json',
   type: 'object',
-  additionalProperties: false,
+  additionalProperties: true,
   required: ['text', 'kind', 'at'],
   properties: {
     text: { type: 'string', minLength: 1, maxLength: 500 },
@@ -310,6 +314,112 @@ export const missRecordSchema = {
     rawIntent: { type: ['string', 'null'] },
     confidence: { type: 'string', enum: ['high', 'mid', 'low'] },
     at: { type: 'string', minLength: 1 },
+  },
+} as const;
+
+/** GET/export body: JSON array of MissRecords (host extras allowed per item). */
+export const missRecordListSchema = {
+  $id: 'https://uipilot.dev/schemas/miss-record-list.json',
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['text', 'kind', 'at'],
+    properties: {
+      text: { type: 'string', minLength: 1, maxLength: 500 },
+      kind: {
+        type: 'string',
+        enum: ['unknown', 'ambiguous', 'low_confidence'],
+      },
+      packId: { type: 'string' },
+      pathname: { type: 'string' },
+      rawIntent: { type: ['string', 'null'] },
+      confidence: { type: 'string', enum: ['high', 'mid', 'low'] },
+      at: { type: 'string', minLength: 1 },
+    },
+  },
+} as const;
+
+const missProposedProperties = {
+  type: { type: 'string', enum: ['faq', 'goto', 'meta', 'refuse'] },
+  stepId: { type: 'string' },
+  faqId: { type: 'string' },
+  aliases: { type: 'array', items: { type: 'string' } },
+} as const;
+
+/** Portable MissExchange = MissRecord + LLM reply + optional proposed label. */
+export const missExchangeSchema = {
+  $id: 'https://uipilot.dev/schemas/miss-exchange.json',
+  type: 'object',
+  additionalProperties: true,
+  required: ['text', 'kind', 'at', 'llmReply'],
+  properties: {
+    text: { type: 'string', minLength: 1, maxLength: 500 },
+    kind: {
+      type: 'string',
+      enum: ['unknown', 'ambiguous', 'low_confidence'],
+    },
+    packId: { type: 'string' },
+    pathname: { type: 'string' },
+    rawIntent: { type: ['string', 'null'] },
+    confidence: { type: 'string', enum: ['high', 'mid', 'low'] },
+    at: { type: 'string', minLength: 1 },
+    llmReply: { type: 'string', minLength: 1, maxLength: 2000 },
+    proposed: {
+      type: 'object',
+      additionalProperties: true,
+      required: ['type'],
+      properties: missProposedProperties,
+    },
+    provider: {
+      type: 'object',
+      additionalProperties: true,
+      required: ['id', 'model'],
+      properties: {
+        id: { type: 'string' },
+        model: { type: 'string' },
+      },
+    },
+    exchangeId: { type: 'string' },
+  },
+} as const;
+
+export const missExchangeListSchema = {
+  $id: 'https://uipilot.dev/schemas/miss-exchange-list.json',
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['text', 'kind', 'at', 'llmReply'],
+    properties: {
+      text: { type: 'string', minLength: 1, maxLength: 500 },
+      kind: {
+        type: 'string',
+        enum: ['unknown', 'ambiguous', 'low_confidence'],
+      },
+      packId: { type: 'string' },
+      pathname: { type: 'string' },
+      rawIntent: { type: ['string', 'null'] },
+      confidence: { type: 'string', enum: ['high', 'mid', 'low'] },
+      at: { type: 'string', minLength: 1 },
+      llmReply: { type: 'string', minLength: 1, maxLength: 2000 },
+      proposed: {
+        type: 'object',
+        additionalProperties: true,
+        required: ['type'],
+        properties: missProposedProperties,
+      },
+      provider: {
+        type: 'object',
+        additionalProperties: true,
+        required: ['id', 'model'],
+        properties: {
+          id: { type: 'string' },
+          model: { type: 'string' },
+        },
+      },
+      exchangeId: { type: 'string' },
+    },
   },
 } as const;
 

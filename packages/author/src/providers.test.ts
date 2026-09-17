@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createOllamaProvider } from './providers/ollama.js';
-import { createOpenAiCompatProvider } from './providers/openaiCompat.js';
-import { createProvider } from './providers/createProvider.js';
-import type { LlmProvider } from './types.js';
+import {
+  createOllamaProvider,
+  createOpenAiCompatProvider,
+  createProvider,
+  type LlmProvider,
+} from '@uipilot/llm';
 
-describe('providers', () => {
+describe('providers (via @uipilot/llm)', () => {
   it('ollama posts to /api/chat', async () => {
     const fetchImpl = vi.fn(async () => ({
       ok: true,
@@ -40,22 +42,19 @@ describe('providers', () => {
     }) as unknown as typeof fetch;
 
     const provider = createOpenAiCompatProvider({
-      baseUrl: 'https://api.example.com',
-      model: 'gpt-test',
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4o-mini',
       apiKey: 'test-key',
       fetchImpl,
     });
 
-    await provider.completeChat({
+    const text = await provider.completeChat({
       messages: [{ role: 'user', content: 'hi' }],
     });
-    expect(fetchImpl).toHaveBeenCalledWith(
-      'https://api.example.com/v1/chat/completions',
-      expect.any(Object)
-    );
+    expect(text).toBe('done');
   });
 
-  it('createProvider selects ollama from env shape', async () => {
+  it('createProvider routes ollama', async () => {
     const fetchImpl = vi.fn(async () => ({
       ok: true,
       json: async () => ({ message: { content: 'x' } }),
@@ -69,7 +68,8 @@ describe('providers', () => {
       },
       fetchImpl
     );
-    await provider.completeChat({ messages: [{ role: 'user', content: 'a' }] });
-    expect(fetchImpl).toHaveBeenCalled();
+    expect(await provider.completeChat({ messages: [{ role: 'user', content: 'a' }] })).toBe(
+      'x'
+    );
   });
 });

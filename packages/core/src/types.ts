@@ -293,6 +293,16 @@ export type AssistantFeatures = {
   onnxRanker?: boolean;
   /** Kill switch when a missLog transport is also provided on the host. */
   missLog?: boolean;
+  /**
+   * Learning Mode: on miss, call host `fallbackLlm` and log MissExchange.
+   * **Default off** — production should run offline NLU only until a train window.
+   * Alias: `llmFallback` (deprecated; treated the same when `learningMode` unset).
+   */
+  learningMode?: boolean;
+  /**
+   * @deprecated Prefer `learningMode`. When `learningMode` is unset, this is used.
+   */
+  llmFallback?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;

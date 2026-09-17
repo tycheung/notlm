@@ -1,22 +1,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { MissRecord } from '@uipilot/core';
+import { normalizeMissRecordList, parseMissRecords } from '@uipilot/core';
+import { validateMissRecordList } from '@uipilot/schema';
 import { draftsDir, pathExists, resolveUipilotHome } from './uipilotHome.js';
-
-function parseMissRecords(raw: string): MissRecord[] {
-  const trimmed = raw.trim();
-  if (!trimmed) return [];
-  if (trimmed.startsWith('[')) {
-    const arr = JSON.parse(trimmed) as unknown;
-    if (!Array.isArray(arr)) throw new Error('Expected a JSON array of MissRecords');
-    return arr as MissRecord[];
-  }
-  return trimmed
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as MissRecord);
-}
 
 function takeFlag(args: string[], name: string): string | undefined {
   const eq = args.findIndex((a) => a.startsWith(`${name}=`));
@@ -30,14 +16,28 @@ function positionalDir(args: string[]): string | undefined {
   const skip = new Set<string>();
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i]!;
-    if (a === '--from' || a === '--out') {
+    if (a === '--from' || a === '--out' || a === '--url') {
       skip.add(a);
       if (args[i + 1]) skip.add(args[i + 1]!);
-    } else if (a.startsWith('--from=') || a.startsWith('--out=')) {
+    } else if (
+      a.startsWith('--from=') ||
+      a.startsWith('--out=') ||
+      a.startsWith('--url=')
+    ) {
       skip.add(a);
     }
   }
   return args.find((a) => !a.startsWith('-') && !skip.has(a));
+}
+
+function writeMissDump(records: ReturnType<typeof parseMissRecords>, outPath?: string): void {
+  const payload = `${JSON.stringify(records, null, 2)}\n`;
+  if (outPath) {
+    writeFileSync(outPath, payload, 'utf8');
+    console.log(`Wrote ${records.length} miss records → ${outPath}`);
+  } else {
+    process.stdout.write(payload);
+  }
 }
 
 /** Export miss records from a JSON/JSONL dump (e.g. localStorage snapshot). */
@@ -49,15 +49,41 @@ export async function cmdMissesExport(args: string[]): Promise<void> {
     return;
   }
   const outPath = takeFlag(args, '--out');
-
   const records = parseMissRecords(readFileSync(fromPath, 'utf8'));
-  const payload = `${JSON.stringify(records, null, 2)}\n`;
-  if (outPath) {
-    writeFileSync(outPath, payload, 'utf8');
-    console.log(`Wrote ${records.length} miss records → ${outPath}`);
-  } else {
-    process.stdout.write(payload);
+  writeMissDump(records, outPath);
+}
+
+/**
+ * GET a host miss-list endpoint, validate portable MissRecord[], write dump.
+ */
+export async function cmdMissesPull(args: string[]): Promise<void> {
+  const url = takeFlag(args, '--url');
+  if (!url) {
+    console.error('Usage: uipilotCLI misses pull --url <endpoint> [--out <path>]');
+    process.exitCode = 1;
+    return;
   }
+  const outPath = takeFlag(args, '--out');
+  const fetchFn = globalThis.fetch?.bind(globalThis);
+  if (!fetchFn) {
+    throw new Error('fetch is not available in this runtime');
+  }
+  const res = await fetchFn(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) {
+    throw new Error(`misses pull failed: HTTP ${res.status} ${res.statusText}`);
+  }
+  const data = (await res.json()) as unknown;
+  const schema = validateMissRecordList(data);
+  if (!schema.ok) {
+    throw new Error(
+      `Host response is not a portable MissRecord[]:\n${schema.errors.join('\n')}`
+    );
+  }
+  const records = normalizeMissRecordList(data);
+  writeMissDump(records, outPath);
 }
 
 /**

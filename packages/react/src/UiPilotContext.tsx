@@ -6,13 +6,18 @@ import {
   emptySession,
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
+  invokeLlmFallback,
+  isLearningModeEnabled,
+  isMissKind,
   listMissingRequires,
   markActiveStep,
   type AssistantFeatures,
   type ChatChoice,
   type ChatMessage,
   type CoachEvent,
+  type LlmFallbackFn,
   type LoadedPack,
+  type MissExchangeTransport,
   type MissKind,
   type MissLogTransport,
   type PackRuntime,
@@ -155,13 +160,20 @@ export type UiPilotProviderProps = {
   /**
    * Optional miss-log sink for unknown/ambiguous/low-confidence utterances.
    * Disabled when `features.missLog === false`.
+   * When `exchangeTransport` is set, successful Learning Mode fallbacks also POST MissExchange.
    */
   missLog?: {
     transport: MissLogTransport;
+    exchangeTransport?: MissExchangeTransport;
     kinds?: MissKind[];
     packId?: string;
     getPathname?: () => string | undefined;
   };
+  /**
+   * Host BYO backup LLM (server proxy). Only used when `features.learningMode` is true
+   * (default off — offline NLU with canned repair).
+   */
+  fallbackLlm?: LlmFallbackFn;
   children: ReactNode;
 } & UiPilotChromeConfig;
 
@@ -180,6 +192,7 @@ export function UiPilotProvider({
   tryHandleUtterance,
   onCoachEvent,
   missLog,
+  fallbackLlm,
   appearance,
   className,
   classNames,
@@ -199,6 +212,13 @@ export function UiPilotProvider({
     [featuresProp]
   );
 
+  const pushAssistantRef = useRef<
+    (
+      text: string,
+      opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
+    ) => void
+  >(() => {});
+
   const coachEventHandler = useMemo(() => {
     const missEnabled = Boolean(missLog?.transport) && features.missLog !== false;
     const pipeline = missEnabled
@@ -217,8 +237,79 @@ export function UiPilotProvider({
             }),
         })
       : null;
-    return composeCoachEventHandlers(pipeline?.onCoachEvent, onCoachEvent);
-  }, [features.missLog, getContext, missLog, onCoachEvent, pack.id]);
+
+    const fallbackEnabled =
+      Boolean(fallbackLlm) && isLearningModeEnabled(features);
+
+    const knownStepIds = new Set(pack.steps.map((s) => s.id));
+
+    const onFallbackMiss = (event: CoachEvent) => {
+      if (!fallbackEnabled || !fallbackLlm) return;
+      if (event.type !== 'repair' || !isMissKind(event.kind)) return;
+      const missKind = event.kind;
+      const text = (event.text ?? '').trim();
+      if (!text) return;
+      void (async () => {
+        let pathname: string | undefined;
+        try {
+          pathname =
+            missLog?.getPathname?.() ?? getContext().pathname;
+        } catch {
+          pathname = undefined;
+        }
+        const result = await invokeLlmFallback(
+          fallbackLlm,
+          {
+            text,
+            kind: missKind,
+            packId: missLog?.packId ?? pack.id,
+            pathname,
+          },
+          { knownStepIds }
+        );
+        if (!result) return;
+        const choices =
+          result.proposed?.type === 'goto' && result.proposed.stepId
+            ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
+            : undefined;
+        pushAssistantRef.current(result.reply, choices ? { choices } : undefined);
+        const exchangeTransport = missLog?.exchangeTransport;
+        if (exchangeTransport) {
+          void Promise.resolve(
+            exchangeTransport.logExchange({
+              text,
+              kind: missKind,
+              packId: missLog?.packId ?? pack.id,
+              pathname,
+              rawIntent: event.rawIntent,
+              confidence: event.confidence,
+              at: new Date().toISOString(),
+              llmReply: result.reply,
+              proposed: result.proposed,
+              provider: result.provider,
+              exchangeId: result.exchangeId,
+            })
+          ).catch(() => {
+            /* host failures must not break chat */
+          });
+        }
+      })();
+    };
+
+    return composeCoachEventHandlers(
+      pipeline?.onCoachEvent,
+      onFallbackMiss,
+      onCoachEvent
+    );
+  }, [
+    fallbackLlm,
+    features,
+    getContext,
+    missLog,
+    onCoachEvent,
+    pack.id,
+    pack.steps,
+  ]);
 
   const chrome = useMemo<UiPilotChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
@@ -267,6 +358,7 @@ export function UiPilotProvider({
     },
     []
   );
+  pushAssistantRef.current = pushAssistant;
 
   const executeStep = useCallback(
     (stepId: StepId, opts?: ExecuteStepOpts) => {

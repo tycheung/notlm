@@ -5,6 +5,8 @@ import {
   createLocalStorageMissLogTransport,
   createMemoryMissLogTransport,
   createMissLogPipeline,
+  normalizeMissRecordList,
+  parseMissRecords,
   sanitizeMissText,
 } from './missLog.js';
 import type { CoachEvent } from './types.js';
@@ -12,6 +14,65 @@ import type { CoachEvent } from './types.js';
 describe('sanitizeMissText', () => {
   it('trims, strips controls, and caps length', () => {
     expect(sanitizeMissText('  hello\u0000world  ', 8)).toBe('hellowor');
+  });
+});
+
+describe('parseMissRecords', () => {
+  it('parses JSON array and ignores host camelCase extras', () => {
+    const records = parseMissRecords(
+      JSON.stringify([
+        {
+          text: 'xyzzy',
+          kind: 'unknown',
+          at: '2026-01-01T00:00:00.000Z',
+          id: 9,
+          userId: 1,
+        },
+      ])
+    );
+    expect(records).toEqual([
+      { text: 'xyzzy', kind: 'unknown', at: '2026-01-01T00:00:00.000Z' },
+    ]);
+  });
+
+  it('parses JSONL', () => {
+    const raw = [
+      JSON.stringify({ text: 'a', kind: 'unknown', at: 't1' }),
+      JSON.stringify({ text: 'b', kind: 'ambiguous', at: 't2' }),
+    ].join('\n');
+    expect(parseMissRecords(raw).map((r) => r.text)).toEqual(['a', 'b']);
+  });
+
+  it('rejects snake_case host dumps', () => {
+    expect(() =>
+      parseMissRecords(
+        JSON.stringify([{ utterance: 'nope', kind: 'unknown', at: 't' }])
+      )
+    ).toThrow(/snake_case/);
+  });
+
+  it('rejects missing text', () => {
+    expect(() =>
+      parseMissRecords(JSON.stringify([{ kind: 'unknown', at: 't' }]))
+    ).toThrow(/text/);
+  });
+});
+
+describe('normalizeMissRecordList', () => {
+  it('accepts portable rows with packId', () => {
+    expect(
+      normalizeMissRecordList([
+        { text: 'x', kind: 'low_confidence', at: 't', packId: 'demo', confidence: 'low' },
+      ])
+    ).toEqual([
+      {
+        text: 'x',
+        kind: 'low_confidence',
+        at: 't',
+        packId: 'demo',
+        confidence: 'low',
+      },
+    ]);
   });
 });
 

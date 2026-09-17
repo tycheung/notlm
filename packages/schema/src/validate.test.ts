@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   PACK_SCHEMA_VERSION,
+  validateMissRecord,
+  validateMissRecordList,
   validatePackFolder,
   validateScenarios,
 } from './index.js';
@@ -85,6 +87,40 @@ describe('validateScenarios', () => {
 
   it('rejects scenarios missing utterance/expect', () => {
     const result = validateScenarios([{ id: 'bad' }]);
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('validateMissRecord', () => {
+  it('accepts portable MissRecord with host extras', () => {
+    const result = validateMissRecord({
+      text: 'xyzzy',
+      kind: 'unknown',
+      at: '2026-01-01T00:00:00.000Z',
+      packId: 'demo',
+      id: 42,
+      userId: 7,
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects missing text', () => {
+    const result = validateMissRecord({ kind: 'unknown', at: 't' });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('validateMissRecordList', () => {
+  it('accepts a list of portable records', () => {
+    const result = validateMissRecordList([
+      { text: 'a', kind: 'unknown', at: 't1' },
+      { text: 'b', kind: 'ambiguous', at: 't2', confidence: 'mid' },
+    ]);
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects non-array', () => {
+    const result = validateMissRecordList({ text: 'a', kind: 'unknown', at: 't' });
     expect(result.ok).toBe(false);
   });
 });

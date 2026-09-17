@@ -4,17 +4,19 @@ export type {
   LlmEnv,
   LlmProvider,
   LlmProviderKind,
-} from './types.js';
+} from './llm.js';
 
 export {
   isRefusedSecretPath,
   loadLlmEnv,
   REFUSED_SECRET_PATHS,
-} from './env.js';
-
-export { createOllamaProvider } from './providers/ollama.js';
-export { createOpenAiCompatProvider } from './providers/openaiCompat.js';
-export { createProvider, createProviderFromEnv } from './providers/createProvider.js';
+  createOllamaProvider,
+  createOpenAiCompatProvider,
+  createAnthropicProvider,
+  createHuggingFaceProvider,
+  createProvider,
+  createProviderFromEnv,
+} from './llm.js';
 
 export { buildIntentTunePrompt, buildPackAuthorPrompt } from './prompts.js';
 export {
@@ -109,4 +111,3 @@ export { detectClashes, clashDensity, type ClashGroup } from './detectClashes.js
 
 export { draftConversationalCopy } from './draftTalk.js';
 export type { DraftTalkResult } from './draftTalk.js';
-

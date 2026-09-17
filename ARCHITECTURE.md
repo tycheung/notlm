@@ -9,16 +9,19 @@ host-app/
 
 npm: @uipilot/react  → UI Host (depends on core)
 npm: @uipilot/core   → pure TS runtime; loads/evaluates pack JSON
-CLI: mapper / extract / author  → write JSON into .uipilot/ only
-     primary façade: map | tune | prepare
-npm: @uipilot/schema → JSON Schema for the folder format
+npm: @uipilot/llm    → multi-provider chat adapters (host server / training only)
+npm: @uipilot/schema → JSON Schema for the folder format + miss/exchange wire
+CLI (operating): validate / misses / intents check (thin)
+CLI (training):  ../uipilot-training — exchanges pull|draft, metrics; tune façades
+     primary façade: map | tune | prepare (still in operating CLI until full move)
 ```
 
 ### Import rules
 
-- `core` must not import `react`, `mapper`, `author`, or host app code.
-- `react` may import `core` only — **never** `author`.
-- `mapper` / `author` may import `core` types + `schema`; they write **files**, not TS into `src/`.
+- `core` must not import `react`, `mapper`, `author`, `uipilot-training`, or host app code.
+- `react` may import `core` only — **never** `author` or `@uipilot/llm`.
+- `mapper` / `author` may import `core` types + `schema` + `@uipilot/llm`; they write **files**, not TS into `src/`.
+- Host BYO `fallbackLlm` may call `@uipilot/llm` **on the server**, never in the browser bundle.
 - Default unit CI must not require a live LLM; author tests use fixtures.
 
 ## Size budgets
@@ -140,8 +143,62 @@ missLog={{
 ```
 
 Built-in transports: memory, `localStorage`, `createHttpMissLogTransport({ url })`.
-CLI: `uipilotCLI misses export --from file.json` and `misses draft-aliases`.
-UiPilot never phones home unless the host supplies an HTTP transport.
+CLI: `uipilotCLI misses export --from file.json`, `misses pull --url …`, and
+`misses draft-aliases`. UiPilot never phones home unless the host supplies an
+HTTP transport.
+
+#### HTTP Miss Sink Contract
+
+Hosts that implement an HTTP miss sink **must** use the portable `MissRecord`
+shape on **both** ingest and list/export. SQL column names are a host concern;
+the JSON wire format is not.
+
+```ts
+type MissRecord = {
+  text: string;                 // capped (~500)
+  kind: 'unknown' | 'ambiguous' | 'low_confidence';
+  packId?: string;
+  pathname?: string;
+  rawIntent?: string | null;
+  confidence?: 'high' | 'mid' | 'low';
+  at: string;                   // ISO timestamp
+};
+```
+
+| Direction | Body |
+|-----------|------|
+| `POST` (ingest) | one `MissRecord` |
+| `GET` / export | `MissRecord[]` (JSON) or JSONL of the same |
+
+Host-only admin fields (`id`, `userId`, `consumedAt`, `createdAt`, …) may appear
+as **additional camelCase properties**. Snake_case aliases (`utterance`,
+`pack_id`, `client_at`, …) are **rejected** by `parseMissRecords` /
+`uipilotCLI misses export|pull|draft-aliases` so corpus tuning stays on-contract.
+Schemas: `@uipilot/schema` `missRecordSchema` / `missRecordListSchema`.
+
+#### MissExchange + Learning Mode (1A)
+
+**Production default = Learning Mode OFF** (`features.learningMode` unset/false).
+Offline NLU only; miss → canned repair. No LLM required.
+
+**Train window:** set `features.learningMode: true` and pass host `fallbackLlm`
+(BYO server proxy). Misses escalate to LLM → chat reply → **`MissExchange`** log.
+Invalid `proposed.goto.stepId` values are forced to `refuse` (no fake step chips).
+
+Recalibration lives in **`uipilot-training`**:
+
+```bash
+uipilot-training exchanges pull --url …/uipilot/misses?exchanges_only=true --out ex.json
+uipilot-training exchanges draft --from ex.json ./my-app
+uipilot-training metrics --from ex.json --misses misses.json
+```
+
+Host coverage API (e.g. VB): `GET …/uipilot/misses/metrics` → `fallbackShare`,
+optional `localHitRate`, `recommendFreeze`.
+
+Drafts only → human/`intents check` accept (ADR-009). Then **freeze**: turn Learning
+Mode off; local NLU owns traffic. Providers: `@uipilot/llm` (ollama, openai,
+openai-compat, anthropic, huggingface).
 
 ## Conversational maturity (G11 / ADR-008)
 

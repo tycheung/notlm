@@ -1,7 +1,8 @@
 {
-  "name": "@uipilot/author",
+  "name": "@uipilot/llm",
   "version": "0.0.0",
   "type": "module",
+  "description": "Multi-provider LLM chat adapters for UiPilot host BYO + training (not browser runtime)",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,12 +11,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
-  "dependencies": {
-    "@uipilot/core": "*",
-    "@uipilot/llm": "*",
-    "@uipilot/schema": "*"
-  },
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsc -b"
   }

@@ -413,9 +413,56 @@ Drafts land under `.uipilot/drafts/scenarios-pool-*/` with `scenarios.json` plus
 4. Review: merge labeled scenarios into `.uipilot/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
 5. `uipilotCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
 6. Optional: `uipilotCLI ranker train ./my-app` then enable `features.onnxRanker` / `UIPILOT_ONNX_RANKER=1` for a corpus-trained intent+slot ranker (lazy ONNX, rules fallback).
-7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later `uipilotCLI misses export` / `misses draft-aliases` into intents/corpus.
+7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Then: `uipilotCLI misses export --from …` or `misses pull --url …`, then `misses draft-aliases` into intents/corpus.
+8. **Learning Mode (optional train window):** `features.learningMode: true` + host `fallbackLlm`. Default **off** for production freeze. See ARCHITECTURE “MissExchange + Learning Mode”.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
+
+---
+
+## Deterministic self-serve packs (not only coaching)
+
+UiPilot is a **process engine** fronted by chat. A pack can coach operators **or**
+run customer/admin self-serve flows — as long as every action is a **visible UI
+step** (same buttons/forms a human would use). No silent product APIs.
+
+### Coach pack vs self-serve pack
+
+| | Coach (e.g. VB director) | Self-serve resolution |
+|--|--------------------------|------------------------|
+| Goal | Teach / navigate complex setup | Finish a known request |
+| Typical intents | `goto:create_event`, `whats_next` | FAQ answers, short `goto` + confirm |
+| First authoring move | Flow DAG + step aliases | **FAQ-first**, then steps for mutations |
+| Confirm | Often mid/low confidence | **Required** for destructive actions (`intents.confirm`) |
+
+### FAQ-first authoring (recommended for resolutions)
+
+Many “resolutions” are answers, not navigation:
+
+1. Add `pack/faq.json` entries with clean aliases (“what’s my balance”, “how do I cancel”).
+2. Optional `stepId` chip when the user should continue in UI.
+3. Add flow steps only for mutations (cancel, update profile, change plan).
+4. Put those steps in `intents.confirm` so chat asks before launching.
+5. Corpus: happy path + reject (“delete everything”) → `stepId: null`.
+
+Example shape:
+
+```json
+{
+  "id": "cancel_howto",
+  "aliases": ["how do I cancel", "cancel my account"],
+  "text": "Open Account → Subscription → Cancel. I’ll highlight Cancel if you say “cancel now”.",
+  "stepId": "cancel_subscription"
+}
+```
+
+### Learning → freeze (same for any pack)
+
+1. Ship offline pack (`learningMode` off).
+2. Train window: Learning Mode on + BYO LLM → MissExchanges → drafts → accept.
+3. Freeze when `fallbackShare` is low / `recommendFreeze` — Learning Mode off again.
+
+Demo-todo remains the portable offline demo (localStorage misses, no LLM required).
 
 ---
 
@@ -437,3 +484,4 @@ so `uipilotCLI intents check` gates fuzzy / prefix matches used by Web Speech.
 | `ARCHITECTURE.md` | Bundle boundaries, folder contract |
 | `CONTRIBUTING.md` | Setup, `map` / `tune` / `prepare`, saturation |
 | `SECURITY.md` | Secrets, BYO LLM, production checklist |
+| Host playbook (VB) | `react-frontend/docs/director-guide/LEARNING_MODE_PLAYBOOK.md` |

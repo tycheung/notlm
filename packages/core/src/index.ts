@@ -2,6 +2,7 @@ export * from './types.js';
 export * from './fuzzyText.js';
 export * from './typoFix.js';
 export * from './missLog.js';
+export * from './fallbackLlm.js';
 export * from './flowGraph.js';
 export * from './slots.js';
 export * from './flowStatus.js';

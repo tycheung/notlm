@@ -1,10 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { cmdMissesDraftAliases, cmdMissesExport } from './cmdMisses.js';
+import {
+  cmdMissesDraftAliases,
+  cmdMissesExport,
+  cmdMissesPull,
+} from './cmdMisses.js';
 
 describe('misses CLI', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('exports JSON array from JSONL', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'uipilot-miss-'));
     try {
@@ -23,11 +31,55 @@ describe('misses CLI', () => {
     }
   });
 
+  it('export rejects snake_case host dumps', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'uipilot-miss-bad-'));
+    try {
+      const src = join(dir, 'bad.json');
+      writeFileSync(
+        src,
+        JSON.stringify([{ utterance: 'nope', kind: 'unknown', at: 't' }]),
+        'utf8'
+      );
+      await expect(cmdMissesExport(['--from', src])).rejects.toThrow(/snake_case/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('pull fetches and writes portable MissRecord[]', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'uipilot-miss-pull-'));
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(
+              JSON.stringify([
+                {
+                  text: 'pulled',
+                  kind: 'unknown',
+                  at: 't',
+                  id: 1,
+                  userId: 2,
+                },
+              ]),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+        )
+      );
+      const out = join(dir, 'pulled.json');
+      await cmdMissesPull(['--url', 'https://example.test/misses', '--out', out]);
+      const parsed = JSON.parse(readFileSync(out, 'utf8')) as Array<{ text: string }>;
+      expect(parsed).toEqual([{ text: 'pulled', kind: 'unknown', at: 't' }]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('draft-aliases writes grouped draft under .uipilot/drafts', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'uipilot-miss-home-'));
     try {
       writeFileSync(join(dir, 'config.json'), '{}\n');
-      // minimal home marker used by resolveUipilotHome — init creates .uipilot
       const home = join(dir, '.uipilot');
       const { mkdirSync } = await import('node:fs');
       mkdirSync(home, { recursive: true });

@@ -17,6 +17,10 @@ function toOpenAiMessages(messages: ChatMessage[]): Array<{ role: string; conten
   return messages.map((m) => ({ role: m.role, content: m.content }));
 }
 
+/**
+ * OpenAI Chat Completions wire format — also works for Azure OpenAI (with
+ * compatible base URL), Groq, Together, Fireworks, and many local gateways.
+ */
 export function createOpenAiCompatProvider(opts: OpenAiCompatProviderOptions): LlmProvider {
   const fetchImpl = opts.fetchImpl ?? fetch;
 

@@ -1,6 +1,14 @@
 import AjvModule from 'ajv';
 import type { ErrorObject, ValidateFunction } from 'ajv';
-import { PACK_PIECE_SCHEMAS, type PackPieceName, scenariosSchema } from './schemas.js';
+import {
+  missExchangeListSchema,
+  missExchangeSchema,
+  missRecordListSchema,
+  missRecordSchema,
+  PACK_PIECE_SCHEMAS,
+  type PackPieceName,
+  scenariosSchema,
+} from './schemas.js';
 
 type AjvLike = {
   compile: (schema: object) => ValidateFunction;
@@ -116,6 +124,70 @@ export function validatePackFolder(files: Record<string, unknown>): ValidationRe
   }
 
   return { ok: errors.length === 0, errors };
+}
+
+let missRecordValidator: ValidateFunction | undefined;
+let missRecordListValidator: ValidateFunction | undefined;
+
+function getMissRecordValidator(): ValidateFunction {
+  if (!missRecordValidator) {
+    missRecordValidator = ajv.compile(missRecordSchema);
+  }
+  return missRecordValidator;
+}
+
+function getMissRecordListValidator(): ValidateFunction {
+  if (!missRecordListValidator) {
+    missRecordListValidator = ajv.compile(missRecordListSchema);
+  }
+  return missRecordListValidator;
+}
+
+/** Validate a single portable MissRecord (host extras allowed). */
+export function validateMissRecord(data: unknown): ValidationResult {
+  const validate = getMissRecordValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('missRecord', validate.errors) };
+}
+
+/** Validate a GET/export MissRecord[]. */
+export function validateMissRecordList(data: unknown): ValidationResult {
+  const validate = getMissRecordListValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('missRecordList', validate.errors) };
+}
+
+let missExchangeValidator: ValidateFunction | undefined;
+let missExchangeListValidator: ValidateFunction | undefined;
+
+function getMissExchangeValidator(): ValidateFunction {
+  if (!missExchangeValidator) {
+    missExchangeValidator = ajv.compile(missExchangeSchema);
+  }
+  return missExchangeValidator;
+}
+
+function getMissExchangeListValidator(): ValidateFunction {
+  if (!missExchangeListValidator) {
+    missExchangeListValidator = ajv.compile(missExchangeListSchema);
+  }
+  return missExchangeListValidator;
+}
+
+export function validateMissExchange(data: unknown): ValidationResult {
+  const validate = getMissExchangeValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('missExchange', validate.errors) };
+}
+
+export function validateMissExchangeList(data: unknown): ValidationResult {
+  const validate = getMissExchangeListValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('missExchangeList', validate.errors) };
 }
 
 /** Re-export schema id used by tests / CLI docs. */

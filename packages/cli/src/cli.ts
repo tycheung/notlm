@@ -28,7 +28,11 @@ import {
 import { cmdRankerTrain } from './cmdRanker.js';
 import { cmdRankerCheck } from './cmdRankerCheck.js';
 import { cmdTalkDraft } from './cmdTalkDraft.js';
-import { cmdMissesDraftAliases, cmdMissesExport } from './cmdMisses.js';
+import {
+  cmdMissesDraftAliases,
+  cmdMissesExport,
+  cmdMissesPull,
+} from './cmdMisses.js';
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -168,6 +172,8 @@ async function main(): Promise<void> {
       case 'misses':
         if (sub === 'export') {
           await cmdMissesExport(rest);
+        } else if (sub === 'pull') {
+          await cmdMissesPull(rest);
         } else if (sub === 'draft-aliases') {
           await cmdMissesDraftAliases(rest);
         } else {
@@ -231,6 +237,7 @@ function usage(): void {
   uipilotCLI ranker train [dir] [--epochs=40] [--dim=128]
   uipilotCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]
   uipilotCLI misses export --from <file.json|jsonl> [--out <path>]
+  uipilotCLI misses pull --url <endpoint> [--out <path>]
   uipilotCLI misses draft-aliases --from <file.json|jsonl> [dir]
 `);
 }
