@@ -246,7 +246,14 @@ export type CoachEvent =
   | { type: 'utterance'; textLength: number }
   | { type: 'pending'; kind: PendingPrompt['kind']; stepId?: StepId }
   | { type: 'blocked'; stepId: StepId; missing: StepId[] }
-  | { type: 'repair'; kind: 'ambiguous' | 'unknown' | 'low_confidence' | 'blocked' }
+  | {
+      type: 'repair';
+      kind: 'ambiguous' | 'unknown' | 'low_confidence' | 'blocked';
+      /** Utterance text for NLU miss tuning (capped by miss-log pipeline). */
+      text?: string;
+      rawIntent?: string | null;
+      confidence?: 'high' | 'mid' | 'low';
+    }
   | { type: 'launch'; stepId: StepId; gated?: boolean; correction?: boolean }
   | { type: 'confirm_ask'; stepId: StepId }
   | { type: 'slot_ask'; stepId: StepId; slotKey: string };
@@ -284,6 +291,8 @@ export type AssistantFeatures = {
    * intent+slot ranker instead of rules-only parseUtterance.
    */
   onnxRanker?: boolean;
+  /** Kill switch when a missLog transport is also provided on the host. */
+  missLog?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;

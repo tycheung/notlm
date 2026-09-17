@@ -1,5 +1,7 @@
 import {
   advanceAfterStepCompleted,
+  composeCoachEventHandlers,
+  createMissLogPipeline,
   dispatchUserUtterance,
   emptySession,
   evaluateFlowStatuses,
@@ -11,6 +13,8 @@ import {
   type ChatMessage,
   type CoachEvent,
   type LoadedPack,
+  type MissKind,
+  type MissLogTransport,
   type PackRuntime,
   type ParseUtteranceFn,
   type RuntimeContextBase,
@@ -148,6 +152,16 @@ export type UiPilotProviderProps = {
   tryHandleUtterance?: (text: string) => boolean | Promise<boolean>;
   /** Optional structured coach telemetry (no secrets). */
   onCoachEvent?: (event: CoachEvent) => void;
+  /**
+   * Optional miss-log sink for unknown/ambiguous/low-confidence utterances.
+   * Disabled when `features.missLog === false`.
+   */
+  missLog?: {
+    transport: MissLogTransport;
+    kinds?: MissKind[];
+    packId?: string;
+    getPathname?: () => string | undefined;
+  };
   children: ReactNode;
 } & UiPilotChromeConfig;
 
@@ -165,6 +179,7 @@ export function UiPilotProvider({
   parseUtteranceFn,
   tryHandleUtterance,
   onCoachEvent,
+  missLog,
   appearance,
   className,
   classNames,
@@ -183,6 +198,27 @@ export function UiPilotProvider({
     }),
     [featuresProp]
   );
+
+  const coachEventHandler = useMemo(() => {
+    const missEnabled = Boolean(missLog?.transport) && features.missLog !== false;
+    const pipeline = missEnabled
+      ? createMissLogPipeline({
+          transport: missLog!.transport,
+          kinds: missLog!.kinds,
+          packId: missLog!.packId ?? pack.id,
+          getPathname:
+            missLog!.getPathname ??
+            (() => {
+              try {
+                return getContext().pathname;
+              } catch {
+                return undefined;
+              }
+            }),
+        })
+      : null;
+    return composeCoachEventHandlers(pipeline?.onCoachEvent, onCoachEvent);
+  }, [features.missLog, getContext, missLog, onCoachEvent, pack.id]);
 
   const chrome = useMemo<UiPilotChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
@@ -408,7 +444,7 @@ export function UiPilotProvider({
           parseUtteranceFn,
           draftCompilers,
           onApplyDraft,
-          onCoachEvent,
+          onCoachEvent: coachEventHandler,
         });
         if (result && typeof (result as Promise<unknown>).then === 'function') {
           void (result as Promise<void>).catch(() => {
@@ -434,7 +470,7 @@ export function UiPilotProvider({
       getContext,
       navigate,
       onApplyDraft,
-      onCoachEvent,
+      coachEventHandler,
       pack,
       parseUtteranceFn,
       pushAssistant,

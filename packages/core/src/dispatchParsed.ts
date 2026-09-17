@@ -103,7 +103,13 @@ export function dispatchParsed(
       },
     }));
     pushAssistant(picked.text, { choices: stepChoices(pack, parsed.candidates) });
-    emitCoachEvent(deps, { type: 'repair', kind: 'ambiguous' });
+    emitCoachEvent(deps, {
+      type: 'repair',
+      kind: 'ambiguous',
+      text: trimmed,
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+    });
     return;
   }
 
@@ -261,7 +267,13 @@ export function dispatchParsed(
         const picked = pickReply(session, pack.replies, 'repair.unknown', { message });
         setSession(() => picked.session);
         pushAssistant(picked.text);
-        emitCoachEvent(deps, { type: 'repair', kind: 'unknown' });
+        emitCoachEvent(deps, {
+          type: 'repair',
+          kind: 'unknown',
+          text: trimmed,
+          rawIntent: parsed.rawIntent,
+          confidence: parsed.confidence,
+        });
         return;
       }
     }
@@ -270,7 +282,13 @@ export function dispatchParsed(
     pushAssistant(picked.text, {
       choices: options.length ? stepChoices(pack, options.map((o) => o.id)) : undefined,
     });
-    emitCoachEvent(deps, { type: 'repair', kind: 'unknown' });
+    emitCoachEvent(deps, {
+      type: 'repair',
+      kind: 'unknown',
+      text: trimmed,
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+    });
     return;
   }
 
@@ -295,7 +313,13 @@ export function dispatchParsed(
         { id: '__no__', label: 'No' },
       ],
     });
-    emitCoachEvent(deps, { type: 'repair', kind: 'low_confidence' });
+    emitCoachEvent(deps, {
+      type: 'repair',
+      kind: 'low_confidence',
+      text: trimmed,
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+    });
     emitCoachEvent(deps, { type: 'confirm_ask', stepId: targetStep });
     return;
   }

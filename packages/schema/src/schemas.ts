@@ -293,6 +293,26 @@ export const configSchema = {
   },
 } as const;
 
+/** Portable HTTP body for miss-log ingest (any host backend). */
+export const missRecordSchema = {
+  $id: 'https://uipilot.dev/schemas/miss-record.json',
+  type: 'object',
+  additionalProperties: false,
+  required: ['text', 'kind', 'at'],
+  properties: {
+    text: { type: 'string', minLength: 1, maxLength: 500 },
+    kind: {
+      type: 'string',
+      enum: ['unknown', 'ambiguous', 'low_confidence'],
+    },
+    packId: { type: 'string' },
+    pathname: { type: 'string' },
+    rawIntent: { type: ['string', 'null'] },
+    confidence: { type: 'string', enum: ['high', 'mid', 'low'] },
+    at: { type: 'string', minLength: 1 },
+  },
+} as const;
+
 export const PACK_PIECE_SCHEMAS = {
   manifest: manifestSchema,
   flow: flowSchema,

@@ -124,6 +124,25 @@ corpus-trained tiny hashed-ngram ranker:
 `onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
 back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
+### Optional miss logging (intent tuning)
+
+When the coach cannot understand an utterance (`unknown` / `ambiguous` /
+`low_confidence`), hosts may persist a portable `MissRecord` for later alias /
+corpus / typo-lexicon tuning:
+
+```tsx
+import { createLocalStorageMissLogTransport } from '@uipilot/core';
+
+missLog={{
+  transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }),
+  packId: 'demo-todo',
+}}
+```
+
+Built-in transports: memory, `localStorage`, `createHttpMissLogTransport({ url })`.
+CLI: `uipilotCLI misses export --from file.json` and `misses draft-aliases`.
+UiPilot never phones home unless the host supplies an HTTP transport.
+
 ## Conversational maturity (G11 / ADR-008)
 
 Runtime stays deterministic. LLM-*feel* comes from:
@@ -133,6 +152,7 @@ Runtime stays deterministic. LLM-*feel* comes from:
 - **Discourse** anaphora + light repair (“again”, “change the name”, “undo that”)
 - **Gate policy** — chat launches honor slots/confirm; packed/queue/`executeStep` resume skip; proactive Yes skips confirm (ADR-008)
 - **Telemetry** — optional `onCoachEvent` for hosts (intent/pending/blocked/launched; no secrets)
+- **Miss logging** — optional `missLog={{ transport }}` for unknown/ambiguous/low-confidence utterances (memory / localStorage / HTTP)
 - **Optional ranker** — demo-todo may enable JSON/ORT hybrid via `features.onnxRanker` / env
 - **Queue algebra** — head-stable merge, rewrite (clear / skip / cancel X / jump Y), packed prereq expansion
 - **Coach-create** — `controls[].coachCreate` (+ `openModal`) re-opens forms on re-ask; slot elicit + multi-slot salvage

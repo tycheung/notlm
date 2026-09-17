@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@uipilot/core';
+import { createLocalStorageMissLogTransport } from '@uipilot/core';
 import {
   UiPilotHost,
   createGuideNavigate,
@@ -462,6 +463,17 @@ export function App() {
     []
   );
 
+  const missLog = useMemo(
+    () => ({
+      transport: createLocalStorageMissLogTransport({
+        key: 'uipilot:demo-todo:misses',
+        limit: 100,
+      }),
+      packId: 'demo-todo',
+    }),
+    []
+  );
+
   return (
     <UiPilotHost
       pack={pack}
@@ -469,6 +481,7 @@ export function App() {
       navigate={navigate}
       openModal={openModal}
       parseUtteranceFn={parseUtteranceFn}
+      missLog={missLog}
       features={{
         chat: true,
         palette: true,

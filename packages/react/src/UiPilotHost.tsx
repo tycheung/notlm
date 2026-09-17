@@ -40,6 +40,7 @@ export function UiPilotHost({
   parseUtteranceFn,
   tryHandleUtterance,
   onCoachEvent,
+  missLog,
   appearance,
   className,
   classNames,
@@ -62,6 +63,7 @@ export function UiPilotHost({
       parseUtteranceFn={parseUtteranceFn}
       tryHandleUtterance={tryHandleUtterance}
       onCoachEvent={onCoachEvent}
+      missLog={missLog}
       appearance={appearance}
       className={className}
       classNames={classNames}

@@ -413,6 +413,7 @@ Drafts land under `.uipilot/drafts/scenarios-pool-*/` with `scenarios.json` plus
 4. Review: merge labeled scenarios into `.uipilot/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
 5. `uipilotCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
 6. Optional: `uipilotCLI ranker train ./my-app` then enable `features.onnxRanker` / `UIPILOT_ONNX_RANKER=1` for a corpus-trained intent+slot ranker (lazy ONNX, rules fallback).
+7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later `uipilotCLI misses export` / `misses draft-aliases` into intents/corpus.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
 

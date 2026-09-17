@@ -12,6 +12,7 @@ export {
   lookupsSchema,
   intentsSchema,
   manifestSchema,
+  missRecordSchema,
   PACK_PIECE_SCHEMAS,
   repliesSchema,
   scenariosSchema,
