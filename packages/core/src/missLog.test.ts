@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   composeCoachEventHandlers,
+  createHttpMissExchangeTransport,
   createHttpMissLogTransport,
   createLocalStorageMissLogTransport,
   createMemoryMissLogTransport,
   createMissLogPipeline,
+  normalizeMissExchangeList,
   normalizeMissRecordList,
+  parseMissExchanges,
   parseMissRecords,
   sanitizeMissText,
 } from './missLog.js';
@@ -73,6 +76,70 @@ describe('normalizeMissRecordList', () => {
         confidence: 'low',
       },
     ]);
+  });
+});
+
+describe('MissExchange parse/normalize', () => {
+  it('parses exchange JSON with proposed + provider', () => {
+    const rows = parseMissExchanges(
+      JSON.stringify([
+        {
+          text: 'how do i seed?',
+          kind: 'unknown',
+          at: '2026-01-01T00:00:00.000Z',
+          llmReply: 'Open Seeding under the event.',
+          proposed: { type: 'goto', stepId: 'seeding', aliases: ['seed'] },
+          provider: { id: 'openai', model: 'gpt-4o-mini' },
+          exchangeId: 'ex-1',
+        },
+      ])
+    );
+    expect(rows[0]).toMatchObject({
+      text: 'how do i seed?',
+      llmReply: 'Open Seeding under the event.',
+      proposed: { type: 'goto', stepId: 'seeding', aliases: ['seed'] },
+      provider: { id: 'openai', model: 'gpt-4o-mini' },
+      exchangeId: 'ex-1',
+    });
+  });
+
+  it('parses JSONL exchanges and rejects missing llmReply', () => {
+    const line = JSON.stringify({
+      text: 'a',
+      kind: 'unknown',
+      at: 't',
+      llmReply: 'hi',
+      proposed: { type: 'faq', faqId: 'f1' },
+    });
+    expect(parseMissExchanges(line)[0]?.proposed?.faqId).toBe('f1');
+    expect(() =>
+      normalizeMissExchangeList([{ text: 'a', kind: 'unknown', at: 't' }])
+    ).toThrow(/llmReply/);
+  });
+
+  it('rejects invalid proposed shapes', () => {
+    expect(() =>
+      normalizeMissExchangeList([
+        {
+          text: 'a',
+          kind: 'unknown',
+          at: 't',
+          llmReply: 'x',
+          proposed: { type: 'nope' },
+        },
+      ])
+    ).toThrow(/proposed\.type/);
+    expect(() =>
+      normalizeMissExchangeList([
+        {
+          text: 'a',
+          kind: 'unknown',
+          at: 't',
+          llmReply: 'x',
+          proposed: ['bad'],
+        },
+      ])
+    ).toThrow(/proposed must be an object/);
   });
 });
 
@@ -183,6 +250,55 @@ describe('transports', () => {
       kind: 'unknown',
       packId: 'p',
     });
+  });
+
+  it('localStorage handles corrupt JSON and write failures', () => {
+    const transport = createLocalStorageMissLogTransport({
+      key: 'k',
+      storage: {
+        getItem: () => '{not-json',
+        setItem: () => {
+          throw new Error('quota');
+        },
+      },
+    });
+    expect(transport.snapshot()).toEqual([]);
+    expect(() =>
+      transport.log({ text: 'x', kind: 'unknown', at: 't' })
+    ).not.toThrow();
+  });
+
+  it('http exchange posts MissExchange JSON and no-ops without fetch', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    const transport = createHttpMissExchangeTransport({
+      url: '/api/uipilot/misses',
+      fetch: fetchMock as unknown as typeof fetch,
+      getHeaders: async () => ({ Authorization: 'Bearer y' }),
+    });
+    await transport.logExchange({
+      text: 'wat',
+      kind: 'unknown',
+      at: 't',
+      llmReply: 'try seeding',
+      proposed: { type: 'meta' },
+    });
+    expect(JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))).toMatchObject({
+      llmReply: 'try seeding',
+      proposed: { type: 'meta' },
+    });
+
+    const prior = globalThis.fetch;
+    // Force the no-fetch branch (Node always has fetch otherwise).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).fetch = undefined;
+    try {
+      const noop = createHttpMissExchangeTransport({ url: '/x' });
+      await expect(
+        noop.logExchange({ text: 'a', kind: 'unknown', at: 't', llmReply: 'b' })
+      ).resolves.toBeUndefined();
+    } finally {
+      globalThis.fetch = prior;
+    }
   });
 });
 
