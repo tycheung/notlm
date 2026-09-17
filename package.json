@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "UiPilot — plug-and-play UI coach (core + react host + pack mapper/codegen)",
+  "description": "UiPilot — plug-and-play UI coach (runtime: core + react + schema + ranker infer)",
   "engines": {
     "node": ">=20"
   },

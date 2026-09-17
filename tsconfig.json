@@ -3,13 +3,11 @@
   "references": [
     { "path": "packages/core" },
     { "path": "packages/schema" },
-    { "path": "packages/llm" },
-    { "path": "packages/author" },
     { "path": "packages/ranker" },
     { "path": "packages/react" },
-    { "path": "packages/mapper" },
     { "path": "packages/cli" },
-    { "path": "packages/codegen" },
-    { "path": "apps/demo" }
+    { "path": "apps/demo" },
+    { "path": "apps/demo-todo" },
+    { "path": "apps/demo-crm" }
   ]
 }
