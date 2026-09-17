@@ -22,7 +22,6 @@ function existsPack(rel) {
 }
 
 const pm = process.env.UIPILOT_PM || 'npm';
-const withSaturation = process.argv.includes('--with-saturation');
 const withDx = process.argv.includes('--with-dx');
 const withE2e =
   process.argv.includes('--with-e2e') ||
@@ -30,6 +29,13 @@ const withE2e =
   process.env.UIPILOT_CI_E2E === '1';
 const skipE2e = process.argv.includes('--skip-e2e');
 
+if (process.argv.includes('--with-saturation')) {
+  console.error('ci_check: --with-saturation is not supported in this repo.');
+  process.exit(1);
+}
+
+// dist/ is gitignored — build before CLI gates / typecheck consumers.
+run(pm, ['run', 'build']);
 run(pm, ['run', 'lint']);
 run(pm, ['run', 'typecheck']);
 run(pm, ['run', 'test:coverage']);
@@ -55,21 +61,10 @@ if (withE2e && !skipE2e) {
   run(pm, ['run', 'test:e2e:demo']);
 }
 
-if (withSaturation) {
-  run(
-    pm,
-    ['run', 'uipilotCLI', '--', 'scenarios', 'saturate', 'packs/demo-todo', '5', '3'],
-    { UIPILOT_SATURATE_FIXTURE: '1' }
-  );
-  run(pm, ['run', 'test:e2e:demo', '--', '--grep', '@guide-saturate']);
-}
-
 console.log(
-  withSaturation
-    ? 'ci_check: ok (with saturation)'
-    : withDx
-      ? 'ci_check: ok (with dx)'
-      : withE2e && !skipE2e
-        ? 'ci_check: ok (with e2e)'
-        : 'ci_check: ok'
+  withDx
+    ? 'ci_check: ok (with dx)'
+    : withE2e && !skipE2e
+      ? 'ci_check: ok (with e2e)'
+      : 'ci_check: ok'
 );

@@ -11,18 +11,9 @@ describe('isLearningModeEnabled', () => {
     expect(isLearningModeEnabled({})).toBe(false);
   });
 
-  it('respects learningMode over llmFallback', () => {
-    expect(isLearningModeEnabled({ learningMode: true, llmFallback: false })).toBe(
-      true
-    );
-    expect(isLearningModeEnabled({ learningMode: false, llmFallback: true })).toBe(
-      false
-    );
-  });
-
-  it('falls back to deprecated llmFallback when learningMode unset', () => {
-    expect(isLearningModeEnabled({ llmFallback: true })).toBe(true);
-    expect(isLearningModeEnabled({ llmFallback: false })).toBe(false);
+  it('respects learningMode only', () => {
+    expect(isLearningModeEnabled({ learningMode: true })).toBe(true);
+    expect(isLearningModeEnabled({ learningMode: false })).toBe(false);
   });
 });
 

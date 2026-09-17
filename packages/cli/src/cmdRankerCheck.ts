@@ -35,7 +35,9 @@ export async function cmdRankerCheck(args: string[]): Promise<void> {
 
   const jsonPath = join(packDir(home), 'ranker.json');
   if (!pathExists(jsonPath)) {
-    console.error(`Missing ${jsonPath} — run uipilotCLI ranker train first`);
+    console.error(
+      `Missing ${jsonPath} — ship a trained ranker artifact before ranker check`
+    );
     process.exitCode = 1;
     return;
   }

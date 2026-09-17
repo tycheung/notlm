@@ -10,16 +10,10 @@ export {
   type RankerEvalResult,
 } from './evaluate.js';
 export {
-  trainRanker,
-  examplesFromCorpus,
-  type TrainExample,
-  type TrainRankerOptions,
-} from './train.js';
-export { exportIntentOnnx } from './onnxExport.js';
-export {
   loadOnnxRuntime,
   createRankerSession,
   type RankerSession,
+  type CreateRankerSessionOpts,
 } from './onnxLazy.js';
 export {
   createHybridUtteranceParser,

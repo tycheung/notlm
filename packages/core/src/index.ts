@@ -25,6 +25,7 @@ export * from './dispatch.js';
 export * from './dispatchLaunch.js';
 export * from './dispatchParsed.js';
 export * from './loadPack.js';
+export * from './intentsCheck.js';
 export * from './visibility.js';
 export * from './subgraph.js';
 export * from './draftCompiler.js';

@@ -1,6 +1,5 @@
 import { featurizeUtterance } from './features.js';
 import { inferRankerJson } from './infer.js';
-import { exportIntentOnnx } from './onnxExport.js';
 import type { RankerInferResult, RankerModelJson } from './types.js';
 
 type OrtModule = {
@@ -37,20 +36,27 @@ export async function loadOnnxRuntime(): Promise<OrtModule | null> {
 
 export type RankerSession = {
   model: RankerModelJson;
-  /** Prefer ONNX when runtime is available; always falls back to JSON. */
+  /** Prefer ONNX when runtime + prebuilt bytes are available; always falls back to JSON. */
   infer: (utterance: string) => Promise<RankerInferResult>;
   backendPreferred: 'onnx' | 'json';
 };
 
+export type CreateRankerSessionOpts = {
+  preferOnnx?: boolean;
+  /** Pre-built ONNX bytes from offline training (never synthesized at runtime). */
+  onnxBytes?: Uint8Array;
+};
+
 /**
- * Create a lazy ranker session. ONNX bytes are built on first infer when preferred.
- * Feature flag should gate construction; this never throws if ORT is missing.
+ * Create a lazy ranker session.
+ * ONNX runs only when preferOnnx and onnxBytes are both provided; otherwise JSON.
  */
 export function createRankerSession(
   model: RankerModelJson,
-  opts?: { preferOnnx?: boolean }
+  opts?: CreateRankerSessionOpts
 ): RankerSession {
-  const preferOnnx = opts?.preferOnnx !== false;
+  const onnxBytes = opts?.onnxBytes;
+  const preferOnnx = opts?.preferOnnx !== false && !!onnxBytes;
   let onnxSession: Awaited<ReturnType<OrtModule['InferenceSession']['create']>> | null =
     null;
   let onnxFailed = false;
@@ -60,7 +66,7 @@ export function createRankerSession(
     model,
     backendPreferred: preferOnnx ? 'onnx' : 'json',
     async infer(utterance: string) {
-      if (!preferOnnx || onnxFailed) {
+      if (!preferOnnx || onnxFailed || !onnxBytes) {
         return inferRankerJson(model, utterance);
       }
       try {
@@ -70,8 +76,7 @@ export function createRankerSession(
           return inferRankerJson(model, utterance);
         }
         if (!onnxSession) {
-          const bytes = exportIntentOnnx(model);
-          onnxSession = await ort.InferenceSession.create(bytes);
+          onnxSession = await ort.InferenceSession.create(onnxBytes);
           ortTensor = ort.Tensor;
         }
         const x = featurizeUtterance(utterance, model.dim, model.ngrams);
@@ -89,7 +94,6 @@ export function createRankerSession(
         intents.sort(
           (a, b) => b.probability - a.probability || a.label.localeCompare(b.label)
         );
-        // Slots always from JSON head (not in ONNX graph)
         const json = inferRankerJson(model, utterance);
         return {
           intent: intents[0]!,

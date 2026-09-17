@@ -8,10 +8,7 @@ const SCAN_DIRS = [
   'packages/core/src',
   'packages/react/src',
   'packages/cli/src',
-  'packages/author/src',
-  'packages/mapper/src',
   'packages/schema/src',
-  'packages/codegen/src',
   'packages/ranker/src',
 ];
 

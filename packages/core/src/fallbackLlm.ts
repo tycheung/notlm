@@ -24,15 +24,10 @@ export type LlmFallbackFn = (
 
 export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 12_000;
 
-/**
- * Learning Mode is opt-in (default off).
- * Prefer `features.learningMode`; fall back to deprecated `llmFallback`.
- */
+/** Learning Mode is opt-in (default off). */
 export function isLearningModeEnabled(features?: AssistantFeatures | null): boolean {
   if (!features) return false;
-  if (features.learningMode !== undefined) return features.learningMode === true;
-  if (features.llmFallback !== undefined) return features.llmFallback === true;
-  return false;
+  return features.learningMode === true;
 }
 
 /**

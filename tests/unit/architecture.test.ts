@@ -12,6 +12,7 @@ const BANNED_FROM_CORE = [
   '@uipilot/mapper',
   '@uipilot/cli',
   '@uipilot/codegen',
+  '@uipilot/llm',
 ];
 
 const BANNED_FROM_REACT = [
@@ -19,6 +20,7 @@ const BANNED_FROM_REACT = [
   '@uipilot/mapper',
   '@uipilot/cli',
   '@uipilot/codegen',
+  '@uipilot/llm',
 ];
 
 function collectTsFiles(dir: string, out: string[] = []): string[] {
@@ -85,20 +87,102 @@ describe('architecture bootstrap', () => {
 });
 
 describe('import graph (apps → react → core)', () => {
-  it('core must not import react/author/mapper/cli/codegen', () => {
+  it('core must not import react/author/mapper/cli/codegen/llm', () => {
     expect(offendersInDir('packages/core/src', BANNED_FROM_CORE)).toEqual([]);
   });
 
-  it('react may import core only among @uipilot packages (not author/mapper/cli)', () => {
+  it('react may import core only among @uipilot packages (not author/mapper/cli/llm)', () => {
     expect(offendersInDir('packages/react/src', BANNED_FROM_REACT)).toEqual([]);
   });
 
-  it('apps must not import author/cli/mapper internals', () => {
-    const banned = ['@uipilot/author', '@uipilot/cli', '@uipilot/mapper'];
+  it('apps must not import author/cli/mapper/llm/codegen internals', () => {
+    const banned = [
+      '@uipilot/author',
+      '@uipilot/cli',
+      '@uipilot/mapper',
+      '@uipilot/llm',
+      '@uipilot/codegen',
+    ];
     const hits = [
       ...offendersInDir('apps/demo-todo/src', banned),
       ...offendersInDir('apps/demo-crm/src', banned),
+      ...offendersInDir('apps/demo/src', banned),
     ];
+    expect(hits).toEqual([]);
+  });
+
+  it('operating packages/ must not contain training package dirs', () => {
+    const names = readdirSync(join(ROOT, 'packages'));
+    const forbidden = ['author', 'mapper', 'codegen', 'llm'];
+    expect(names.filter((n) => forbidden.includes(n))).toEqual([]);
+  });
+
+  it('operating cli must not import author/mapper/codegen/llm', () => {
+    const banned = [
+      '@uipilot/author',
+      '@uipilot/mapper',
+      '@uipilot/codegen',
+      '@uipilot/llm',
+    ];
+    expect(offendersInDir('packages/cli/src', banned)).toEqual([]);
+  });
+
+  it('schema and ranker must not import authoring packages', () => {
+    const banned = [
+      '@uipilot/author',
+      '@uipilot/mapper',
+      '@uipilot/codegen',
+      '@uipilot/llm',
+    ];
+    expect(offendersInDir('packages/schema/src', banned)).toEqual([]);
+    expect(offendersInDir('packages/ranker/src', banned)).toEqual([]);
+  });
+
+  it('operating ranker must not ship exportIntentOnnx', () => {
+    const rankerSrc = join(ROOT, 'packages/ranker/src');
+    expect(readdirSync(rankerSrc).includes('onnxExport.ts')).toBe(false);
+    const index = readFileSync(join(rankerSrc, 'index.ts'), 'utf8');
+    expect(index).not.toMatch(/exportIntentOnnx/);
+  });
+
+  it('unsupported surface includes exchanges and metrics', async () => {
+    const { isUnsupportedCommand } = await import(
+      '../../packages/cli/src/fatDispatch.ts'
+    );
+    expect(isUnsupportedCommand('exchanges', 'pull')).toBe(true);
+    expect(isUnsupportedCommand('metrics')).toBe(true);
+  });
+
+  it('packages src must not name external training tooling', () => {
+    const hits: string[] = [];
+    for (const file of collectTsFiles(join(ROOT, 'packages'))) {
+      const text = readFileSync(file, 'utf8');
+      if (/uipilot-training|uipilot-trainer/i.test(text)) {
+        hits.push(relative(ROOT, file));
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it('top docs must not name external training tooling', () => {
+    const docs = [
+      'README.md',
+      'ARCHITECTURE.md',
+      'CONTRIBUTING.md',
+      'SECURITY.md',
+      'docs/PACK_COOKBOOK.md',
+      'docs/adr/009-runtime-vs-training-llm-fallback.md',
+    ];
+    const hits: string[] = [];
+    for (const rel of docs) {
+      const full = join(ROOT, rel);
+      try {
+        const text = readFileSync(full, 'utf8');
+        if (/uipilot-training|uipilot-trainer/i.test(text)) hits.push(rel);
+      } catch {
+        /* missing ok */
+      }
+    }
     expect(hits).toEqual([]);
   });
 });

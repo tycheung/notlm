@@ -10,9 +10,6 @@
   "references": [
     { "path": "../core" },
     { "path": "../schema" },
-    { "path": "../author" },
-    { "path": "../mapper" },
-    { "path": "../codegen" },
     { "path": "../ranker" }
   ]
 }
