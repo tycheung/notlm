@@ -1,6 +1,12 @@
 # UiPilot
 
-**UI, but for you** — pilot the UI with a plug-and-play coach for SPAs: deterministic **runtime** NLU, `data-guide-id` coaching, optional **chat FAB** + **command palette**. Build tooling writes **JSON only** into a single host folder (`.uipilot/`) — inventory, structured DAG draft, checklist, and pack config — with optional **LLM-assisted** pack drafting (BYO / Ollama; never on the runtime hot path).
+**UI, but for you** — pilot the UI with a plug-and-play coach for SPAs: deterministic
+**runtime** NLU, `data-guide-id` coaching, optional **chat FAB** + **command palette**.
+
+This repo is the **runtime**: `@uipilot/core`, `@uipilot/react`, `@uipilot/schema`,
+`@uipilot/ranker` (infer), and a thin `uipilotCLI` (`init` / `validate` /
+`intents check` / `ranker check`). Pack JSON and optional prebuilt ranker artifacts
+are host-owned inputs.
 
 See `ARCHITECTURE.md` for bundle boundaries and [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md) for host wire-up.
 

@@ -8,7 +8,7 @@ The coach **never POSTs** and never calls product APIs. `UiPilotHost` / `execute
 
 ## Run
 
-From the `assistant/` workspace root (after `npm install` and building packages):
+From the **uipilot** workspace root (after `npm install` and building packages):
 
 ```bash
 npm run build -w @uipilot/core
@@ -23,3 +23,5 @@ npm run dev
 ```
 
 Pack JSON is loaded from `packs/demo-todo/.uipilot/`.
+Optional ONNX: ship prebuilt `pack/ranker.onnx` bytes into `createRankerSession`
+(never synthesized at runtime).

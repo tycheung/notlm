@@ -1,30 +1,36 @@
-# ADR-009: Runtime vs training repos + host BYO LLM fallback
+# ADR-009: Sealed runtime + host BYO LLM fallback
 
-**Status:** Accepted  
-**Date:** 2026-09-17
+**Status:** Accepted (amended)  
+**Date:** 2026-09-17 (amended 2026-09-17)
 
 ## Context
 
 UiPilot’s operating packages (`@uipilot/core`, `@uipilot/react`) must stay lean and
-deterministic on the chat hot path. Authoring (saturation, intents tune, ranker train)
-and multi-provider LLM SDKs inflate that surface. We also need a **backup LLM** when
+deterministic on the chat hot path. Authoring, saturation, ranker training, and
+multi-provider LLM SDKs inflate that surface. We also need a **backup LLM** when
 local NLU misses, without making the browser call provider APIs.
 
 ## Decision
 
-1. **Operating repo (`uipilot`):** runtime + schema + `@uipilot/llm` (server/training
-   adapters only) + optional thin validate/misses CLI.
-2. **Training repo (`uipilot-training`):** MissExchange recalibration CLI
-   (`exchanges pull|draft`, `metrics`). Map/tune/prepare remain in operating
-   `uipilotCLI` until packages are physically relocated; training is the home for
-   exchange→draft loops and hit-rate metrics.
+1. **This repo (`uipilot`) is sealed:** runtime only — `@uipilot/core`, `@uipilot/react`,
+   `@uipilot/schema`, `@uipilot/ranker` (infer), and a **thin** CLI:
+   `init` / `validate` / `intents check` / `ranker check`.
+2. **Offline pack improvement is out of scope here.** External tooling may produce
+   drafts and artifacts; this repo does not name, ship, or advertise that tooling.
 3. **Runtime LLM:** only via host-provided `fallbackLlm` (BYO proxy). Browser never
-   holds provider keys. Providers: ollama, openai, openai-compat, anthropic, huggingface.
-4. **Promotion (1A):** log `MissExchange`; training writes **drafts only**; human /
-   `intents check` accept before pack ownership. No silent auto-merge.
+   holds provider keys. Operating runtime ships **zero** provider SDKs; hosts
+   implement their own server proxy (e.g. VB `/uipilot/fallback`).
+4. **Promotion (1A):** hosts may log `MissExchange` over the portable HTTP contract;
+   pack growth stays draft → human review → `intents check` → accept. No silent
+   auto-merge in the runtime.
+5. **Operating CLI** does not implement authoring / miss-recalibration verbs
+   (unknown / not available).
 
 ## Consequences
 
-- Pack mutation stays offline and gated.
-- Hosts (e.g. Victory Bowling) implement `/uipilot/fallback` + portable miss/exchange APIs.
-- Gradual local takeover is measured as falling `fallbackShare` after accepts.
+- Pack mutation stays offline and gated by host process.
+- Hosts implement `/uipilot/fallback` + portable miss/exchange APIs without depending
+  on provider SDKs in the browser bundle.
+- Operating CI remains runnable with gate commands only.
+- User-facing docs in this repo describe **pack contracts and host wire-up**, not
+  external CLI product names.

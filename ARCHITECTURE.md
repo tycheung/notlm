@@ -9,20 +9,19 @@ host-app/
 
 npm: @uipilot/react  → UI Host (depends on core)
 npm: @uipilot/core   → pure TS runtime; loads/evaluates pack JSON
-npm: @uipilot/llm    → multi-provider chat adapters (host server / training only)
 npm: @uipilot/schema → JSON Schema for the folder format + miss/exchange wire
-CLI (operating): validate / misses / intents check (thin)
-CLI (training):  ../uipilot-training — exchanges pull|draft, metrics; tune façades
-     primary façade: map | tune | prepare (still in operating CLI until full move)
+npm: @uipilot/ranker → optional ONNX/hybrid infer (prebuilt artifacts only)
+CLI: init / validate / intents check / ranker check (thin gates only)
 ```
+
 
 ### Import rules
 
-- `core` must not import `react`, `mapper`, `author`, `uipilot-training`, or host app code.
-- `react` may import `core` only — **never** `author` or `@uipilot/llm`.
-- `mapper` / `author` may import `core` types + `schema` + `@uipilot/llm`; they write **files**, not TS into `src/`.
-- Host BYO `fallbackLlm` may call `@uipilot/llm` **on the server**, never in the browser bundle.
-- Default unit CI must not require a live LLM; author tests use fixtures.
+- `core` must not import `react`, `mapper`, `author`, `@uipilot/llm`, or host app code.
+- `react` may import `core` only — **never** `author`, `mapper`, or `@uipilot/llm`.
+- Offline tooling may write **files** under `.uipilot/`, not TS into host `src/` — that tooling is out of scope for this repo.
+- Host BYO `fallbackLlm` is a host-owned HTTP proxy — **not** a provider SDK in the browser (or in the operating runtime packages).
+- Default unit CI must not require a live LLM.
 
 ## Size budgets
 
@@ -109,20 +108,19 @@ Optional `lookups.json` fuzzy-matches names against host-published arrays on
 Control `userFill` guide ids trigger a **sequential** scroll + 3× blink tour for
 fields the coach cannot type (e.g. the user’s name).
 
-**User-ask saturation:** `uipilotCLI scenarios ask --force=5000..10000 --blurb="…"`
-generates naturalistic questions from a 30s description (not DAG aliases);
-`scenarios label-pool` soft-labels the whole pool into scenarios + FAQ drafts for
-`intents tune` / `pack accept`.
+**User-ask / saturation growth** of scenarios and FAQ is done offline (out of scope
+for this repo). Ship updated `scenarios.json` / pack pieces, then run
+`uipilotCLI intents check`.
 
 ### Optional ONNX intent+slot ranker
 
 Default NLU remains rule-based (`parseUtterance`). Hosts may opt into a
 corpus-trained tiny hashed-ngram ranker:
 
-1. `uipilotCLI ranker train ./app` → `pack/ranker.json` (+ `ranker.onnx`)
+1. Ship `pack/ranker.json` (+ optional `pack/ranker.onnx`) as host artifacts
 2. Enable with `features.onnxRanker: true` or `UIPILOT_ONNX_RANKER=1`
 3. Pass `parseUtteranceFn` from `@uipilot/ranker` (`createJsonHybridParser` /
-   `createHybridUtteranceParser` with lazy ONNX runtime)
+   `createHybridUtteranceParser` with prebuilt ONNX bytes — never synthesized here)
 
 `onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
 back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
@@ -143,9 +141,8 @@ missLog={{
 ```
 
 Built-in transports: memory, `localStorage`, `createHttpMissLogTransport({ url })`.
-CLI: `uipilotCLI misses export --from file.json`, `misses pull --url …`, and
-`misses draft-aliases`. UiPilot never phones home unless the host supplies an
-HTTP transport.
+Offline recalibration of misses / exchanges is **out of scope** for this repo.
+UiPilot never phones home unless the host supplies an HTTP transport.
 
 #### HTTP Miss Sink Contract
 
@@ -172,8 +169,8 @@ type MissRecord = {
 
 Host-only admin fields (`id`, `userId`, `consumedAt`, `createdAt`, …) may appear
 as **additional camelCase properties**. Snake_case aliases (`utterance`,
-`pack_id`, `client_at`, …) are **rejected** by `parseMissRecords` /
-`uipilotCLI misses export|pull|draft-aliases` so corpus tuning stays on-contract.
+`pack_id`, `client_at`, …) are **rejected** by `parseMissRecords`
+so corpus tuning stays on-contract.
 Schemas: `@uipilot/schema` `missRecordSchema` / `missRecordListSchema`.
 
 #### MissExchange + Learning Mode (1A)
@@ -185,20 +182,17 @@ Offline NLU only; miss → canned repair. No LLM required.
 (BYO server proxy). Misses escalate to LLM → chat reply → **`MissExchange`** log.
 Invalid `proposed.goto.stepId` values are forced to `refuse` (no fake step chips).
 
-Recalibration lives in **`uipilot-training`**:
-
-```bash
-uipilot-training exchanges pull --url …/uipilot/misses?exchanges_only=true --out ex.json
-uipilot-training exchanges draft --from ex.json ./my-app
-uipilot-training metrics --from ex.json --misses misses.json
-```
+Offline promotion of exchanges into pack drafts is **out of scope** for this repo
+(host / external pack tooling). After pack pieces and `scenarios.json` update,
+run `uipilotCLI intents check`, then freeze Learning Mode when coverage is high
+enough.
 
 Host coverage API (e.g. VB): `GET …/uipilot/misses/metrics` → `fallbackShare`,
 optional `localHitRate`, `recommendFreeze`.
 
-Drafts only → human/`intents check` accept (ADR-009). Then **freeze**: turn Learning
-Mode off; local NLU owns traffic. Providers: `@uipilot/llm` (ollama, openai,
-openai-compat, anthropic, huggingface).
+Drafts only → human / `intents check` accept (ADR-009). Then **freeze**: turn
+Learning Mode off; local NLU owns traffic. Provider SDKs are not part of the
+operating runtime packages.
 
 ## Conversational maturity (G11 / ADR-008)
 

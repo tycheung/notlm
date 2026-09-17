@@ -205,7 +205,7 @@ Deterministic aliases → step ids. `meta` lists built-in meta intents (e.g. `wh
 }
 ```
 
-Start with **clean** phrases. Add typos / STT fragments when hardening (see `vb-director`). Prefer `uipilotCLI tune` for large alias growth; keep hand edits for surgical fixes.
+Start with **clean** phrases. Add typos / STT fragments when hardening (see `vb-director`). Prefer offline tooling or hand edits for large alias growth; keep surgical fixes in pack JSON.
 
 ### `pack/binders.json`
 
@@ -270,9 +270,8 @@ Suggested mix per step: **clean**, **slang**, **typo/truncated STT**, plus at le
 Optional acceleration (still review before accept):
 
 ```bash
-uipilotCLI map ./my-app
-uipilotCLI tune ./my-app
-# or: uipilotCLI prepare ./my-app --llm
+# Grow pack aliases / scenarios offline, then:
+uipilotCLI intents check ./my-app
 uipilotCLI intents check ./my-app
 uipilotCLI pack accept <draftId> ./my-app   # only when check is green
 ```
@@ -397,23 +396,23 @@ Flow saturation teaches checklist phrasing. **User-ask** invents what real peopl
 
 ```bash
 # 5000–10000 naturalistic questions (LLM). Default force=5000.
-uipilotCLI scenarios ask ./my-app --force=8000 --blurb="Your 30s app description…"
-# or fixture / CI smoke:
-uipilotCLI scenarios ask packs/demo-todo --force=12 --fixture --label-pool
+# Grow user-ask scenarios offline (out of scope for this repo), then:
+uipilotCLI intents check ./my-app
 ```
 
 3. Soft-label the **entire** pool (chunked LLM calls):
 
 ```bash
-uipilotCLI scenarios label-pool ./my-app --chunk=50
+# Soft-label / FAQ drafts are offline; merge into scenarios + pack, then:
+uipilotCLI intents check ./my-app
 ```
 
 Drafts land under `.uipilot/drafts/scenarios-pool-*/` with `scenarios.json` plus optional `faq.json` (product Q&A).
 
 4. Review: merge labeled scenarios into `.uipilot/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
 5. `uipilotCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
-6. Optional: `uipilotCLI ranker train ./my-app` then enable `features.onnxRanker` / `UIPILOT_ONNX_RANKER=1` for a corpus-trained intent+slot ranker (lazy ONNX, rules fallback).
-7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Then: `uipilotCLI misses export --from …` or `misses pull --url …`, then `misses draft-aliases` into intents/corpus.
+6. Optional: ship `pack/ranker.json` (+ `ranker.onnx`) then enable `features.onnxRanker` / `UIPILOT_ONNX_RANKER=1` and pass prebuilt `onnxBytes` into `createRankerSession` (JSON infer always available).
+7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Offline recalibration of misses / exchanges is out of scope for this repo.
 8. **Learning Mode (optional train window):** `features.learningMode: true` + host `fallbackLlm`. Default **off** for production freeze. See ARCHITECTURE “MissExchange + Learning Mode”.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.

@@ -15,13 +15,9 @@
 
 ## Build-time LLM authoring
 
-- Allowed **only** in `@uipilot/author` / CLI — never in runtime `core` / Host dispatch.
-- **BYO credentials:** `UIPILOT_LLM_API_KEY`, `UIPILOT_LLM_BASE_URL`, `UIPILOT_LLM_MODEL`, `UIPILOT_LLM_PROVIDER` (or local config file gitignored).
-- Support **Ollama** and **OpenAI-compatible** self-host endpoints (LM Studio, vLLM, LocalAI, etc.).
-- Do not commit keys; do not log raw API keys or full prompts that may contain secrets.
-- Redact `.env`, private keys, and obvious secret patterns before sending source excerpts to a model.
-- Prefer local Ollama when code must not leave the machine; document that cloud BYO implies data leaves the host.
-- Host **learnings/config** live under `.uipilot/` (JSON). Do not store API keys there; use env or gitignored `*.local.json`.
+- **Out of scope for this repo.** Never in runtime `core` / Host dispatch / thin `uipilotCLI`.
+- Host **learnings/config** live under `.uipilot/` (JSON). Do not store API keys there.
+- Host BYO Learning Mode proxies must keep provider credentials server-side.
 
 ## Reporting
 
