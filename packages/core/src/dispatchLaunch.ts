@@ -41,6 +41,51 @@ export function launchStep(
     }
   }
 
+  // Soft confirm when host marks the step unavailable (even if NLP confidence is high).
+  if (!isCorrection && !opts?.skipGate) {
+    const reason = pack.unavailableReason?.(targetStep, ctx) ?? null;
+    if (reason) {
+      let next: import('./types.js').SessionSlots = {
+        ...session,
+        pending: {
+          kind: 'confirm',
+          stepId: targetStep,
+          slots,
+        },
+        discourse: {
+          ...(session.discourse ?? {}),
+          lastChoiceIds: ['__yes__', '__no__'],
+        },
+      };
+      const picked = pickReply(next, pack.replies, 'repair.low_confidence', {
+        title: stepTitle(pack, targetStep),
+        stepId: targetStep,
+        message: reason,
+      });
+      next = {
+        ...picked.session,
+        pending: next.pending,
+        discourse: next.discourse,
+      };
+      setSession(() => next);
+      pushAssistant(picked.text, {
+        choices: [
+          { id: '__yes__', label: 'Yes' },
+          { id: '__no__', label: 'No' },
+        ],
+      });
+      emitCoachEvent(deps, { type: 'confirm_ask', stepId: targetStep });
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'low_confidence',
+        text: deps.text,
+        rawIntent: opts?.rawIntent,
+        confidence: opts?.confidence ?? 'high',
+      });
+      return;
+    }
+  }
+
   if (
     !isCorrection &&
     !opts?.skipGate &&

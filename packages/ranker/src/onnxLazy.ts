@@ -1,5 +1,5 @@
 import { featurizeUtterance } from './features.js';
-import { inferRankerJson } from './infer.js';
+import { inferRankerJson, subsetIntentDistribution } from './infer.js';
 import type { RankerInferResult, RankerModelJson } from './types.js';
 
 type OrtModule = {
@@ -34,10 +34,12 @@ export async function loadOnnxRuntime(): Promise<OrtModule | null> {
   return ortLoad;
 }
 
+export type RankerInferOpts = { labels?: string[] };
+
 export type RankerSession = {
   model: RankerModelJson;
   /** Prefer ONNX when runtime + prebuilt bytes are available; always falls back to JSON. */
-  infer: (utterance: string) => Promise<RankerInferResult>;
+  infer: (utterance: string, opts?: RankerInferOpts) => Promise<RankerInferResult>;
   backendPreferred: 'onnx' | 'json';
 };
 
@@ -65,15 +67,15 @@ export function createRankerSession(
   return {
     model,
     backendPreferred: preferOnnx ? 'onnx' : 'json',
-    async infer(utterance: string) {
+    async infer(utterance: string, inferOpts?: RankerInferOpts) {
       if (!preferOnnx || onnxFailed || !onnxBytes) {
-        return inferRankerJson(model, utterance);
+        return inferRankerJson(model, utterance, inferOpts);
       }
       try {
         const ort = await loadOnnxRuntime();
         if (!ort) {
           onnxFailed = true;
-          return inferRankerJson(model, utterance);
+          return inferRankerJson(model, utterance, inferOpts);
         }
         if (!onnxSession) {
           onnxSession = await ort.InferenceSession.create(onnxBytes);
@@ -86,15 +88,13 @@ export function createRankerSession(
         if (!probsData || probsData.length !== model.intentLabels.length) {
           throw new Error('ONNX output shape mismatch');
         }
-        const intents = model.intentLabels.map((label, i) => ({
+        const all = model.intentLabels.map((label, i) => ({
           label,
           score: Math.log((probsData[i] ?? 1e-9) + 1e-9),
           probability: probsData[i] ?? 0,
         }));
-        intents.sort(
-          (a, b) => b.probability - a.probability || a.label.localeCompare(b.label)
-        );
-        const json = inferRankerJson(model, utterance);
+        const intents = subsetIntentDistribution(all, inferOpts?.labels);
+        const json = inferRankerJson(model, utterance, inferOpts);
         return {
           intent: intents[0]!,
           intents,
@@ -103,7 +103,7 @@ export function createRankerSession(
         };
       } catch {
         onnxFailed = true;
-        return inferRankerJson(model, utterance);
+        return inferRankerJson(model, utterance, inferOpts);
       }
     },
   };

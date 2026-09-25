@@ -34,6 +34,8 @@ describe('parseUtterance', () => {
     expect(parseUtterance('create list', pack).stepId).toBe('create_list');
     expect(parseUtterance('make a list', pack).stepId).toBe('create_list');
     expect(parseUtterance('add todo', pack).stepId).toBe('add_item');
+    expect(parseUtterance('create list', pack).confidence).toBe('high');
+    expect(parseUtterance('create list', pack).probability).toBe(1);
   });
 
   it('prefers token-boundary matches over mid-word substrings', () => {

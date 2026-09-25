@@ -1,4 +1,8 @@
 import { editDistance, hasTokenBoundaryMatch } from './fuzzyText.js';
+import {
+  probabilityToConfidence,
+  ruleScoreToProbability,
+} from './confidenceBands.js';
 import { looksLikeFaqQuestion, matchFaqEntry } from './glossary.js';
 import { buildTypoLexicon, correctTypos } from './typoFix.js';
 import type { IntentParsePack, ParseUtteranceResult, StepId } from './types.js';
@@ -184,7 +188,11 @@ function matchStepCandidates(
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
 
-export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteranceResult {
+export function parseUtterance(
+  raw: string,
+  pack: IntentParsePack,
+  _opts?: import('./types.js').ParseUtteranceOpts
+): ParseUtteranceResult {
   const text = raw.trim();
   if (!text) {
     return {
@@ -210,6 +218,7 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
         rawIntent: 'faq',
         faqId: faqHit.id,
         confidence: 'high',
+        probability: 1,
       };
     }
   }
@@ -259,11 +268,10 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
 
   const topScore = stepHits[0]?.score ?? 0;
   let confidence: 'high' | 'mid' | 'low' | undefined;
+  let probability: number | undefined;
   if (stepId || (candidates && candidates.length >= 2)) {
-    // ≥500 substring/exact; ≥250 fuzzy; else truncated-STT / weak prefix.
-    if (topScore >= 500) confidence = 'high';
-    else if (topScore >= 250) confidence = 'mid';
-    else confidence = 'low';
+    probability = ruleScoreToProbability(topScore);
+    confidence = probabilityToConfidence(probability);
   }
 
   return {
@@ -274,5 +282,6 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
     goBack,
     rawIntent,
     confidence,
+    probability,
   };
 }

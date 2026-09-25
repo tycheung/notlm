@@ -229,6 +229,24 @@ export type LookupMatchResult =
       candidates: LookupEntityHit[];
     };
 
+/** Portable System One decision heads (optional; ranker / hybrid). */
+export type ParseDecisionHeads = {
+  /** Renormalized P(goto:step) over shortlist / step labels. */
+  stepDist: Array<{ stepId: StepId; probability: number }>;
+  /** FAQ entry masses when known. */
+  faqDist: Array<{ faqId: string; probability: number }>;
+  /** P(utterance is question-shaped / FAQ-seeking). */
+  isQuestion: number;
+  /** P(out-of-domain / unknown). */
+  isOod: number;
+};
+
+export type ParseUtteranceOpts = {
+  pathname?: string;
+  shortlistStepIds?: StepId[];
+  data?: Record<string, unknown>;
+};
+
 export type ParseUtteranceResult = {
   stepId: StepId | null;
   /** Near-tied step matches when the utterance is ambiguous across contexts. */
@@ -237,8 +255,12 @@ export type ParseUtteranceResult = {
   isCorrection: boolean;
   goBack: boolean;
   rawIntent: string | null;
-  /** Rule-score tier for single/top hit (ranker may omit). */
+  /** Rule-score tier / calibrated band from probability. */
   confidence?: 'high' | 'mid' | 'low';
+  /** Calibrated top-decision probability in [0, 1] when known. */
+  probability?: number;
+  /** Optional parallel decision heads (telemetry / tests). */
+  decision?: ParseDecisionHeads;
   /** When FAQ matching wins at parse time. */
   faqId?: string;
 };

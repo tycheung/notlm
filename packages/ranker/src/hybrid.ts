@@ -1,19 +1,27 @@
 import {
+  CONFIDENCE_MID_MIN,
   normalizeUtterance,
   parseUtterance,
+  probabilityToConfidence,
   type IntentParsePack,
+  type ParseUtteranceOpts,
   type ParseUtteranceResult,
   type SlotBag,
+  type StepId,
 } from '@uipilot/core';
+import { inferDecisionFromRanked } from './decision.js';
+import { labelsForStepShortlist } from './infer.js';
 import { createRankerSession, type RankerSession } from './onnxLazy.js';
 import type { RankerInferResult, RankerModelJson } from './types.js';
 
 export type UtteranceParser = (
   raw: string,
-  pack: IntentParsePack
+  pack: IntentParsePack,
+  opts?: ParseUtteranceOpts
 ) => ParseUtteranceResult | Promise<ParseUtteranceResult>;
 
-const DEFAULT_MIN_PROB = 0.45;
+const DEFAULT_MIN_PROB = CONFIDENCE_MID_MIN;
+const MID_MARGIN_MAX = 0.2;
 
 /** Pull simple slot values: "quoted" phrases and key=value / key: value. */
 export function extractHeuristicSlots(raw: string): SlotBag {
@@ -31,22 +39,47 @@ export function extractHeuristicSlots(raw: string): SlotBag {
   return slots;
 }
 
+function attachBands(
+  result: ParseUtteranceResult,
+  probability: number,
+  decision: ReturnType<typeof inferDecisionFromRanked>
+): ParseUtteranceResult {
+  const confidence = probabilityToConfidence(probability);
+  return {
+    ...result,
+    probability,
+    confidence,
+    decision: {
+      stepDist: decision.stepDist,
+      faqDist: decision.faqDist,
+      isQuestion: decision.isQuestion,
+      isOod: decision.isOod,
+    },
+  };
+}
+
 function resultFromRanker(
   ranked: RankerInferResult,
   pack: IntentParsePack,
-  raw: string
+  raw: string,
+  decision: ReturnType<typeof inferDecisionFromRanked>
 ): ParseUtteranceResult {
   const label = ranked.intent.label;
   const slotPatches = extractHeuristicSlots(raw);
+  const p = ranked.intent.probability;
 
   if (label === 'go_back') {
-    return {
-      stepId: null,
-      slotPatches,
-      isCorrection: false,
-      goBack: true,
-      rawIntent: 'go_back',
-    };
+    return attachBands(
+      {
+        stepId: null,
+        slotPatches,
+        isCorrection: false,
+        goBack: true,
+        rawIntent: 'go_back',
+      },
+      p,
+      decision
+    );
   }
   if (
     label === 'whats_next' ||
@@ -58,32 +91,59 @@ function resultFromRanker(
     label === 'unknown' ||
     label === 'faq'
   ) {
-    return {
-      stepId: null,
-      slotPatches,
-      isCorrection: label === 'correction',
-      goBack: false,
-      rawIntent: label === 'unknown' ? 'unknown' : label,
-    };
+    const faqId =
+      label === 'faq' ? decision.faqDist[0]?.faqId : undefined;
+    return attachBands(
+      {
+        stepId: null,
+        slotPatches,
+        isCorrection: label === 'correction',
+        goBack: false,
+        rawIntent: label === 'unknown' ? 'unknown' : label,
+        faqId,
+      },
+      p,
+      decision
+    );
   }
   if (label.startsWith('goto:')) {
-    const stepId = label.slice('goto:'.length);
+    const stepId = label.slice('goto:'.length) as StepId;
     const known = pack.steps.some((s) => s.id === stepId);
-    return {
-      stepId: known ? stepId : null,
+    const topSteps = decision.stepDist.slice(0, 2).map((s) => s.stepId);
+    const margin =
+      (decision.stepDist[0]?.probability ?? 0) -
+      (decision.stepDist[1]?.probability ?? 0);
+    const candidates =
+      known &&
+      topSteps.length >= 2 &&
+      probabilityToConfidence(p) === 'mid' &&
+      margin < MID_MARGIN_MAX
+        ? topSteps
+        : undefined;
+    return attachBands(
+      {
+        stepId: known ? stepId : null,
+        candidates,
+        slotPatches,
+        isCorrection: false,
+        goBack: false,
+        rawIntent: known ? `goto:${stepId}` : 'unknown',
+      },
+      p,
+      decision
+    );
+  }
+  return attachBands(
+    {
+      stepId: null,
       slotPatches,
       isCorrection: false,
       goBack: false,
-      rawIntent: known ? `goto:${stepId}` : 'unknown',
-    };
-  }
-  return {
-    stepId: null,
-    slotPatches,
-    isCorrection: false,
-    goBack: false,
-    rawIntent: 'unknown',
-  };
+      rawIntent: 'unknown',
+    },
+    p,
+    decision
+  );
 }
 
 /**
@@ -95,18 +155,47 @@ export function createHybridUtteranceParser(
   opts?: { minProbability?: number }
 ): UtteranceParser {
   const minProb = opts?.minProbability ?? DEFAULT_MIN_PROB;
-  return async (raw, pack) => {
-    if (!raw.trim()) return parseUtterance(raw, pack);
-    const ranked = await session.infer(raw);
-    if (ranked.intent.probability < minProb || ranked.intent.label === 'unknown') {
-      const rules = parseUtterance(raw, pack);
+  return async (raw, pack, parseOpts) => {
+    if (!raw.trim()) return parseUtterance(raw, pack, parseOpts);
+    const labels = labelsForStepShortlist(
+      session.model.intentLabels,
+      parseOpts?.shortlistStepIds
+    );
+    const ranked = await session.infer(raw, { labels });
+    const decision = inferDecisionFromRanked(ranked, pack, raw);
+
+    // Prefer FAQ when question-shaped and catalog hits.
+    if (decision.isQuestion >= 0.55 && decision.faqDist[0]?.faqId) {
+      const faqId = decision.faqDist[0].faqId;
+      if (faqId !== 'faq' && pack.faq?.some((f) => f.id === faqId)) {
+        return attachBands(
+          {
+            stepId: null,
+            slotPatches: extractHeuristicSlots(raw),
+            isCorrection: false,
+            goBack: false,
+            rawIntent: 'faq',
+            faqId,
+          },
+          Math.max(decision.faqDist[0].probability, decision.topProbability),
+          decision
+        );
+      }
+    }
+
+    if (
+      ranked.intent.probability < minProb ||
+      ranked.intent.label === 'unknown' ||
+      decision.isOod >= 0.55
+    ) {
+      const rules = parseUtterance(raw, pack, parseOpts);
       if (Object.keys(rules.slotPatches).length === 0) {
         return { ...rules, slotPatches: extractHeuristicSlots(raw) };
       }
       return rules;
     }
-    const fromRanker = resultFromRanker(ranked, pack, raw);
-    const rules = parseUtterance(raw, pack);
+    const fromRanker = resultFromRanker(ranked, pack, raw, decision);
+    const rules = parseUtterance(raw, pack, parseOpts);
     if (
       rules.goBack ||
       rules.rawIntent === 'whats_next' ||
@@ -116,6 +205,9 @@ export function createHybridUtteranceParser(
         return {
           ...rules,
           slotPatches: { ...fromRanker.slotPatches, ...rules.slotPatches },
+          probability: rules.probability ?? fromRanker.probability,
+          confidence: rules.confidence ?? fromRanker.confidence,
+          decision: fromRanker.decision,
         };
       }
     }

@@ -651,4 +651,62 @@ describe('dispatchUserUtterance', () => {
     expect(calls.flashed).toEqual(['guide-list-row-list-1']);
     expect(calls.executed).toEqual([]);
   });
+
+  it('passes shortlistStepIds into parseUtteranceFn before bias', () => {
+    const seen: Array<{ shortlist?: string[]; pathname?: string }> = [];
+    const calls = {
+      assistant: [] as string[],
+      executed: [] as string[],
+    };
+    let session = emptySession();
+    dispatchUserUtterance({
+      text: 'make a list',
+      pack,
+      session,
+      ctx: { pathname: '/lists/new', data: {} },
+      pushAssistant: (msg) => {
+        calls.assistant.push(msg);
+      },
+      executeStep: (stepId) => {
+        calls.executed.push(stepId);
+      },
+      setSession: (updater) => {
+        session = updater(session);
+      },
+      parseUtteranceFn: (text, intentPack, opts) => {
+        seen.push({
+          shortlist: opts?.shortlistStepIds,
+          pathname: opts?.pathname,
+        });
+        return {
+          stepId: 'create_list',
+          slotPatches: {},
+          isCorrection: false,
+          goBack: false,
+          rawIntent: 'goto:create_list',
+          confidence: 'high',
+          probability: 0.95,
+        };
+      },
+    });
+    expect(seen[0]?.pathname).toBe('/lists/new');
+    expect(seen[0]?.shortlist?.length).toBeGreaterThan(0);
+    expect(calls.executed).toContain('create_list');
+  });
+
+  it('soft-confirms when unavailableReason is set even on high confidence', () => {
+    const gated = {
+      ...pack,
+      unavailableReason: (stepId: string) =>
+        stepId === 'create_list' ? 'Finish billing first' : null,
+    };
+    const calls = runDispatch('make a list', emptySession(), {
+      pathname: '/lists',
+      data: {},
+    }, gated);
+    expect(calls.executed).toEqual([]);
+    expect(calls.sessions.at(-1)?.pending?.kind).toBe('confirm');
+    expect(calls.sessions.at(-1)?.pending?.stepId).toBe('create_list');
+    expect(calls.choices[0]?.some((c) => c.id === '__yes__')).toBe(true);
+  });
 });

@@ -1,4 +1,9 @@
 import type { ScenarioCase } from '@uipilot/core';
+import {
+  CONFIDENCE_HIGH_MIN,
+  CONFIDENCE_MID_MIN,
+  probabilityToConfidence,
+} from '@uipilot/core';
 import { inferRankerJson } from './infer.js';
 import type { RankerModelJson } from './types.js';
 
@@ -14,6 +19,12 @@ export type RankerEvalFail = {
   probability: number;
 };
 
+export type RankerBandMetrics = {
+  high: { hits: number; total: number; hitRate: number };
+  mid: { hits: number; total: number; hitRate: number };
+  low: { hits: number; total: number; hitRate: number };
+};
+
 export type RankerEvalResult = {
   ok: boolean;
   hitRate: number;
@@ -21,6 +32,8 @@ export type RankerEvalResult = {
   total: number;
   minHitRate: number;
   fails: RankerEvalFail[];
+  /** Per calibrated-band accuracy among labeled cases. */
+  bands: RankerBandMetrics;
 };
 
 function expectedLabel(c: RankerEvalCase): string | null {
@@ -29,6 +42,10 @@ function expectedLabel(c: RankerEvalCase): string | null {
   if (e.rawIntent) return `meta:${e.rawIntent}`;
   if (typeof e.stepId === 'string' && e.stepId) return `goto:${e.stepId}`;
   return null;
+}
+
+function emptyBand(): RankerBandMetrics['high'] {
+  return { hits: 0, total: 0, hitRate: 0 };
 }
 
 /**
@@ -44,22 +61,35 @@ export function evaluateRankerSoftScore(
   const minProbability = opts?.minProbability ?? DEFAULT_RANKER_MIN_PROB;
   const labeled = cases.filter((c) => expectedLabel(c) != null);
   const fails: RankerEvalFail[] = [];
+  const bands: RankerBandMetrics = {
+    high: emptyBand(),
+    mid: emptyBand(),
+    low: emptyBand(),
+  };
   let hits = 0;
   for (const c of labeled) {
     const want = expectedLabel(c)!;
     const inferred = inferRankerJson(model, c.utterance);
     const actual = inferred.intent.label;
-    const ok =
-      actual === want && inferred.intent.probability >= minProbability;
-    if (ok) hits += 1;
-    else {
+    const p = inferred.intent.probability;
+    const band = probabilityToConfidence(p);
+    bands[band].total += 1;
+    const ok = actual === want && p >= minProbability;
+    if (ok) {
+      hits += 1;
+      bands[band].hits += 1;
+    } else {
       fails.push({
         utterance: c.utterance,
         expected: want,
         actual,
-        probability: inferred.intent.probability,
+        probability: p,
       });
     }
+  }
+  for (const key of ['high', 'mid', 'low'] as const) {
+    const b = bands[key];
+    b.hitRate = b.total === 0 ? 0 : b.hits / b.total;
   }
   const total = labeled.length;
   const hitRate = total === 0 ? 0 : hits / total;
@@ -70,5 +100,8 @@ export function evaluateRankerSoftScore(
     total,
     minHitRate,
     fails,
+    bands,
   };
 }
+
+export { CONFIDENCE_HIGH_MIN, CONFIDENCE_MID_MIN };

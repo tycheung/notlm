@@ -1,3 +1,4 @@
+export * from './confidenceBands.js';
 export * from './types.js';
 export * from './fuzzyText.js';
 export * from './typoFix.js';

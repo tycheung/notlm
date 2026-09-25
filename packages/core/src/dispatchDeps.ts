@@ -10,7 +10,8 @@ import type {
 
 export type ParseUtteranceFn = (
   text: string,
-  pack: IntentParsePack
+  pack: IntentParsePack,
+  opts?: import('./types.js').ParseUtteranceOpts
 ) => ParseUtteranceResult | Promise<ParseUtteranceResult>;
 
 export type DispatchDeps = {

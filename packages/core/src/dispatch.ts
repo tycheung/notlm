@@ -173,7 +173,15 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     faq: live.pack.faq,
   };
   const parseFn = live.parseUtteranceFn ?? parseUtterance;
-  const parsedOrPromise = parseFn(parseText, intentPack);
+  const shortlist = shortlistStepIds(live.pack, live.ctx, live.session.stale, {
+    preferPath: true,
+  });
+  const parseOpts = {
+    pathname: live.ctx.pathname,
+    shortlistStepIds: shortlist,
+    data: live.ctx.data,
+  };
+  const parsedOrPromise = parseFn(parseText, intentPack, parseOpts);
   if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
     return (parsedOrPromise as Promise<ParseUtteranceResult>).then((parsed) => {
       live.text = parseText;

@@ -1,6 +1,17 @@
 export type { RankerModelJson, RankerInferResult, RankerIntentScore, RankerSlotScore } from './types.js';
 export { featurizeUtterance, hashToken } from './features.js';
-export { inferRankerJson } from './infer.js';
+export {
+  inferRankerJson,
+  subsetIntentDistribution,
+  labelsForStepShortlist,
+  alwaysKeepLabels,
+  type InferRankerOpts,
+} from './infer.js';
+export {
+  inferDecision,
+  inferDecisionFromRanked,
+  type RankerDecision,
+} from './decision.js';
 export {
   evaluateRankerSoftScore,
   DEFAULT_RANKER_SOFT_HIT_RATE,
@@ -8,12 +19,14 @@ export {
   type RankerEvalCase,
   type RankerEvalFail,
   type RankerEvalResult,
+  type RankerBandMetrics,
 } from './evaluate.js';
 export {
   loadOnnxRuntime,
   createRankerSession,
   type RankerSession,
   type CreateRankerSessionOpts,
+  type RankerInferOpts,
 } from './onnxLazy.js';
 export {
   createHybridUtteranceParser,
