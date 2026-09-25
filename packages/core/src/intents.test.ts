@@ -166,6 +166,12 @@ describe('parseUtterance', () => {
     expect(parseUtterance('create tornament list', typed).stepId).toBe('create_list');
   });
 
+  it('splits glued capability asks (what can youdo)', () => {
+    const withHelp = { ...pack, meta: [...pack.meta, 'help'] };
+    expect(parseUtterance('what can youdo', withHelp).rawIntent).toBe('help');
+    expect(parseUtterance('what canyou do', withHelp).rawIntent).toBe('help');
+  });
+
   it('keeps step on correction only with a strong multi-word phrase', () => {
     const withStep = parseUtterance('actually create list', pack);
     expect(withStep.isCorrection).toBe(true);

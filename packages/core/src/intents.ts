@@ -30,7 +30,7 @@ const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
   {
     intent: 'help',
     patterns: [
-      /\bwhat can you do\b/i,
+      /\bwhat can you ?do\b/i,
       /\bwhat do you support\b/i,
       /\bwhat are you able to do\b/i,
       /\bshow me what you can do\b/i,

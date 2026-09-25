@@ -56,6 +56,36 @@ const STOPWORDS = new Set([
 ]);
 
 /**
+ * Extra tokens allowed when splitting glued words (missing spaces).
+ * Includes pronouns / chat shortenings that are not in STOPWORDS (so edit-typo
+ * rewrite still skips them).
+ */
+const GLUE_PARTS = new Set([
+  ...STOPWORDS,
+  'you',
+  'u',
+  'your',
+  'ur',
+  'we',
+  'us',
+  'they',
+  'them',
+  'he',
+  'she',
+  'his',
+  'her',
+  'im',
+  'ive',
+  'id',
+  'ill',
+  'dont',
+  'cant',
+  'wont',
+  'whats',
+  'thats',
+]);
+
+/**
  * Domain + coach vocabulary always available even before pack aliases load.
  * Keep small — pack lexicon covers host-specific phrasing.
  */
@@ -136,18 +166,66 @@ export function buildTypoLexicon(pack?: IntentParsePack | null): Set<string> {
   return lexicon;
 }
 
+function isGluePart(token: string, lexicon: Set<string>): boolean {
+  return token.length >= 2 && (GLUE_PARTS.has(token) || lexicon.has(token));
+}
+
 /**
- * Correct OOV tokens against a closed lexicon (edit distance).
- * Conservative: unique best match only; skips stopwords and short tokens.
+ * Split a missing-space glue token ("youdo", "bowlingcenter") into known parts.
+ * Only when exactly one bipartition yields two known tokens (lexicon or glue words).
+ */
+function bestGlueSplit(word: string, lexicon: Set<string>): [string, string] | null {
+  if (word.length < 5 || word.length > 28) return null;
+  if (lexicon.has(word) || STOPWORDS.has(word)) return null;
+  let hit: [string, string] | null = null;
+  for (let i = 2; i <= word.length - 2; i += 1) {
+    const left = word.slice(0, i);
+    const right = word.slice(i);
+    if (!isGluePart(left, lexicon) || !isGluePart(right, lexicon)) continue;
+    if (hit) return null; // ambiguous
+    hit = [left, right];
+  }
+  return hit;
+}
+
+/** Recursively expand glued OOV tokens (handles triple glues like whatcanyoudo). */
+function expandGluedToken(word: string, lexicon: Set<string>, depth = 0): string[] {
+  if (depth > 4) return [word];
+  const split = bestGlueSplit(word, lexicon);
+  if (!split) return [word];
+  return [
+    ...expandGluedToken(split[0], lexicon, depth + 1),
+    ...expandGluedToken(split[1], lexicon, depth + 1),
+  ];
+}
+
+/**
+ * Correct OOV tokens against a closed lexicon (edit distance) and split
+ * missing-space glues ("what can youdo" → "what can you do").
+ * Conservative: unique best match / unique bipartition only; skips stopwords.
  */
 export function correctTypos(text: string, lexicon: Set<string>): string {
   if (!text.trim() || lexicon.size === 0) return text;
   const words = text.split(/\s+/);
   let changed = false;
-  const out = words.map((word) => {
-    if (STOPWORDS.has(word) || lexicon.has(word)) return word;
-    const max = maxDistance(word);
-    if (max <= 0) return word;
+  const out: string[] = [];
+  for (const word of words) {
+    const expanded = expandGluedToken(word, lexicon);
+    if (expanded.length > 1) {
+      changed = true;
+      out.push(...expanded);
+      continue;
+    }
+    const token = expanded[0]!;
+    if (STOPWORDS.has(token) || lexicon.has(token) || GLUE_PARTS.has(token)) {
+      out.push(token);
+      continue;
+    }
+    const max = maxDistance(token);
+    if (max <= 0) {
+      out.push(token);
+      continue;
+    }
 
     let best: string | null = null;
     let bestDist = max + 1;
@@ -155,9 +233,9 @@ export function correctTypos(text: string, lexicon: Set<string>): string {
     let tied = false;
     for (const candidate of lexicon) {
       // Cheap length gate before edit distance.
-      const lenDelta = Math.abs(candidate.length - word.length);
+      const lenDelta = Math.abs(candidate.length - token.length);
       if (lenDelta > max) continue;
-      const dist = editDistance(word, candidate);
+      const dist = editDistance(token, candidate);
       if (dist > max || dist === 0) continue;
       if (dist < bestDist || (dist === bestDist && lenDelta < bestLenDelta)) {
         best = candidate;
@@ -170,9 +248,10 @@ export function correctTypos(text: string, lexicon: Set<string>): string {
     }
     if (best && !tied) {
       changed = true;
-      return best;
+      out.push(best);
+    } else {
+      out.push(token);
     }
-    return word;
-  });
+  }
   return changed ? out.join(' ') : text;
 }

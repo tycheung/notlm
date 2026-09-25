@@ -64,4 +64,16 @@ describe('correctTypos', () => {
     expect(correctTypos('', lex)).toBe('');
     expect(correctTypos('create tournament', lex)).toBe('create tournament');
   });
+
+  it('splits missing-space glues into known tokens', () => {
+    expect(correctTypos('what can youdo', lex)).toBe('what can you do');
+    expect(correctTypos('what canyou do', lex)).toBe('what can you do');
+    expect(correctTypos('bowlingcenter', lex)).toBe('bowling center');
+    expect(correctTypos('createsquad', lex)).toBe('create squad');
+  });
+
+  it('does not invent ambiguous glue splits', () => {
+    // No unique bipartition into known parts → leave alone.
+    expect(correctTypos('zzzzzz', lex)).toBe('zzzzzz');
+  });
 });
