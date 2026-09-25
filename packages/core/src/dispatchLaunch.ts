@@ -19,7 +19,11 @@ export function launchStep(
   targetStep: StepId,
   slots: Record<string, unknown>,
   isCorrection: boolean,
-  opts?: { skipGate?: boolean }
+  opts?: {
+    skipGate?: boolean;
+    rawIntent?: string | null;
+    confidence?: 'high' | 'mid' | 'low';
+  }
 ): void {
   const { pack, session, ctx, pushAssistant, executeStep, setSession } = deps;
   const sink = { pushAssistant, setSession };
@@ -79,7 +83,14 @@ export function launchStep(
       };
       setSession(() => next);
       if (injected.message) pushAssistant(injected.message);
-      emitCoachEvent(deps, { type: 'launch', stepId: targetStep, gated: false });
+      emitCoachEvent(deps, {
+        type: 'launch',
+        stepId: targetStep,
+        gated: false,
+        text: deps.text,
+        rawIntent: opts?.rawIntent,
+        confidence: opts?.confidence,
+      });
       executeStep(targetStep, { prefill: slots, skipCoach: true });
       return;
     }
@@ -124,6 +135,9 @@ export function launchStep(
     stepId: targetStep,
     gated: !opts?.skipGate,
     correction: isCorrection,
+    text: deps.text,
+    rawIntent: opts?.rawIntent,
+    confidence: opts?.confidence,
   });
   const nav = pack.resolveNav(targetStep, ctx);
   executeStep(targetStep, {

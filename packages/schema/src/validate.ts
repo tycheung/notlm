@@ -1,6 +1,10 @@
 import AjvModule from 'ajv';
 import type { ErrorObject, ValidateFunction } from 'ajv';
 import {
+  conversationRecordListSchema,
+  conversationRecordSchema,
+  conversationTurnListSchema,
+  conversationTurnSchema,
   missExchangeListSchema,
   missExchangeSchema,
   missRecordListSchema,
@@ -188,6 +192,67 @@ export function validateMissExchangeList(data: unknown): ValidationResult {
   const ok = validate(data);
   if (ok) return { ok: true, errors: [] };
   return { ok: false, errors: formatErrors('missExchangeList', validate.errors) };
+}
+
+let conversationTurnValidator: ValidateFunction | undefined;
+let conversationTurnListValidator: ValidateFunction | undefined;
+let conversationRecordValidator: ValidateFunction | undefined;
+let conversationRecordListValidator: ValidateFunction | undefined;
+
+function getConversationTurnValidator(): ValidateFunction {
+  if (!conversationTurnValidator) {
+    conversationTurnValidator = ajv.compile(conversationTurnSchema);
+  }
+  return conversationTurnValidator;
+}
+
+function getConversationTurnListValidator(): ValidateFunction {
+  if (!conversationTurnListValidator) {
+    conversationTurnListValidator = ajv.compile(conversationTurnListSchema);
+  }
+  return conversationTurnListValidator;
+}
+
+function getConversationRecordValidator(): ValidateFunction {
+  if (!conversationRecordValidator) {
+    conversationRecordValidator = ajv.compile(conversationRecordSchema);
+  }
+  return conversationRecordValidator;
+}
+
+function getConversationRecordListValidator(): ValidateFunction {
+  if (!conversationRecordListValidator) {
+    conversationRecordListValidator = ajv.compile(conversationRecordListSchema);
+  }
+  return conversationRecordListValidator;
+}
+
+export function validateConversationTurn(data: unknown): ValidationResult {
+  const validate = getConversationTurnValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('conversationTurn', validate.errors) };
+}
+
+export function validateConversationTurnList(data: unknown): ValidationResult {
+  const validate = getConversationTurnListValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('conversationTurnList', validate.errors) };
+}
+
+export function validateConversationRecord(data: unknown): ValidationResult {
+  const validate = getConversationRecordValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('conversationRecord', validate.errors) };
+}
+
+export function validateConversationRecordList(data: unknown): ValidationResult {
+  const validate = getConversationRecordListValidator();
+  const ok = validate(data);
+  if (ok) return { ok: true, errors: [] };
+  return { ok: false, errors: formatErrors('conversationRecordList', validate.errors) };
 }
 
 /** Re-export schema id used by tests / CLI docs. */

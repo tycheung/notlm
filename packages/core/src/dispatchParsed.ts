@@ -91,7 +91,10 @@ export function dispatchParsed(
   if (parsed.rawIntent === 'ambiguous' && parsed.candidates && parsed.candidates.length >= 2) {
     const resolved = resolveKeywordCollision(parsed.candidates, pack, ctx, session);
     if (resolved) {
-      launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection);
+      launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+      });
       return;
     }
     const picked = disambiguationPrompt(pack, session, parsed.candidates);
@@ -332,7 +335,10 @@ export function dispatchParsed(
     });
     next = patchQueuedStepSlots(next, targetStep, slotPatches);
     setSession(() => next);
-    launchStep(deps, targetStep, slotPatches, true);
+    launchStep(deps, targetStep, slotPatches, true, {
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+    });
     return;
   }
 
@@ -353,7 +359,11 @@ export function dispatchParsed(
       };
       setSession(() => next);
       if (injected.message) pushAssistant(injected.message);
-      launchStep(deps, targetStep, slotPatches, false, { skipGate: true });
+      launchStep(deps, targetStep, slotPatches, false, {
+        skipGate: true,
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+      });
       return;
     }
     const { queue, wasHead } = mergeActionIntoQueue(session.actionQueue, action);
@@ -362,7 +372,10 @@ export function dispatchParsed(
     setSession(() => next);
     if (wasHead) {
       // Re-ask current head → reopen (coach-create / modal).
-      launchStep(deps, targetStep, slotPatches, false);
+      launchStep(deps, targetStep, slotPatches, false, {
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+      });
       return;
     }
     pushAssistant(
@@ -371,5 +384,8 @@ export function dispatchParsed(
     return;
   }
 
-  launchStep(deps, targetStep, slotPatches, false);
+  launchStep(deps, targetStep, slotPatches, false, {
+    rawIntent: parsed.rawIntent,
+    confidence: parsed.confidence,
+  });
 }

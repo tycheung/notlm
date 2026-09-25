@@ -6,6 +6,10 @@ export {
   configSchema,
   controlsSchema,
   corpusSchema,
+  conversationRecordListSchema,
+  conversationRecordSchema,
+  conversationTurnListSchema,
+  conversationTurnSchema,
   flowSchema,
   glossarySchema,
   faqSchema,
@@ -23,6 +27,10 @@ export {
 export type { PackPieceName } from './schemas.js';
 
 export {
+  validateConversationRecord,
+  validateConversationRecordList,
+  validateConversationTurn,
+  validateConversationTurnList,
   validateMissExchange,
   validateMissExchangeList,
   validateMissRecord,

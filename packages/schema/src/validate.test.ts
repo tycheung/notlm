@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   PACK_SCHEMA_VERSION,
+  validateConversationRecord,
+  validateConversationTurn,
   validateMissRecord,
   validateMissRecordList,
   validatePackFolder,
@@ -122,5 +124,27 @@ describe('validateMissRecordList', () => {
   it('rejects non-array', () => {
     const result = validateMissRecordList({ text: 'a', kind: 'unknown', at: 't' });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('validateConversationTurn', () => {
+  it('accepts a portable turn and record', () => {
+    const turn = {
+      conversationId: 'c1',
+      turnId: 't1',
+      at: '2026-01-01T00:00:00.000Z',
+      role: 'user',
+      text: 'create event',
+      outcome: 'hit',
+      stepId: 'create_event',
+    };
+    expect(validateConversationTurn(turn).ok).toBe(true);
+    expect(
+      validateConversationRecord({
+        conversationId: 'c1',
+        startedAt: '2026-01-01T00:00:00.000Z',
+        turns: [turn],
+      }).ok
+    ).toBe(true);
   });
 });

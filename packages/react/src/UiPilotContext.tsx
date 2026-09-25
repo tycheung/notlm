@@ -1,6 +1,7 @@
 import {
   advanceAfterStepCompleted,
   composeCoachEventHandlers,
+  createConversationLogPipeline,
   createMissLogPipeline,
   dispatchUserUtterance,
   emptySession,
@@ -11,10 +12,13 @@ import {
   isMissKind,
   listMissingRequires,
   markActiveStep,
+  mintConversationId,
   type AssistantFeatures,
   type ChatChoice,
   type ChatMessage,
   type CoachEvent,
+  type ConversationLogPipeline,
+  type ConversationTransport,
   type LlmFallbackFn,
   type LoadedPack,
   type MissExchangeTransport,
@@ -170,6 +174,15 @@ export type UiPilotProviderProps = {
     getPathname?: () => string | undefined;
   };
   /**
+   * Optional conversation transcript sink (hits + misses under one conversationId).
+   * Disabled when `features.conversationLog === false`. Default on when transport is wired.
+   */
+  conversationLog?: {
+    transport: ConversationTransport;
+    packId?: string;
+    getPathname?: () => string | undefined;
+  };
+  /**
    * Host BYO backup LLM (server proxy). Only used when `features.learningMode` is true
    * (default off — offline NLU with canned repair).
    */
@@ -192,6 +205,7 @@ export function UiPilotProvider({
   tryHandleUtterance,
   onCoachEvent,
   missLog,
+  conversationLog,
   fallbackLlm,
   appearance,
   className,
@@ -212,12 +226,23 @@ export function UiPilotProvider({
     [featuresProp]
   );
 
+  const conversationIdRef = useRef(mintConversationId());
+  const conversationPipelineRef = useRef<ConversationLogPipeline | null>(null);
+
   const pushAssistantRef = useRef<
     (
       text: string,
       opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
     ) => void
   >(() => {});
+
+  const defaultPathname = useCallback(() => {
+    try {
+      return getContext().pathname;
+    } catch {
+      return undefined;
+    }
+  }, [getContext]);
 
   const coachEventHandler = useMemo(() => {
     const missEnabled = Boolean(missLog?.transport) && features.missLog !== false;
@@ -226,17 +251,21 @@ export function UiPilotProvider({
           transport: missLog!.transport,
           kinds: missLog!.kinds,
           packId: missLog!.packId ?? pack.id,
-          getPathname:
-            missLog!.getPathname ??
-            (() => {
-              try {
-                return getContext().pathname;
-              } catch {
-                return undefined;
-              }
-            }),
+          getPathname: missLog!.getPathname ?? defaultPathname,
         })
       : null;
+
+    const convEnabled =
+      Boolean(conversationLog?.transport) && features.conversationLog !== false;
+    const convPipeline = convEnabled
+      ? createConversationLogPipeline({
+          transport: conversationLog!.transport,
+          conversationId: conversationIdRef.current,
+          packId: conversationLog!.packId ?? pack.id,
+          getPathname: conversationLog!.getPathname ?? defaultPathname,
+        })
+      : null;
+    conversationPipelineRef.current = convPipeline;
 
     const fallbackEnabled =
       Boolean(fallbackLlm) && isLearningModeEnabled(features);
@@ -253,7 +282,9 @@ export function UiPilotProvider({
         let pathname: string | undefined;
         try {
           pathname =
-            missLog?.getPathname?.() ?? getContext().pathname;
+            missLog?.getPathname?.() ??
+            conversationLog?.getPathname?.() ??
+            getContext().pathname;
         } catch {
           pathname = undefined;
         }
@@ -262,7 +293,7 @@ export function UiPilotProvider({
           {
             text,
             kind: missKind,
-            packId: missLog?.packId ?? pack.id,
+            packId: missLog?.packId ?? conversationLog?.packId ?? pack.id,
             pathname,
           },
           { knownStepIds }
@@ -298,10 +329,13 @@ export function UiPilotProvider({
 
     return composeCoachEventHandlers(
       pipeline?.onCoachEvent,
+      convPipeline?.onCoachEvent,
       onFallbackMiss,
       onCoachEvent
     );
   }, [
+    conversationLog,
+    defaultPathname,
     fallbackLlm,
     features,
     getContext,
@@ -348,6 +382,7 @@ export function UiPilotProvider({
       text: string,
       opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
     ) => {
+      conversationPipelineRef.current?.logChat('assistant', text);
       setMessages((prev) => [
         ...prev,
         newMessage('assistant', text, opts?.choices, {
@@ -508,6 +543,7 @@ export function UiPilotProvider({
     (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+      conversationPipelineRef.current?.logChat('user', trimmed);
       setMessages((prev) => [...prev, newMessage('user', trimmed)]);
       setPanelOpen(true);
 
@@ -549,11 +585,18 @@ export function UiPilotProvider({
         const intercepted = tryHandleUtterance(trimmed);
         if (intercepted && typeof (intercepted as Promise<unknown>).then === 'function') {
           void (intercepted as Promise<boolean>).then((handled) => {
-            if (!handled) runCore();
+            if (handled) {
+              conversationPipelineRef.current?.markLastUserOutcome('adapter');
+            } else {
+              runCore();
+            }
           });
           return;
         }
-        if (intercepted) return;
+        if (intercepted) {
+          conversationPipelineRef.current?.markLastUserOutcome('adapter');
+          return;
+        }
       }
       runCore();
     },

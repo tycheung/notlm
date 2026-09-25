@@ -94,6 +94,20 @@ describe('conversational maturity', () => {
     expect(events.some((e) => e.type === 'repair' && e.kind === 'blocked')).toBe(true);
   });
 
+  it('launch events include utterance text for hit logging', () => {
+    const { calls, events } = run('make a list', emptySession(), {
+      pathname: '/',
+      data: {},
+    });
+    expect(calls.executed).toContain('create_list');
+    const launch = events.find((e) => e.type === 'launch');
+    expect(launch).toMatchObject({
+      type: 'launch',
+      stepId: 'create_list',
+      text: 'make a list',
+    });
+  });
+
   it('undo returns to prior history step', () => {
     let session = emptySession();
     session = {

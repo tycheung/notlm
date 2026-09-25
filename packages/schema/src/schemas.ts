@@ -423,6 +423,87 @@ export const missExchangeListSchema = {
   },
 } as const;
 
+const conversationTurnProperties = {
+  conversationId: { type: 'string', minLength: 1 },
+  turnId: { type: 'string', minLength: 1 },
+  at: { type: 'string', minLength: 1 },
+  role: { type: 'string', enum: ['user', 'assistant'] },
+  text: { type: 'string', minLength: 1, maxLength: 2000 },
+  outcome: {
+    type: 'string',
+    enum: ['hit', 'miss', 'blocked', 'confirm', 'slot_ask', 'adapter'],
+  },
+  stepId: { type: 'string' },
+  missKind: {
+    type: 'string',
+    enum: ['unknown', 'ambiguous', 'low_confidence', 'blocked'],
+  },
+  rawIntent: { type: ['string', 'null'] },
+  confidence: { type: 'string', enum: ['high', 'mid', 'low'] },
+  pathname: { type: 'string' },
+  packId: { type: 'string' },
+} as const;
+
+/** Portable append-only ConversationTurn (POST ingest). */
+export const conversationTurnSchema = {
+  $id: 'https://uipilot.dev/schemas/conversation-turn.json',
+  type: 'object',
+  additionalProperties: true,
+  required: ['conversationId', 'turnId', 'at', 'role', 'text'],
+  properties: conversationTurnProperties,
+} as const;
+
+export const conversationTurnListSchema = {
+  $id: 'https://uipilot.dev/schemas/conversation-turn-list.json',
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['conversationId', 'turnId', 'at', 'role', 'text'],
+    properties: conversationTurnProperties,
+  },
+} as const;
+
+/** Aggregated ConversationRecord for training dumps. */
+export const conversationRecordSchema = {
+  $id: 'https://uipilot.dev/schemas/conversation-record.json',
+  type: 'object',
+  additionalProperties: true,
+  required: ['conversationId', 'startedAt', 'turns'],
+  properties: {
+    conversationId: { type: 'string', minLength: 1 },
+    packId: { type: 'string' },
+    startedAt: { type: 'string', minLength: 1 },
+    endedAt: { type: 'string' },
+    turns: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: true,
+        required: ['conversationId', 'turnId', 'at', 'role', 'text'],
+        properties: conversationTurnProperties,
+      },
+    },
+  },
+} as const;
+
+export const conversationRecordListSchema = {
+  $id: 'https://uipilot.dev/schemas/conversation-record-list.json',
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: true,
+    required: ['conversationId', 'startedAt', 'turns'],
+    properties: {
+      conversationId: { type: 'string', minLength: 1 },
+      packId: { type: 'string' },
+      startedAt: { type: 'string', minLength: 1 },
+      endedAt: { type: 'string' },
+      turns: { type: 'array' },
+    },
+  },
+} as const;
+
 export const PACK_PIECE_SCHEMAS = {
   manifest: manifestSchema,
   flow: flowSchema,

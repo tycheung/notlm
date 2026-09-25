@@ -173,6 +173,48 @@ as **additional camelCase properties**. Snake_case aliases (`utterance`,
 so corpus tuning stays on-contract.
 Schemas: `@uipilot/schema` `missRecordSchema` / `missRecordListSchema`.
 
+#### Conversation logging (hits + misses)
+
+Hosts may also wire a **conversation** transcript sink. One `conversationId` is
+minted per `UiPilotProvider` mount; append-only `ConversationTurn`s cover user and
+assistant chat plus structured outcomes (`hit` / `miss` / `blocked` / `confirm` /
+`slot_ask` / `adapter`). Kill switch: `features.conversationLog === false`.
+
+```tsx
+import { createHttpConversationTransport } from '@uipilot/core';
+
+conversationLog={{
+  transport: createHttpConversationTransport({ url: '/api/uipilot/conversations' }),
+  packId: 'demo-todo',
+}}
+```
+
+```ts
+type ConversationTurn = {
+  conversationId: string;
+  turnId: string;
+  at: string;
+  role: 'user' | 'assistant';
+  text: string;                 // user ~500, assistant ~2000
+  outcome?: 'hit' | 'miss' | 'blocked' | 'confirm' | 'slot_ask' | 'adapter';
+  stepId?: string;
+  missKind?: 'unknown' | 'ambiguous' | 'low_confidence' | 'blocked';
+  rawIntent?: string | null;
+  confidence?: 'high' | 'mid' | 'low';
+  pathname?: string;
+  packId?: string;
+};
+```
+
+| Direction | Body |
+|-----------|------|
+| `POST` (ingest) | one `ConversationTurn` |
+| `GET` / export | `ConversationRecord[]` or flat `ConversationTurn[]` (hosts / offline tooling aggregate by id) |
+
+Snake_case keys are rejected by parse helpers. Offline LLM analysis of conversations
+is **out of scope** for this repo (external pack tooling). Existing `MissRecord` /
+`MissExchange` sinks remain supported.
+
 #### MissExchange + Learning Mode (1A)
 
 **Production default = Learning Mode OFF** (`features.learningMode` unset/false).

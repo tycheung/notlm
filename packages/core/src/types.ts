@@ -254,7 +254,16 @@ export type CoachEvent =
       rawIntent?: string | null;
       confidence?: 'high' | 'mid' | 'low';
     }
-  | { type: 'launch'; stepId: StepId; gated?: boolean; correction?: boolean }
+  | {
+      type: 'launch';
+      stepId: StepId;
+      gated?: boolean;
+      correction?: boolean;
+      /** Utterance text for hit logging (capped by conversation pipeline). */
+      text?: string;
+      rawIntent?: string | null;
+      confidence?: 'high' | 'mid' | 'low';
+    }
   | { type: 'confirm_ask'; stepId: StepId }
   | { type: 'slot_ask'; stepId: StepId; slotKey: string };
 
@@ -293,6 +302,11 @@ export type AssistantFeatures = {
   onnxRanker?: boolean;
   /** Kill switch when a missLog transport is also provided on the host. */
   missLog?: boolean;
+  /**
+   * Kill switch when a conversationLog transport is also provided on the host.
+   * Default on when transport is wired.
+   */
+  conversationLog?: boolean;
   /**
    * Learning Mode: on miss, call host `fallbackLlm` and log MissExchange.
    * **Default off** — production should run offline NLU only until a train window.
