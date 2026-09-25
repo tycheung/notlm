@@ -308,10 +308,12 @@ export function dispatchParsed(
   if (!targetStep) {
     // “the form?” / “what form” while a create/edit step is queued → open that surface.
     const surfaceAsk =
-      /\b(?:what|which|where(?:'s| is)|whose)?\s*(?:the\s+)?(?:form|page|screen|dialog|modal|wizard)\b/i.test(
+      /\b(?:what|which|where(?:'s| is)|whose)?\s*(?:the\s+)?(?:form|page|screen|dialog|modal|wizard|panel|drawer|window|tab|sheet|popup|overlay|menu|view)\b/i.test(
         trimmed
       ) ||
-      /\b(?:nothing(?:'s| is)?\s+open|no\s+form|form(?:'s| is)?\s+not\s+open)\b/i.test(trimmed);
+      /\b(?:nothing(?:'s| is)?\s+open|no\s+form|form(?:'s| is)?\s+not\s+open|(?:isn'?t|not)\s+open)\b/i.test(
+        trimmed
+      );
     const queuedSurface =
       session.actionQueue[0]?.stepId ?? session.activeStep ?? undefined;
     if (surfaceAsk && queuedSurface) {

@@ -32,7 +32,17 @@ function asEntityRows(
 }
 
 function looksLikeLookup(normalized: string, def: LookupDef): boolean {
-  const hints = def.utteranceHints ?? ['show me', 'open', 'find', 'go to', 'where is'];
+  const hints = def.utteranceHints ?? [
+    'show me',
+    'open',
+    'find',
+    'go to',
+    'where is',
+    'pull up',
+    'bring up',
+    'take me to',
+    'launch',
+  ];
   const entities = def.entityWords ?? [];
   const hasHint = hints.some((h) => normalized.includes(h.toLowerCase()));
   const hasEntity = entities.length === 0 || entities.some((w) => normalized.includes(w.toLowerCase()));
@@ -42,9 +52,19 @@ function looksLikeLookup(normalized: string, def: LookupDef): boolean {
 /** Pull a name candidate after a hint phrase, stripping trailing entity words. */
 export function extractLookupName(raw: string, def: LookupDef): string | null {
   const normalized = normalizeUtterance(raw);
-  const hints = [...(def.utteranceHints ?? ['show me', 'open', 'find', 'go to'])].sort(
-    (a, b) => b.length - a.length
-  );
+  const hints = [
+    ...(def.utteranceHints ?? [
+      'show me',
+      'open',
+      'find',
+      'go to',
+      'where is',
+      'pull up',
+      'bring up',
+      'take me to',
+      'launch',
+    ]),
+  ].sort((a, b) => b.length - a.length);
   let rest = normalized;
   for (const hint of hints) {
     const h = hint.toLowerCase();
@@ -63,10 +83,11 @@ export function extractLookupName(raw: string, def: LookupDef): string | null {
   // UI surface / politeness noise — not part of an entity name.
   rest = rest
     .replace(
-      /\b(?:form|forms|page|screen|dialog|modal|wizard|panel|drawer|view|window|ui)\b/gi,
+      /\b(?:form|forms|page|screen|dialog|modal|wizard|panel|drawer|view|window|ui|tab|sheet|popup|overlay|menu)\b/gi,
       ' '
     )
-    .replace(/\b(?:for me|please|now|real quick|thanks)\b/gi, ' ')
+    .replace(/\b(?:for me|please|now|real quick|thanks|kindly)\b/gi, ' ')
+    .replace(/^(?:can you|could you|would you|will you)\s+/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
   return rest.length >= 2 ? rest : null;

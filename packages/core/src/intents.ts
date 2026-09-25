@@ -99,8 +99,15 @@ export function normalizeUtterance(text: string): string {
     [/\bsubscripshin\b/g, 'subscription'],
     [/\bassgn\b/g, 'assign'],
     // UI surface synonyms — not part of step/entity identity.
-    [/\b(?:forms?|pages?|screens?|dialogs?|modals?|wizards?|panels?|drawers?|windows?)\b/g, ' '],
-    [/\b(?:for me|please|real quick)\b/g, ' '],
+    [
+      /\b(?:forms?|pages?|screens?|dialogs?|modals?|wizards?|panels?|drawers?|windows?|tabs?|sheets?|popups?|overlays?|menus?|views?)\b/g,
+      ' ',
+    ],
+    [/\b(?:for me|please|real quick|kindly|thanks)\b/g, ' '],
+    // Leading wrappers only — do not strip mid-phrase “can you” (“what can you do”).
+    [/^(?:can you|could you|would you|will you)\s+/g, ''],
+    [/\b(?:pull up|bring up|fire up|hop into|launch)\b/g, 'open '],
+    [/\btake me to\b/g, 'go to '],
   ];
   for (const [re, to] of replacements) t = t.replace(re, to);
   return t.replace(/\s+/g, ' ').trim();
@@ -166,12 +173,21 @@ function matchStepCandidates(
 ): Array<{ id: StepId; score: number }> {
   const n = text.includes(' ') || text === text.toLowerCase() ? text : normalizeUtterance(text);
   const haystack = normalizeUtterance(n);
+  // Also score without leading open/show wrappers so “open the format page”
+  // lands as strongly as bare “format”.
+  const haystackBare = haystack
+    .replace(/^(?:open|show me|go to|find|pull up|bring up|launch)\s+(?:the\s+)?/i, '')
+    .trim();
+  const haystacks = haystackBare && haystackBare !== haystack ? [haystack, haystackBare] : [haystack];
   const bestByStep = new Map<StepId, number>();
 
   for (const step of pack.steps) {
     const phrases = [step.title, ...step.keywords, ...(pack.aliases[step.id] || [])];
     for (const phrase of phrases) {
-      const score = phraseScore(haystack, phrase);
+      let score = 0;
+      for (const h of haystacks) {
+        score = Math.max(score, phraseScore(h, phrase));
+      }
       if (score <= 0) continue;
       const prev = bestByStep.get(step.id) ?? 0;
       if (score > prev) bestByStep.set(step.id, score);
