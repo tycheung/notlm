@@ -5,9 +5,10 @@
     "keywords": [
       "billing",
       "subscription",
-      "pass",
+      "tournament pass",
+      "my pass",
       "access",
-      "plan"
+      "my plan"
     ],
     "kind": "hard",
     "requires": []
@@ -67,7 +68,27 @@
     "kind": "hard",
     "requires": [
       "create_event"
-    ]
+    ],
+    "subgraph": "event_format",
+    "hideWhen": ["saOnlyMode"]
+  },
+  {
+    "id": "configure_prize_fund",
+    "title": "Prize fund",
+    "keywords": [
+      "prize fund",
+      "prize pool",
+      "configure prize fund",
+      "payout",
+      "entry fee",
+      "house cut",
+      "added money"
+    ],
+    "kind": "soft",
+    "requires": [
+      "apply_format"
+    ],
+    "hideWhen": ["saOnlyMode"]
   },
   {
     "id": "side_actions",
@@ -75,7 +96,7 @@
     "keywords": [
       "side action",
       "bracket",
-      "pot",
+      "side pot",
       "high game",
       "eliminator"
     ],
@@ -172,10 +193,10 @@
     "id": "enter_scores",
     "title": "Enter scores",
     "keywords": [
-      "score",
       "scoring",
       "enter scores",
-      "game scoring"
+      "game scoring",
+      "punch scores"
     ],
     "kind": "hard",
     "requires": [
