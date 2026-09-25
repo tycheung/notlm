@@ -16,8 +16,13 @@ test-results
 **/.uipilot/drafts/
 
 # Local AI / agent tooling (not shipped as product)
-.cursor/
-**/.cursor/
+# Keep committed Cursor rules; ignore session/cache under .cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+**/.cursor/*
+!**/.cursor/rules/
+!**/.cursor/rules/**
 typescript-slice-master.mdc
 **/typescript-slice-master.mdc
 

@@ -1,0 +1,32 @@
+---
+description: Keep UiPilot core generic; product verbiage and synonym lists live in pack JSON
+globs: packages/**/*,packs/**/*
+alwaysApply: true
+---
+
+# Pack-driven runtime (no product forks in core)
+
+## Split
+
+- **Core / ranker / react**: generic mechanisms (normalize *engine*, dispatch, lookup scoring, bands).
+- **Pack JSON** (`normalize`, `intents`, `faq`, `lookups`, `replies`, `flow`, …): product words, synonyms, copy, step graph.
+
+## Rules
+
+1. Do **not** hardcode product synonyms, UI surface words, open-verb aliases, or politeness fillers in TypeScript. Read `pack.normalize` (and other pack pieces).
+2. New behavior → **generic + config-shaped**. Prefer extending `NormalizeConfig` / pack schemas over `if (pack.id === 'vb-…')`.
+3. Hosts must be able to add synonyms by editing JSON alone. If they cannot, extend load/schema/dispatch so `pack.normalize` (etc.) is threaded end-to-end.
+4. Demos and regression tests that need synonyms supply them via `loadPackFromJson({ normalize: … })`, not by relying on hidden core defaults.
+
+## Example
+
+```ts
+// ❌ BAD
+const SURFACES = ['form', 'page'];
+if (text.includes('pull up')) …
+
+// ✅ GOOD
+normalizeUtterance(text, pack.normalize);
+stripOpenVerbPrefix(haystack, pack.normalize);
+looksLikeSurfaceAsk(text, pack.normalize);
+```
