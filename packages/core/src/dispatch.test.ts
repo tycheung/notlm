@@ -529,6 +529,57 @@ describe('dispatchUserUtterance', () => {
     expect(calls.choices[0]?.some((c) => c.id === 'create_list')).toBe(true);
   });
 
+  it('opens create step instead of entity-lookup miss for “… form” asks', () => {
+    const withLookups = loadPackFromJson({
+      manifest: { id: 'demo' },
+      flow,
+      controls: [
+        { id: 'nav-create', stepId: 'create_list', path: '/lists/new' },
+        { id: 'nav-add', stepId: 'add_item', path: '/lists/items/new' },
+      ],
+      intents: {
+        aliases: {
+          create_list: ['create list', 'make a list'],
+          add_item: ['add todo'],
+        },
+        meta: ['go_back', 'whats_next', 'help'],
+      },
+      binders: {
+        create_list: { path: 'data.listCount', op: 'gte', value: 1 },
+        add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
+      },
+      lookups: [
+        {
+          id: 'lists',
+          dataPath: 'lists',
+          nameKey: 'name',
+          idKey: 'id',
+          utteranceHints: ['show me', 'open', 'find', 'go to'],
+          entityWords: ['list', 'lists'],
+        },
+      ],
+    });
+    const calls = runDispatch(
+      'open the create list form for me',
+      emptySession(),
+      { pathname: '/', data: { lists: [{ id: '1', name: 'Shopping' }] } },
+      withLookups
+    );
+    expect(calls.assistant.some((m) => /couldn.t find/i.test(m))).toBe(false);
+    expect(calls.executed).toContain('create_list');
+  });
+
+  it('opens the queued step when asked what form with nothing open', () => {
+    let session = emptySession();
+    session = {
+      ...session,
+      actionQueue: [{ stepId: 'create_list', slots: {} }],
+    };
+    const calls = runDispatch('what form nothing is open', session);
+    expect(calls.executed).toContain('create_list');
+    expect(calls.assistant[0]).toMatch(/Opening|Create list/i);
+  });
+
   it('prefers faq answers for question-shaped asks even when a step alias matches', () => {
     const withFaq = loadPackFromJson({
       manifest: { id: 'demo' },

@@ -60,7 +60,26 @@ export function extractLookupName(raw: string, def: LookupDef): string | null {
     const re = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
     rest = rest.replace(re, ' ').replace(/\s+/g, ' ').trim();
   }
+  // UI surface / politeness noise — not part of an entity name.
+  rest = rest
+    .replace(
+      /\b(?:form|forms|page|screen|dialog|modal|wizard|panel|drawer|view|window|ui)\b/gi,
+      ' '
+    )
+    .replace(/\b(?:for me|please|now|real quick|thanks)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return rest.length >= 2 ? rest : null;
+}
+
+/**
+ * True when the leftover “name” is actually a create/goto step ask
+ * (“create …”, “new …”) rather than an entity to open from a list.
+ */
+export function looksLikeStepActionQuery(query: string): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return false;
+  return /^(?:create|make|new|start|add|edit|configure|set\s*up|setup)\b/.test(q);
 }
 
 function scoreName(query: string, candidate: string): number {
@@ -102,6 +121,8 @@ export function matchEntityLookup(
     if (!query) {
       return { kind: 'miss', lookupId: def.id, query: '' };
     }
+    // “open the create tournament form” is a step ask, not an entity name.
+    if (looksLikeStepActionQuery(query)) continue;
     let rows = asEntityRows(
       readDataPath(ctx.data, def.dataPath),
       def.nameKey ?? 'name',

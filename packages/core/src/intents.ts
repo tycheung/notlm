@@ -98,9 +98,12 @@ export function normalizeUtterance(text: string): string {
     [/\bside-action\b/g, 'side action'],
     [/\bsubscripshin\b/g, 'subscription'],
     [/\bassgn\b/g, 'assign'],
+    // UI surface synonyms — not part of step/entity identity.
+    [/\b(?:forms?|pages?|screens?|dialogs?|modals?|wizards?|panels?|drawers?|windows?)\b/g, ' '],
+    [/\b(?:for me|please|real quick)\b/g, ' '],
   ];
   for (const [re, to] of replacements) t = t.replace(re, to);
-  return t;
+  return t.replace(/\s+/g, ' ').trim();
 }
 
 function fuzzyIncludes(haystack: string, needle: string): boolean {

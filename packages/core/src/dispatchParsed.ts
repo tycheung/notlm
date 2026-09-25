@@ -116,6 +116,17 @@ export function dispatchParsed(
     return;
   }
 
+  // Prefer a confident step hit over entity-list lookup (“open create tournament form”
+  // must not be treated as opening a tournament named “create form”).
+  const earlyStep =
+    packed.actions[0]?.stepId ??
+    (parsed.stepId && parsed.confidence !== 'low' ? parsed.stepId : null);
+  const preferStepOverLookup =
+    Boolean(earlyStep) &&
+    (parsed.confidence === 'high' ||
+      parsed.confidence === 'mid' ||
+      (typeof parsed.rawIntent === 'string' && parsed.rawIntent.startsWith('goto:')));
+
   if (parsed.rawIntent === 'ambiguous' && parsed.candidates && parsed.candidates.length >= 2) {
     const resolved = resolveKeywordCollision(parsed.candidates, pack, ctx, session);
     if (resolved) {
@@ -191,7 +202,9 @@ export function dispatchParsed(
     return;
   }
 
-  const lookup = matchEntityLookup(trimmed, pack.lookups, ctx);
+  const lookup = preferStepOverLookup
+    ? ({ kind: 'none' } as const)
+    : matchEntityLookup(trimmed, pack.lookups, ctx);
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
     const def = pack.lookups?.find((l) => l.id === lookup.lookupId);
@@ -293,6 +306,24 @@ export function dispatchParsed(
   }
 
   if (!targetStep) {
+    // “the form?” / “what form” while a create/edit step is queued → open that surface.
+    const surfaceAsk =
+      /\b(?:what|which|where(?:'s| is)|whose)?\s*(?:the\s+)?(?:form|page|screen|dialog|modal|wizard)\b/i.test(
+        trimmed
+      ) ||
+      /\b(?:nothing(?:'s| is)?\s+open|no\s+form|form(?:'s| is)?\s+not\s+open)\b/i.test(trimmed);
+    const queuedSurface =
+      session.actionQueue[0]?.stepId ?? session.activeStep ?? undefined;
+    if (surfaceAsk && queuedSurface) {
+      pushAssistant(
+        `Opening “${stepTitle(pack, queuedSurface)}” — that’s the form still on your queue.`
+      );
+      executeStep(queuedSurface, {
+        prefill: session.byStep[queuedSurface] ?? session.actionQueue[0]?.slots,
+        coachCreate: true,
+      });
+      return;
+    }
     const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
       const offer = faqHit.stepId
