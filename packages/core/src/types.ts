@@ -352,6 +352,8 @@ export type PackRuntime = {
   faq?: FaqEntry[];
   lookups?: LookupDef[];
   replies?: ReplyBank;
+  /** Pack-driven utterance normalization. */
+  normalize?: NormalizeConfig;
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -397,6 +399,21 @@ export type IntentConfig = {
   confirm?: StepId[];
 };
 
+/** Pack-driven utterance normalization (synonyms / surfaces / open verbs). */
+export type NormalizePhrasePair = {
+  from: string;
+  to: string;
+};
+
+export type NormalizeConfig = {
+  replacements?: NormalizePhrasePair[];
+  surfaceWords?: string[];
+  trailingFillers?: string[];
+  leadingPoliteness?: string[];
+  openVerbAliases?: NormalizePhrasePair[];
+  openVerbPrefixes?: string[];
+};
+
 export type ScenarioCase = {
   utterance: string;
   expect: {
@@ -426,6 +443,8 @@ export type PackJsonInput = {
   replies?: ReplyBank;
   /** Nested DAGs keyed by id; referenced via FlowStepDef.subgraph. */
   subgraphs?: Record<string, FlowStepDef[]>;
+  /** Utterance normalization synonyms (surfaces, open verbs, typos). */
+  normalize?: NormalizeConfig;
 };
 
 /** Host-registered NL → draft patch compiler (no domain types in core). */
@@ -448,6 +467,8 @@ export type IntentParsePack = {
   meta?: string[];
   /** Optional FAQ catalog for first-class FAQ parse hits. */
   faq?: FaqEntry[];
+  /** Optional pack normalize config for synonym / surface handling. */
+  normalize?: NormalizeConfig;
 };
 
 export type PackedUtteranceResult = {

@@ -15,6 +15,7 @@ export {
   faqSchema,
   lookupsSchema,
   intentsSchema,
+  normalizeSchema,
   manifestSchema,
   missExchangeListSchema,
   missExchangeSchema,

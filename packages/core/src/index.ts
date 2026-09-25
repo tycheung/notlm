@@ -2,6 +2,7 @@ export * from './confidenceBands.js';
 export * from './types.js';
 export * from './fuzzyText.js';
 export * from './typoFix.js';
+export * from './normalizeConfig.js';
 export * from './missLog.js';
 export * from './conversationLog.js';
 export * from './fallbackLlm.js';

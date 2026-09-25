@@ -101,6 +101,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     aliases: live.pack.aliases,
     meta: live.pack.meta,
     faq: live.pack.faq,
+    normalize: live.pack.normalize,
   };
   const rewrite = detectQueueRewrite(trimmed, intentPackEarly, live.session);
   if (rewrite) {
@@ -171,6 +172,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     aliases: live.pack.aliases,
     meta: live.pack.meta,
     faq: live.pack.faq,
+    normalize: live.pack.normalize,
   };
   const parseFn = live.parseUtteranceFn ?? parseUtterance;
   const shortlist = shortlistStepIds(live.pack, live.ctx, live.session.stale, {

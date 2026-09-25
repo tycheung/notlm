@@ -8,7 +8,58 @@ import {
 import { parseUtterance } from './intents.js';
 import { loadPackFromJson } from './loadPack.js';
 import { emptySession } from './slots.js';
-import type { FlowStepDef, LookupDef, SessionSlots } from './types.js';
+import type { FlowStepDef, LookupDef, NormalizeConfig, SessionSlots } from './types.js';
+
+const TEST_NORMALIZE: NormalizeConfig = {
+  replacements: [
+    { from: 'tourney', to: 'tournament' },
+    { from: 'creat', to: 'create' },
+  ],
+  surfaceWords: [
+    'form',
+    'forms',
+    'page',
+    'pages',
+    'screen',
+    'screens',
+    'dialog',
+    'dialogs',
+    'modal',
+    'modals',
+    'wizard',
+    'wizards',
+    'panel',
+    'panels',
+    'drawer',
+    'drawers',
+    'window',
+    'windows',
+    'tab',
+    'tabs',
+    'sheet',
+    'sheets',
+    'popup',
+    'popups',
+    'overlay',
+    'overlays',
+    'menu',
+    'menus',
+    'view',
+    'views',
+    'ui',
+  ],
+  trailingFillers: ['for me', 'please', 'real quick', 'kindly', 'thanks', 'now'],
+  leadingPoliteness: ['can you', 'could you', 'would you', 'will you'],
+  openVerbAliases: [
+    { from: 'pull up', to: 'open' },
+    { from: 'bring up', to: 'open' },
+    { from: 'fire up', to: 'open' },
+    { from: 'hop into', to: 'open' },
+    { from: 'launch', to: 'open' },
+    { from: 'take me to', to: 'go to' },
+  ],
+  openVerbPrefixes: ['open', 'show me', 'go to', 'find', 'pull up', 'bring up', 'launch'],
+};
 
 /**
  * Regression: UI surface / open-verb / politeness synonyms must not turn
@@ -94,6 +145,7 @@ const pack = loadPackFromJson({
     bowling_center: { path: 'data.hasCenter', op: 'eq', value: true },
   },
   lookups: [tournamentLookup, eventLookup],
+  normalize: TEST_NORMALIZE,
 });
 
 const SURFACES = [
@@ -185,10 +237,15 @@ describe('synonym / surface regression', () => {
     for (const surface of SURFACES) {
       for (const verb of OPEN_VERBS) {
         const u = `${verb} create tournament ${surface}`;
-        const lookup = matchEntityLookup(u, pack.lookups, {
-          pathname: '/',
-          data: { tournaments: [{ id: 't1', name: 'E2E Open' }] },
-        });
+        const lookup = matchEntityLookup(
+          u,
+          pack.lookups,
+          {
+            pathname: '/',
+            data: { tournaments: [{ id: 't1', name: 'E2E Open' }] },
+          },
+          TEST_NORMALIZE
+        );
         if (lookup.kind === 'miss') {
           fails.push(`${u} => miss(${'query' in lookup ? lookup.query : ''})`);
         }
@@ -252,13 +309,18 @@ describe('synonym / surface regression', () => {
     ];
     const fails: string[] = [];
     for (const u of cases) {
-      const lookup = matchEntityLookup(u, pack.lookups, {
-        pathname: '/',
-        data: {
-          tournaments: [{ id: 't1', name: 'E2E Open' }],
-          events: [{ id: 'e1', name: 'Baker Doubles' }],
+      const lookup = matchEntityLookup(
+        u,
+        pack.lookups,
+        {
+          pathname: '/',
+          data: {
+            tournaments: [{ id: 't1', name: 'E2E Open' }],
+            events: [{ id: 'e1', name: 'Baker Doubles' }],
+          },
         },
-      });
+        TEST_NORMALIZE
+      );
       if (lookup.kind !== 'hit') {
         fails.push(`${u} => lookup ${lookup.kind}`);
       }
@@ -301,7 +363,8 @@ describe('synonym / surface regression', () => {
     for (const polite of POLITE) {
       const q = extractLookupName(
         `${polite}open the create tournament form for me`.trim(),
-        tournamentLookup
+        tournamentLookup,
+        TEST_NORMALIZE
       );
       expect(looksLikeStepActionQuery(q ?? ''), String(q)).toBe(true);
     }

@@ -1,6 +1,11 @@
 import { editDistance } from './fuzzyText.js';
-import { normalizeUtterance } from './intents.js';
-import type { LookupDef, LookupMatchResult, RuntimeContextBase } from './types.js';
+import { normalizeUtterance } from './normalizeConfig.js';
+import type {
+  LookupDef,
+  LookupMatchResult,
+  NormalizeConfig,
+  RuntimeContextBase,
+} from './types.js';
 
 function readDataPath(data: Record<string, unknown>, path: string): unknown {
   const parts = path.split('.').filter(Boolean);
@@ -38,33 +43,52 @@ function looksLikeLookup(normalized: string, def: LookupDef): boolean {
     'find',
     'go to',
     'where is',
-    'pull up',
-    'bring up',
-    'take me to',
-    'launch',
   ];
   const entities = def.entityWords ?? [];
   const hasHint = hints.some((h) => normalized.includes(h.toLowerCase()));
-  const hasEntity = entities.length === 0 || entities.some((w) => normalized.includes(w.toLowerCase()));
+  const hasEntity =
+    entities.length === 0 || entities.some((w) => normalized.includes(w.toLowerCase()));
   return hasHint && hasEntity;
 }
 
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripConfiguredNoise(rest: string, normalize?: NormalizeConfig | null): string {
+  let t = rest;
+  const surfaces = normalize?.surfaceWords ?? [];
+  const fillers = normalize?.trailingFillers ?? [];
+  const leading = normalize?.leadingPoliteness ?? [];
+  for (const p of [...surfaces, ...fillers].sort((a, b) => b.length - a.length)) {
+    if (!p.trim()) continue;
+    const parts = p.trim().split(/\s+/).map(escapeRe);
+    t = t.replace(new RegExp(`\\b${parts.join('\\s+')}\\b`, 'gi'), ' ');
+  }
+  for (const p of [...leading].sort((a, b) => b.length - a.length)) {
+    if (!p.trim()) continue;
+    t = t.replace(
+      new RegExp(`^(?:${escapeRe(p).replace(/\s+/g, '\\s+')})\\s+`, 'i'),
+      ''
+    );
+  }
+  return t.replace(/\s+/g, ' ').trim();
+}
+
 /** Pull a name candidate after a hint phrase, stripping trailing entity words. */
-export function extractLookupName(raw: string, def: LookupDef): string | null {
-  const normalized = normalizeUtterance(raw);
-  const hints = [
-    ...(def.utteranceHints ?? [
-      'show me',
-      'open',
-      'find',
-      'go to',
-      'where is',
-      'pull up',
-      'bring up',
-      'take me to',
-      'launch',
-    ]),
-  ].sort((a, b) => b.length - a.length);
+export function extractLookupName(
+  raw: string,
+  def: LookupDef,
+  normalize?: NormalizeConfig | null
+): string | null {
+  const normalized = normalizeUtterance(raw, normalize);
+  const hints = [...(def.utteranceHints ?? [
+    'show me',
+    'open',
+    'find',
+    'go to',
+    'where is',
+  ])].sort((a, b) => b.length - a.length);
   let rest = normalized;
   for (const hint of hints) {
     const h = hint.toLowerCase();
@@ -77,19 +101,10 @@ export function extractLookupName(raw: string, def: LookupDef): string | null {
   rest = rest.replace(/^(the|a|an)\s+/i, '').trim();
   const entityWords = [...(def.entityWords ?? [])].sort((a, b) => b.length - a.length);
   for (const word of entityWords) {
-    const re = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    const re = new RegExp(`\\b${escapeRe(word)}\\b`, 'gi');
     rest = rest.replace(re, ' ').replace(/\s+/g, ' ').trim();
   }
-  // UI surface / politeness noise — not part of an entity name.
-  rest = rest
-    .replace(
-      /\b(?:form|forms|page|screen|dialog|modal|wizard|panel|drawer|view|window|ui|tab|sheet|popup|overlay|menu)\b/gi,
-      ' '
-    )
-    .replace(/\b(?:for me|please|now|real quick|thanks|kindly)\b/gi, ' ')
-    .replace(/^(?:can you|could you|would you|will you)\s+/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  rest = stripConfiguredNoise(rest, normalize);
   return rest.length >= 2 ? rest : null;
 }
 
@@ -127,10 +142,11 @@ export function resolveGuideId(template: string | undefined, id: string): string
 export function matchEntityLookup(
   raw: string,
   lookups: LookupDef[] | undefined,
-  ctx: RuntimeContextBase
+  ctx: RuntimeContextBase,
+  normalize?: NormalizeConfig | null
 ): LookupMatchResult {
   if (!lookups?.length) return { kind: 'none' };
-  const normalized = normalizeUtterance(raw);
+  const normalized = normalizeUtterance(raw, normalize);
 
   for (const def of lookups) {
     if (def.filterPath) {
@@ -138,7 +154,7 @@ export function matchEntityLookup(
       if (!gate) continue;
     }
     if (!looksLikeLookup(normalized, def)) continue;
-    const query = extractLookupName(raw, def);
+    const query = extractLookupName(raw, def, normalize);
     if (!query) {
       return { kind: 'miss', lookupId: def.id, query: '' };
     }

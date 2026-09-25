@@ -4,8 +4,16 @@ import {
   ruleScoreToProbability,
 } from './confidenceBands.js';
 import { looksLikeFaqQuestion, matchFaqEntry } from './glossary.js';
+import {
+  normalizeUtterance,
+  stripOpenVerbPrefix,
+} from './normalizeConfig.js';
 import { buildTypoLexicon, correctTypos } from './typoFix.js';
-import type { IntentParsePack, ParseUtteranceResult, StepId } from './types.js';
+import type {
+  IntentParsePack,
+  ParseUtteranceResult,
+  StepId,
+} from './types.js';
 
 const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
   {
@@ -81,38 +89,6 @@ const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
 const CORRECTION_RE =
   /\b(actually|instead|change(?:\s+it)?|wait|correction|should(?:\s+have)?\s+been|make it|rename(?:\s+it)?|i meant)\b/i;
 
-export function normalizeUtterance(text: string): string {
-  let t = text.trim().toLowerCase().replace(/[’']/g, "'");
-  t = t.replace(/[^a-z0-9'\s:-]/g, ' ').replace(/\s+/g, ' ').trim();
-  const replacements: Array<[RegExp, string]> = [
-    [/\btourney\b/g, 'tournament'],
-    [/\btornament\b/g, 'tournament'],
-    [/\bcreat\b/g, 'create'],
-    [/\bcrate\b/g, 'create'],
-    [/\bparticpants\b/g, 'participants'],
-    [/\bparticiants\b/g, 'participants'],
-    [/\blain\b/g, 'lane'],
-    [/\blains\b/g, 'lanes'],
-    [/\bscors\b/g, 'scores'],
-    [/\bsideaction\b/g, 'side action'],
-    [/\bside-action\b/g, 'side action'],
-    [/\bsubscripshin\b/g, 'subscription'],
-    [/\bassgn\b/g, 'assign'],
-    // UI surface synonyms — not part of step/entity identity.
-    [
-      /\b(?:forms?|pages?|screens?|dialogs?|modals?|wizards?|panels?|drawers?|windows?|tabs?|sheets?|popups?|overlays?|menus?|views?)\b/g,
-      ' ',
-    ],
-    [/\b(?:for me|please|real quick|kindly|thanks)\b/g, ' '],
-    // Leading wrappers only — do not strip mid-phrase “can you” (“what can you do”).
-    [/^(?:can you|could you|would you|will you)\s+/g, ''],
-    [/\b(?:pull up|bring up|fire up|hop into|launch)\b/g, 'open '],
-    [/\btake me to\b/g, 'go to '],
-  ];
-  for (const [re, to] of replacements) t = t.replace(re, to);
-  return t.replace(/\s+/g, ' ').trim();
-}
-
 function fuzzyIncludes(haystack: string, needle: string): boolean {
   if (!needle) return false;
   if (hasTokenBoundaryMatch(haystack, needle)) return true;
@@ -171,14 +147,11 @@ function matchStepCandidates(
   text: string,
   pack: IntentParsePack
 ): Array<{ id: StepId; score: number }> {
-  const n = text.includes(' ') || text === text.toLowerCase() ? text : normalizeUtterance(text);
-  const haystack = normalizeUtterance(n);
-  // Also score without leading open/show wrappers so “open the format page”
-  // lands as strongly as bare “format”.
-  const haystackBare = haystack
-    .replace(/^(?:open|show me|go to|find|pull up|bring up|launch)\s+(?:the\s+)?/i, '')
-    .trim();
-  const haystacks = haystackBare && haystackBare !== haystack ? [haystack, haystackBare] : [haystack];
+  const n = text.includes(' ') || text === text.toLowerCase() ? text : normalizeUtterance(text, pack.normalize);
+  const haystack = normalizeUtterance(n, pack.normalize);
+  const haystackBare = stripOpenVerbPrefix(haystack, pack.normalize);
+  const haystacks =
+    haystackBare && haystackBare !== haystack ? [haystack, haystackBare] : [haystack];
   const bestByStep = new Map<StepId, number>();
 
   for (const step of pack.steps) {
@@ -223,7 +196,10 @@ export function parseUtterance(
     };
   }
 
-  const normalized = correctTypos(normalizeUtterance(text), buildTypoLexicon(pack));
+  const normalized = correctTypos(
+    normalizeUtterance(text, pack.normalize),
+    buildTypoLexicon(pack)
+  );
 
   // First-class FAQ: question-shaped asks that hit the catalog win at parse time.
   if (pack.faq?.length && looksLikeFaqQuestion(text)) {

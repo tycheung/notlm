@@ -20,6 +20,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     lookups,
     replies,
     subgraphs,
+    normalize,
   } = input;
   const controlByStep = new Map<StepId, (typeof controls)[number]>();
   for (const control of controls) {
@@ -64,6 +65,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     faq: faq?.length ? faq : undefined,
     lookups: lookups?.length ? lookups : undefined,
     replies: replies && Object.keys(replies).length ? replies : undefined,
+    normalize: normalize && Object.keys(normalize).length ? normalize : undefined,
   };
 }
 

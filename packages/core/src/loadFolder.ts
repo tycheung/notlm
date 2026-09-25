@@ -11,6 +11,7 @@ import type {
   FaqEntry,
   LoadedPack,
   LookupDef,
+  NormalizeConfig,
   PackJsonInput,
   ReplyBank,
 } from './types.js';
@@ -103,6 +104,8 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const lookups = existsSync(lookupsPath) ? readJsonFile(lookupsPath) : undefined;
   const repliesPath = join(pack, 'replies.json');
   const replies = existsSync(repliesPath) ? readJsonFile(repliesPath) : undefined;
+  const normalizePath = join(pack, 'normalize.json');
+  const normalize = existsSync(normalizePath) ? readJsonFile(normalizePath) : undefined;
 
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
@@ -124,6 +127,10 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     replies:
       replies != null && typeof replies === 'object' && !Array.isArray(replies)
         ? (replies as ReplyBank)
+        : undefined,
+    normalize:
+      normalize != null && typeof normalize === 'object' && !Array.isArray(normalize)
+        ? (normalize as NormalizeConfig)
         : undefined,
   };
 }

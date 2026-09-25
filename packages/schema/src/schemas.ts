@@ -160,6 +160,42 @@ export const intentsSchema = {
   },
 } as const;
 
+export const normalizeSchema = {
+  $id: 'https://uipilot.dev/schemas/normalize.json',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    replacements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['from', 'to'],
+        properties: {
+          from: { type: 'string', minLength: 1 },
+          to: { type: 'string' },
+        },
+      },
+    },
+    surfaceWords: { type: 'array', items: { type: 'string', minLength: 1 } },
+    trailingFillers: { type: 'array', items: { type: 'string', minLength: 1 } },
+    leadingPoliteness: { type: 'array', items: { type: 'string', minLength: 1 } },
+    openVerbAliases: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['from', 'to'],
+        properties: {
+          from: { type: 'string', minLength: 1 },
+          to: { type: 'string' },
+        },
+      },
+    },
+    openVerbPrefixes: { type: 'array', items: { type: 'string', minLength: 1 } },
+  },
+} as const;
+
 export const repliesSchema = {
   $id: 'https://uipilot.dev/schemas/replies.json',
   type: 'object',
@@ -509,6 +545,7 @@ export const PACK_PIECE_SCHEMAS = {
   flow: flowSchema,
   controls: controlsSchema,
   intents: intentsSchema,
+  normalize: normalizeSchema,
   binders: bindersSchema,
   corpus: corpusSchema,
   scenarios: scenariosSchema,

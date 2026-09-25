@@ -23,10 +23,18 @@ describe('extractLookupName', () => {
 
   it('strips UI surface synonyms and politeness fillers', () => {
     expect(
-      extractLookupName('open the create tournament form for me', {
-        ...listsLookup,
-        entityWords: ['tournament', 'tournaments'],
-      })
+      extractLookupName(
+        'open the create tournament form for me',
+        {
+          ...listsLookup,
+          entityWords: ['tournament', 'tournaments'],
+        },
+        {
+          surfaceWords: ['form', 'page'],
+          trailingFillers: ['for me', 'please'],
+          leadingPoliteness: ['can you'],
+        }
+      )
     ).toBe('create');
   });
 });
@@ -83,6 +91,10 @@ describe('matchEntityLookup', () => {
       {
         pathname: '/',
         data: { tournaments: [{ id: '1', name: 'E2E Open' }] },
+      },
+      {
+        surfaceWords: ['form'],
+        trailingFillers: ['for me'],
       }
     );
     expect(result.kind).toBe('none');

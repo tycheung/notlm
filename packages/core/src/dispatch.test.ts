@@ -21,6 +21,18 @@ const flow: FlowStepDef[] = [
   },
 ];
 
+const DEMO_NORMALIZE = {
+  surfaceWords: ['form', 'forms', 'page', 'pages', 'screen', 'screens', 'wizard', 'wizards'],
+  trailingFillers: ['for me', 'please'],
+  leadingPoliteness: ['can you', 'could you'],
+  openVerbAliases: [
+    { from: 'pull up', to: 'open' },
+    { from: 'bring up', to: 'open' },
+    { from: 'take me to', to: 'go to' },
+  ],
+  openVerbPrefixes: ['open', 'show me', 'go to', 'find', 'pull up', 'bring up'],
+};
+
 const pack = loadPackFromJson({
   manifest: { id: 'demo' },
   flow,
@@ -39,6 +51,7 @@ const pack = loadPackFromJson({
     create_list: { path: 'data.listCount', op: 'gte', value: 1 },
     add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
   },
+  normalize: DEMO_NORMALIZE,
 });
 
 function runDispatch(
@@ -558,6 +571,7 @@ describe('dispatchUserUtterance', () => {
           entityWords: ['list', 'lists'],
         },
       ],
+      normalize: DEMO_NORMALIZE,
     });
     const calls = runDispatch(
       'open the create list form for me',

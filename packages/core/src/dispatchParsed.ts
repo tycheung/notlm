@@ -4,6 +4,7 @@ import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
 import { looksLikeFaqQuestion, matchFaqEntry, matchGlossaryEntry } from './glossary.js';
+import { looksLikeSurfaceAsk } from './normalizeConfig.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
 import {
   formatBlockedQueueMessage,
@@ -204,7 +205,7 @@ export function dispatchParsed(
 
   const lookup = preferStepOverLookup
     ? ({ kind: 'none' } as const)
-    : matchEntityLookup(trimmed, pack.lookups, ctx);
+    : matchEntityLookup(trimmed, pack.lookups, ctx, pack.normalize);
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
     const def = pack.lookups?.find((l) => l.id === lookup.lookupId);
@@ -307,13 +308,7 @@ export function dispatchParsed(
 
   if (!targetStep) {
     // “the form?” / “what form” while a create/edit step is queued → open that surface.
-    const surfaceAsk =
-      /\b(?:what|which|where(?:'s| is)|whose)?\s*(?:the\s+)?(?:form|page|screen|dialog|modal|wizard|panel|drawer|window|tab|sheet|popup|overlay|menu|view)\b/i.test(
-        trimmed
-      ) ||
-      /\b(?:nothing(?:'s| is)?\s+open|no\s+form|form(?:'s| is)?\s+not\s+open|(?:isn'?t|not)\s+open)\b/i.test(
-        trimmed
-      );
+    const surfaceAsk = looksLikeSurfaceAsk(trimmed, pack.normalize);
     const queuedSurface =
       session.actionQueue[0]?.stepId ?? session.activeStep ?? undefined;
     if (surfaceAsk && queuedSurface) {
