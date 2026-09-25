@@ -529,6 +529,47 @@ describe('dispatchUserUtterance', () => {
     expect(calls.choices[0]?.some((c) => c.id === 'create_list')).toBe(true);
   });
 
+  it('prefers faq answers for question-shaped asks even when a step alias matches', () => {
+    const withFaq = loadPackFromJson({
+      manifest: { id: 'demo' },
+      flow,
+      controls: [
+        { id: 'nav-create', stepId: 'create_list', path: '/lists/new' },
+        { id: 'nav-add', stepId: 'add_item', path: '/lists/items/new' },
+      ],
+      intents: {
+        aliases: {
+          create_list: ['create list', 'make a list'],
+          add_item: ['add todo'],
+        },
+        meta: ['go_back', 'whats_next', 'explain_field'],
+      },
+      binders: {
+        create_list: { path: 'data.listCount', op: 'gte', value: 1 },
+        add_item: { path: 'data.itemCount', op: 'gte', value: 1 },
+      },
+      faq: [
+        {
+          id: 'faq-create-list',
+          aliases: ['how do i create a list', 'how do i make a list'],
+          text: 'Use Create list from the checklist, then name it.',
+          stepId: 'create_list',
+          href: '/help/faq#create-list',
+          label: 'Read: create list',
+        },
+      ],
+    });
+    const calls = runDispatch(
+      'how do I create a list',
+      emptySession(),
+      { pathname: '/', data: {} },
+      withFaq
+    );
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toMatch(/Use Create list/i);
+    expect(calls.choices[0]?.[0]?.id).toBe('create_list');
+  });
+
   it('answers faq product questions before unintelligible fallback', () => {
     const withFaq = loadPackFromJson({
       manifest: { id: 'demo' },

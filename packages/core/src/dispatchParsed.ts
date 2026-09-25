@@ -3,7 +3,7 @@ import { extractMultiSlotPatches } from './discourse.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
-import { matchFaqEntry, matchGlossaryEntry } from './glossary.js';
+import { looksLikeFaqQuestion, matchFaqEntry, matchGlossaryEntry } from './glossary.js';
 import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
 import {
   formatBlockedQueueMessage,
@@ -41,6 +41,34 @@ export function dispatchParsed(
   const { pack, session, ctx, pushAssistant, executeStep, setSession, flashField, clickField } =
     deps;
   const trimmed = deps.text.trim();
+
+  // First-class FAQ intent from parse (question-shaped catalog hit).
+  if (parsed.rawIntent === 'faq' && parsed.faqId) {
+    const faqHit =
+      (pack.faq ?? []).find((e) => e.id === parsed.faqId) ??
+      matchFaqEntry(pack.faq ?? [], trimmed);
+    if (faqHit) {
+      const offer = faqHit.stepId
+        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
+        : '';
+      const links =
+        faqHit.href || faqHit.action
+          ? [
+              {
+                label: faqHit.label ?? 'Learn more',
+                href: faqHit.href,
+                action: faqHit.action,
+              },
+            ]
+          : undefined;
+      pushAssistant(`${faqHit.text}${offer}`, {
+        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+        links,
+        intentKey: faqHit.id,
+      });
+      return;
+    }
+  }
 
   if (parsed.goBack || parsed.rawIntent === 'go_back') {
     const prevStep = resolveGoBackStep(session);
@@ -216,6 +244,32 @@ export function dispatchParsed(
   const targetStep = singleAction?.stepId ?? parsed.stepId;
   const slotPatches = singleAction?.slots ?? parsed.slotPatches;
 
+  // Question-shaped asks: answer product FAQ (with optional step chip) before navigating.
+  if (looksLikeFaqQuestion(trimmed)) {
+    const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
+    if (faqHit) {
+      const offer = faqHit.stepId
+        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
+        : '';
+      const links =
+        faqHit.href || faqHit.action
+          ? [
+              {
+                label: faqHit.label ?? 'Learn more',
+                href: faqHit.href,
+                action: faqHit.action,
+              },
+            ]
+          : undefined;
+      pushAssistant(`${faqHit.text}${offer}`, {
+        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+        links,
+        intentKey: faqHit.id,
+      });
+      return;
+    }
+  }
+
   // In-form / active coach-create fill: value-like utterance with no strong new step.
   if (!targetStep || (parsed.confidence === 'low' && session.activeStep)) {
     const fillStep =
@@ -296,11 +350,35 @@ export function dispatchParsed(
   }
 
   if (
-    parsed.confidence === 'low' &&
+    (parsed.confidence === 'low' || parsed.confidence === 'mid') &&
     !parsed.isCorrection &&
     packed.actions.length < 2 &&
     !(pack.confirm ?? []).includes(targetStep)
   ) {
+    // Mid with near-tie candidates → chips; otherwise soft Yes/No confirm.
+    if (
+      parsed.confidence === 'mid' &&
+      parsed.candidates &&
+      parsed.candidates.length >= 2
+    ) {
+      const picked = disambiguationPrompt(pack, session, parsed.candidates);
+      setSession(() => ({
+        ...picked.session,
+        discourse: {
+          ...(picked.session.discourse ?? {}),
+          lastChoiceIds: parsed.candidates,
+        },
+      }));
+      pushAssistant(picked.text, { choices: stepChoices(pack, parsed.candidates) });
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'ambiguous',
+        text: trimmed,
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+      });
+      return;
+    }
     const picked = lowConfidencePrompt(pack, session, targetStep);
     setSession(() => ({
       ...picked.session,

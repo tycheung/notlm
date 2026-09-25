@@ -18,3 +18,17 @@ export function editDistance(a: string, b: string): number {
   }
   return row[b.length] ?? b.length;
 }
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** True when `needle` appears as a whole-token / word-boundary span in `haystack`. */
+export function hasTokenBoundaryMatch(haystack: string, needle: string): boolean {
+  const h = haystack.toLowerCase().trim();
+  const n = needle.toLowerCase().trim();
+  if (!n || !h) return false;
+  if (h === n) return true;
+  const re = new RegExp(`(?:^|\\s)${escapeRegExp(n)}(?:\\s|$)`);
+  return re.test(h);
+}

@@ -108,7 +108,7 @@ const BUILTIN_LEXICON = [
 function maxDistance(word: string): number {
   if (word.length >= 8) return 2;
   if (word.length >= 5) return 1;
-  if (word.length === 4) return 1;
+  // Length ≤4: never rewrite (late≠lane, pass≠past).
   return 0;
 }
 

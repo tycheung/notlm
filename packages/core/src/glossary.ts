@@ -1,4 +1,5 @@
 import type { FaqEntry, GlossaryEntry } from './types.js';
+import { hasTokenBoundaryMatch } from './fuzzyText.js';
 
 function stripExplainLead(utterance: string): string {
   return utterance
@@ -36,8 +37,12 @@ function matchAliasCatalog<T extends AliasCatalog>(
     for (const label of labels) {
       if (!label) continue;
       if (needle === label) return entry;
-      if (needle.includes(label) || label.includes(needle)) {
-        const score = label.length;
+      // Prefer token-boundary containment; allow exact substring only for multi-word labels.
+      const boundary = hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
+      const looseMulti =
+        label.includes(' ') && (needle.includes(label) || label.includes(needle));
+      if (boundary || looseMulti) {
+        const score = label.length + (boundary ? 50 : 0);
         if (score > bestScore) {
           best = entry;
           bestScore = score;
@@ -59,6 +64,26 @@ export function matchGlossaryEntry(
 /** Product FAQ match against full utterance (blurb-led Q&A). */
 export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | null {
   return matchAliasCatalog(faq, normalizeAsk(utterance));
+}
+
+/**
+ * True when the utterance reads like a product question (not a direct “do X” command).
+ * Used so FAQ answers can win over step aliases that appear as substrings
+ * (e.g. “how do I create a tournament” vs alias “create tournament”).
+ */
+export function looksLikeFaqQuestion(utterance: string): boolean {
+  const n = normalizeAsk(utterance);
+  if (!n) return false;
+  if (
+    /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it)\b/.test(
+      n
+    )
+  ) {
+    return false;
+  }
+  return /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand)\b/.test(
+    n
+  );
 }
 
 /**

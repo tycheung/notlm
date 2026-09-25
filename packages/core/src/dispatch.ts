@@ -1,6 +1,8 @@
 import { emitCoachEvent } from './coachEvents.js';
+import { filterCandidatesByContext, shortlistStepIds } from './candidateTree.js';
 import { resolveDiscourse } from './discourse.js';
 import { parseUtterance } from './intents.js';
+import { biasStepByPageContext } from './pageContext.js';
 import { applyQueueRewrite, detectQueueRewrite } from './queueRewrite.js';
 import { handlePendingUtterance } from './dispatchTalk.js';
 import { resolveGoBackStep, stepTitle } from './dispatchResolve.js';
@@ -98,6 +100,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     steps: live.pack.steps,
     aliases: live.pack.aliases,
     meta: live.pack.meta,
+    faq: live.pack.faq,
   };
   const rewrite = detectQueueRewrite(trimmed, intentPackEarly, live.session);
   if (rewrite) {
@@ -167,15 +170,87 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     steps: live.pack.steps,
     aliases: live.pack.aliases,
     meta: live.pack.meta,
+    faq: live.pack.faq,
   };
   const parseFn = live.parseUtteranceFn ?? parseUtterance;
   const parsedOrPromise = parseFn(parseText, intentPack);
   if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
     return (parsedOrPromise as Promise<ParseUtteranceResult>).then((parsed) => {
       live.text = parseText;
-      dispatchParsed(live, intentPack, parsed);
+      dispatchParsed(live, intentPack, applyContextBias(live, parsed));
     });
   }
   live.text = parseText;
-  dispatchParsed(live, intentPack, parsedOrPromise as ParseUtteranceResult);
+  dispatchParsed(live, intentPack, applyContextBias(live, parsedOrPromise as ParseUtteranceResult));
+}
+
+function applyContextBias(
+  live: DispatchDeps,
+  parsed: ParseUtteranceResult
+): ParseUtteranceResult {
+  const metaSkip = new Set([
+    'faq',
+    'go_back',
+    'whats_next',
+    'explain_field',
+    'help',
+    'cancel_all',
+    'do_it',
+    'skip_side_actions',
+    'lookup_participant',
+  ]);
+  if (parsed.goBack || (parsed.rawIntent && metaSkip.has(parsed.rawIntent))) {
+    return parsed;
+  }
+  const shortlist = shortlistStepIds(live.pack, live.ctx, live.session.stale, {
+    preferPath: true,
+  });
+  let next = { ...parsed };
+  if (next.candidates && next.candidates.length >= 2) {
+    const filtered = filterCandidatesByContext(
+      next.candidates,
+      live.pack,
+      live.ctx,
+      live.session
+    );
+    if (filtered.length === 1) {
+      next = {
+        ...next,
+        stepId: filtered[0]!,
+        candidates: undefined,
+        rawIntent: `goto:${filtered[0]}`,
+      };
+    } else if (filtered.length >= 2 && filtered.length < next.candidates.length) {
+      next = { ...next, candidates: filtered, rawIntent: 'ambiguous' };
+    }
+  }
+  if (!next.stepId && shortlist.length === 1 && next.candidates?.length) {
+    const only = shortlist[0]!;
+    if (next.candidates.includes(only)) {
+      next = {
+        ...next,
+        stepId: only,
+        candidates: undefined,
+        rawIntent: `goto:${only}`,
+        confidence: next.confidence ?? 'mid',
+      };
+    }
+  } else if (!next.stepId && next.candidates?.length) {
+    const biased = biasStepByPageContext(
+      null,
+      live.ctx.pathname,
+      live.pack.steps,
+      next.candidates
+    );
+    if (biased && next.candidates.includes(biased)) {
+      next = {
+        ...next,
+        stepId: biased,
+        candidates: undefined,
+        rawIntent: `goto:${biased}`,
+        confidence: next.confidence ?? 'mid',
+      };
+    }
+  }
+  return next;
 }

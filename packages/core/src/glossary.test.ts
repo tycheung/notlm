@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { matchFaqEntry, matchGlossaryEntry, mergeFaqEntries } from './glossary.js';
+import {
+  looksLikeFaqQuestion,
+  matchFaqEntry,
+  matchGlossaryEntry,
+  mergeFaqEntries,
+} from './glossary.js';
 
 describe('matchGlossaryEntry', () => {
   const glossary = [
@@ -37,6 +42,30 @@ describe('matchFaqEntry', () => {
       },
     ];
     expect(matchFaqEntry(faq, 'is this app free to use')?.id).toBe('local_only');
+  });
+});
+
+describe('looksLikeFaqQuestion', () => {
+  it('detects question leads and rejects direct commands', () => {
+    expect(looksLikeFaqQuestion('how do I create a tournament')).toBe(true);
+    expect(looksLikeFaqQuestion('what is a side action')).toBe(true);
+    expect(looksLikeFaqQuestion('why cant i score')).toBe(true);
+    expect(looksLikeFaqQuestion('create a tournament')).toBe(false);
+    expect(looksLikeFaqQuestion('take me to billing')).toBe(false);
+    expect(looksLikeFaqQuestion('open squads')).toBe(false);
+  });
+});
+
+describe('token-boundary FAQ match', () => {
+  it('does not match single-word aliases inside unrelated words', () => {
+    const faq = [
+      {
+        id: 'lanes',
+        aliases: ['lane'],
+        text: 'Lane help',
+      },
+    ];
+    expect(matchFaqEntry(faq, 'text my wife im running late')).toBeNull();
   });
 });
 

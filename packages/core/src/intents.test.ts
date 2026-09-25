@@ -36,6 +36,42 @@ describe('parseUtterance', () => {
     expect(parseUtterance('add todo', pack).stepId).toBe('add_item');
   });
 
+  it('prefers token-boundary matches over mid-word substrings', () => {
+    const lanePack: IntentParsePack = {
+      steps: [
+        {
+          id: 'assign_lanes',
+          title: 'Assign lanes',
+          keywords: ['lane'],
+          kind: 'soft',
+          requires: [],
+        },
+      ],
+      aliases: { assign_lanes: ['lane'] },
+      meta: [],
+    };
+    expect(parseUtterance('text my wife im running late', lanePack).stepId).toBeNull();
+    expect(parseUtterance('open lane chart', lanePack).stepId).toBe('assign_lanes');
+  });
+
+  it('emits faq rawIntent for question-shaped FAQ hits', () => {
+    const withFaq: IntentParsePack = {
+      ...pack,
+      faq: [
+        {
+          id: 'faq-create',
+          aliases: ['how do i create a list'],
+          text: 'Use Create list.',
+          stepId: 'create_list',
+        },
+      ],
+    };
+    const parsed = parseUtterance('how do I create a list', withFaq);
+    expect(parsed.rawIntent).toBe('faq');
+    expect(parsed.faqId).toBe('faq-create');
+    expect(parsed.stepId).toBeNull();
+  });
+
   it('detects meta intents', () => {
     expect(parseUtterance('go back', pack)).toMatchObject({
       goBack: true,

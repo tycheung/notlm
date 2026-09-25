@@ -239,6 +239,8 @@ export type ParseUtteranceResult = {
   rawIntent: string | null;
   /** Rule-score tier for single/top hit (ranker may omit). */
   confidence?: 'high' | 'mid' | 'low';
+  /** When FAQ matching wins at parse time. */
+  faqId?: string;
 };
 
 /** Structured coach telemetry for hosts (no secrets / raw credentials). */
@@ -422,6 +424,8 @@ export type IntentParsePack = {
   steps: FlowStepDef[];
   aliases: Record<StepId, string[]>;
   meta?: string[];
+  /** Optional FAQ catalog for first-class FAQ parse hits. */
+  faq?: FaqEntry[];
 };
 
 export type PackedUtteranceResult = {

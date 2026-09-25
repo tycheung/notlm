@@ -1,4 +1,5 @@
-import { editDistance } from './fuzzyText.js';
+import { editDistance, hasTokenBoundaryMatch } from './fuzzyText.js';
+import { looksLikeFaqQuestion, matchFaqEntry } from './glossary.js';
 import { buildTypoLexicon, correctTypos } from './typoFix.js';
 import type { IntentParsePack, ParseUtteranceResult, StepId } from './types.js';
 
@@ -100,12 +101,15 @@ export function normalizeUtterance(text: string): string {
 
 function fuzzyIncludes(haystack: string, needle: string): boolean {
   if (!needle) return false;
-  if (haystack.includes(needle)) return true;
+  if (hasTokenBoundaryMatch(haystack, needle)) return true;
+  // Mid-string includes only for multi-word phrases (avoid "late"→"lane"-style FPs).
+  if (needle.includes(' ') && haystack.includes(needle)) return true;
   const words = haystack.split(' ');
   const needleWords = needle.split(' ');
   if (needleWords.length === 1) {
     const n = needleWords[0];
-    if (!n || n.length < 5) return false;
+    // Short tokens: exact word only (late≠lane). Longer tokens allow edit distance 1.
+    if (!n || n.length < 6) return false;
     return words.some((w) => editDistance(w, n) <= 1);
   }
   let from = 0;
@@ -129,7 +133,10 @@ function phraseScore(haystack: string, phrase: string): number {
   const wordCount = p.split(/\s+/).length;
   const singleWordPenalty = wordCount === 1 ? 220 : 0;
   if (haystack === p) return 1000 + p.length;
-  if (haystack.includes(p)) return 500 + p.length * 2 - singleWordPenalty;
+  // Prefer word-boundary hits over raw mid-string includes.
+  if (hasTokenBoundaryMatch(haystack, p)) return 500 + p.length * 2 - singleWordPenalty;
+  // Demoted: continuous substring without boundaries (multi-word only).
+  if (wordCount > 1 && haystack.includes(p)) return 320 + p.length - singleWordPenalty;
   if (fuzzyIncludes(haystack, p)) return 200 + p.length - Math.floor(singleWordPenalty / 2);
   if (haystack.length >= 5 && p.startsWith(haystack)) return 150 + haystack.length;
   return 0;
@@ -190,6 +197,23 @@ export function parseUtterance(raw: string, pack: IntentParsePack): ParseUtteran
   }
 
   const normalized = correctTypos(normalizeUtterance(text), buildTypoLexicon(pack));
+
+  // First-class FAQ: question-shaped asks that hit the catalog win at parse time.
+  if (pack.faq?.length && looksLikeFaqQuestion(text)) {
+    const faqHit = matchFaqEntry(pack.faq, text);
+    if (faqHit) {
+      return {
+        stepId: null,
+        slotPatches: {},
+        isCorrection: false,
+        goBack: false,
+        rawIntent: 'faq',
+        faqId: faqHit.id,
+        confidence: 'high',
+      };
+    }
+  }
+
   const meta = matchMetaIntent(normalized, pack.meta);
   const goBack = meta === 'go_back';
   const isCorrection = !goBack && CORRECTION_RE.test(normalized);
