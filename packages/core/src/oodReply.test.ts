@@ -19,6 +19,12 @@ const pack: IntentParsePack = {
 };
 
 describe('ood + mixed intent', () => {
+  it('extracts house averages from disfluent question', () => {
+    expect(extractEntitySpans('uhh what are house averages')).toEqual([
+      'house averages',
+    ]);
+  });
+
   it('extracts recipe entities', () => {
     expect(extractEntitySpans('recipe for blueberry muffins')).toContain(
       'blueberry muffins'

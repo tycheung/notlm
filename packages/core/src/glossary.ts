@@ -14,13 +14,20 @@ function stripExplainLead(utterance: string): string {
 }
 
 function normalizeAsk(utterance: string): string {
-  return utterance
+  let n = utterance
     .trim()
     .toLowerCase()
     .replace(/[’']/g, "'")
     .replace(/[^a-z0-9'\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  // Strip leading disfluencies so "uhh what are …" still looks like a FAQ question.
+  for (let i = 0; i < 3; i++) {
+    const next = n.replace(/^(uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls)\s+/, '');
+    if (next === n) break;
+    n = next;
+  }
+  return n;
 }
 
 type AliasCatalog = { id: string; aliases: string[] };

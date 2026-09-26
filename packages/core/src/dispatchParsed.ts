@@ -303,26 +303,36 @@ export function dispatchParsed(
   const slotPatches = singleAction?.slots ?? parsed.slotPatches;
 
   // Question-shaped asks: answer product FAQ (with optional step chip) before navigating.
-  if (looksLikeFaqQuestion(trimmed)) {
-    const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
-    if (faqHit) {
-      const offer = faqHit.stepId
-        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
+  // Also prefer a strong FAQ alias hit over a weak mid/low step confirm (e.g. "house averages"
+  // incorrectly soft-matching bowling_center via keyword "house").
+  {
+    const faqHitEarly = matchFaqEntry(pack.faq ?? [], trimmed);
+    if (
+      faqHitEarly &&
+      (looksLikeFaqQuestion(trimmed) ||
+        parsed.confidence === 'low' ||
+        parsed.confidence === 'mid' ||
+        !targetStep)
+    ) {
+      const offer = faqHitEarly.stepId
+        ? ` If you want, I can take you to “${stepTitle(pack, faqHitEarly.stepId)}”.`
         : '';
       const links =
-        faqHit.href || faqHit.action
+        faqHitEarly.href || faqHitEarly.action
           ? [
               {
-                label: faqHit.label ?? 'Learn more',
-                href: faqHit.href,
-                action: faqHit.action,
+                label: faqHitEarly.label ?? 'Learn more',
+                href: faqHitEarly.href,
+                action: faqHitEarly.action,
               },
             ]
           : undefined;
-      pushAssistant(`${faqHit.text}${offer}`, {
-        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+      pushAssistant(`${faqHitEarly.text}${offer}`, {
+        choices: faqHitEarly.stepId
+          ? stepChoices(pack, [faqHitEarly.stepId])
+          : undefined,
         links,
-        intentKey: faqHit.id,
+        intentKey: faqHitEarly.id,
       });
       return;
     }

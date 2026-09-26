@@ -9,7 +9,7 @@ import {
   formatBlockedQueueMessage,
   invokeLlmFallback,
   isDecisionFallbackEnabled,
-  isMissKind,
+  isDecisionFallbackMissKind,
   listMissingRequires,
   markActiveStep,
   mintConversationId,
@@ -286,7 +286,8 @@ export function UiPilotProvider({
 
     const onFallbackMiss = (event: CoachEvent) => {
       if (!fallbackEnabled || !fallbackLlm) return;
-      if (event.type !== 'repair' || !isMissKind(event.kind)) return;
+      // Soft mid-confirm (`low_confidence`) stays local — do not race Laya refuse alongside Yes/No.
+      if (event.type !== 'repair' || !isDecisionFallbackMissKind(event.kind)) return;
       const missKind = event.kind;
       const text = (event.text ?? '').trim();
       if (!text) return;

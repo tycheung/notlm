@@ -21,21 +21,60 @@ const STOP = new Set([
   'can',
   'could',
   'would',
+  'should',
+  'will',
   'make',
   'create',
   'open',
   'show',
   'get',
-  'a',
+  'help',
+  'with',
+  'about',
+  'uhh',
+  'uh',
+  'um',
+  'umm',
+  'like',
+  'what',
+  'whats',
+  "what's",
+  'how',
+  'why',
+  'when',
+  'where',
+  'who',
+  'which',
+  'is',
+  'are',
+  'do',
+  'does',
+  'did',
+  'tell',
 ]);
+
+const DISFLUENCY_RE =
+  /^(?:uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please)(?:\s+|$)/i;
+
+const QUESTION_FRAME_RE =
+  /^(?:what(?:'s|s| are| is)|how(?: do| does| can| to)?|where(?: do| can)?|why(?: do| is)?|tell me(?: about)?|help(?: me)?(?: with| understand)?|explain)\s+/i;
 
 /** Lightweight noun-ish spans for personalizing refuse templates. */
 export function extractEntitySpans(text: string): string[] {
-  const cleaned = text
+  let cleaned = text
     .replace(/[?!.,;:]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   if (!cleaned) return [];
+
+  // Strip leading disfluencies repeatedly, then question frames.
+  for (let i = 0; i < 3; i++) {
+    const next = cleaned.replace(DISFLUENCY_RE, '').trim();
+    if (next === cleaned) break;
+    cleaned = next;
+  }
+  cleaned = cleaned.replace(QUESTION_FRAME_RE, '').trim();
+
   const lower = cleaned.toLowerCase();
   const spans: string[] = [];
 
@@ -47,14 +86,31 @@ export function extractEntitySpans(text: string): string[] {
   const forX = lower.match(/\bfor\s+([a-z0-9][\w\s-]{1,40})$/i);
   if (forX?.[1] && !spans.includes(forX[1].trim())) spans.push(forX[1].trim());
 
-  const tokens = cleaned.split(/\s+/).filter((t) => {
-    const w = t.toLowerCase();
-    return w.length > 2 && !STOP.has(w);
-  });
-  if (spans.length === 0 && tokens.length) {
-    // Prefer last 2–4 content tokens as a phrase.
-    const phrase = tokens.slice(-Math.min(4, tokens.length)).join(' ');
-    if (phrase) spans.push(phrase);
+  // Prefer multi-word noun phrase remaining after frame strip (e.g. "house averages").
+  const content = cleaned
+    .split(/\s+/)
+    .filter((t) => {
+      const w = t.toLowerCase();
+      return w.length > 1 && !STOP.has(w);
+    })
+    .join(' ')
+    .trim();
+  if (content && !spans.includes(content)) {
+    // Cap length so we never regurgitate a whole sentence.
+    const short =
+      content.length > 48 ? content.split(/\s+/).slice(0, 4).join(' ') : content;
+    if (short) spans.push(short);
+  }
+
+  if (spans.length === 0) {
+    const tokens = cleaned.split(/\s+/).filter((t) => {
+      const w = t.toLowerCase();
+      return w.length > 2 && !STOP.has(w);
+    });
+    if (tokens.length) {
+      const phrase = tokens.slice(-Math.min(3, tokens.length)).join(' ');
+      if (phrase) spans.push(phrase);
+    }
   }
   return spans.slice(0, 3);
 }

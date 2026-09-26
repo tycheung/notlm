@@ -46,10 +46,21 @@ export const DEFAULT_MISS_KINDS: readonly MissKind[] = [
   'low_confidence',
 ];
 
+/** Miss kinds that may invoke decision fallback (Laya). Soft mid-confirm stays local. */
+export const DECISION_FALLBACK_MISS_KINDS: readonly MissKind[] = [
+  'unknown',
+  'ambiguous',
+];
+
 const MISS_KIND_SET = new Set<string>(DEFAULT_MISS_KINDS);
+const FALLBACK_MISS_KIND_SET = new Set<string>(DECISION_FALLBACK_MISS_KINDS);
 
 export function isMissKind(kind: string): kind is MissKind {
   return MISS_KIND_SET.has(kind);
+}
+
+export function isDecisionFallbackMissKind(kind: string): kind is MissKind {
+  return FALLBACK_MISS_KIND_SET.has(kind);
 }
 
 /** Cap length and strip control chars for safe storage / tuning corpora. */
