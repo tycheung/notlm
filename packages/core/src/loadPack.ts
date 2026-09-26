@@ -29,6 +29,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
 
   return {
     id: manifest.id,
+    productRole: manifest.productRole,
     steps: flow,
     subgraphs: subgraphs && Object.keys(subgraphs).length ? subgraphs : undefined,
     isComplete: bindersToCompleteness(binders),

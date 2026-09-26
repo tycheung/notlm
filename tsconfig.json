@@ -4,6 +4,7 @@
     { "path": "packages/core" },
     { "path": "packages/schema" },
     { "path": "packages/ranker" },
+    { "path": "packages/ops" },
     { "path": "packages/react" },
     { "path": "packages/cli" },
     { "path": "apps/demo" },

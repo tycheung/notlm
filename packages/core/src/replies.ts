@@ -21,6 +21,14 @@ const DEFAULTS: ReplyBank = {
     'Just to check — did you mean “{{title}}”? Say yes to continue.',
     '{{message}}',
   ],
+  'repair.ood_capability': [
+    'No — I am {{product_role}}, and I do not have the ability to help with {{entities}} (or {{capability}}).',
+    'I can’t help with {{entities}}. I am {{product_role}} and only cover tournament workflow steps.',
+  ],
+  'repair.partial_ood': [
+    'Okay — {{handled}}. I am {{product_role}} and do not have the ability to help with {{entities}}.',
+    'I’ll handle {{handled}}, but I can’t do {{entities}} — I am {{product_role}}.',
+  ],
 };
 
 export function renderTemplate(

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Thin operating CLI — pack quality gates only.
+ * Thin operating CLI — pack quality gates + Laya/Celery install scaffolds.
  */
 import { cmdInit, cmdValidate } from './commands.js';
 import { cmdIntentsCheck } from './cmdIntentsCheck.js';
 import { cmdRankerCheck } from './cmdRankerCheck.js';
+import { cmdCelerySetup, cmdLayaInstall } from './cmdLayaInstall.js';
 import { isUnsupportedCommand, unsupportedCommandMessage } from './fatDispatch.js';
 
 async function main(): Promise<void> {
@@ -40,6 +41,20 @@ async function main(): Promise<void> {
           process.exitCode = 1;
         }
         break;
+      case 'laya':
+        if (sub === 'install') await cmdLayaInstall(rest);
+        else {
+          usage();
+          process.exitCode = 1;
+        }
+        break;
+      case 'celery':
+        if (sub === 'setup') await cmdCelerySetup(rest);
+        else {
+          usage();
+          process.exitCode = 1;
+        }
+        break;
       case 'help':
       case '--help':
       case '-h':
@@ -64,6 +79,8 @@ function usage(): void {
   uipilotCLI validate [dir]
   uipilotCLI intents check [dir]
   uipilotCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]
+  uipilotCLI laya install [dir] [--with-celery] [--disabled]
+  uipilotCLI celery setup [dir] [--force]
 `);
 }
 

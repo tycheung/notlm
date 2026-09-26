@@ -40,6 +40,8 @@ export type DispatchDeps = {
    * Defaults to rule-based parseUtterance.
    */
   parseUtteranceFn?: ParseUtteranceFn;
+  /** Session phrase LRU (hot-path cache over local/Laya decisions). */
+  phraseLru?: import('./phraseLru.js').PhraseLruStore;
   /** Host-registered draft compilers keyed by compilerId. */
   draftCompilers?: Record<string, import('./types.js').DraftCompiler>;
   /** Persist/apply a compiled draft (UI-actions / host save). */

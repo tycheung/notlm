@@ -106,6 +106,8 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const replies = existsSync(repliesPath) ? readJsonFile(repliesPath) : undefined;
   const normalizePath = join(pack, 'normalize.json');
   const normalize = existsSync(normalizePath) ? readJsonFile(normalizePath) : undefined;
+  const subgraphsPath = join(pack, 'subgraphs.json');
+  const subgraphsRaw = existsSync(subgraphsPath) ? readJsonFile(subgraphsPath) : undefined;
 
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
@@ -131,6 +133,12 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     normalize:
       normalize != null && typeof normalize === 'object' && !Array.isArray(normalize)
         ? (normalize as NormalizeConfig)
+        : undefined,
+    subgraphs:
+      subgraphsRaw != null &&
+      typeof subgraphsRaw === 'object' &&
+      !Array.isArray(subgraphsRaw)
+        ? (subgraphsRaw as PackJsonInput['subgraphs'])
         : undefined,
   };
 }

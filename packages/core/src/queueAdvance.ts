@@ -8,6 +8,7 @@ import type {
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { pickReply } from './replies.js';
 import { clearStale } from './slots.js';
+import { maybeCompleteParentSubgraph } from './subgraph.js';
 
 function titleOf(pack: PackRuntime, stepId: StepId): string {
   return pack.steps.find((s) => s.id === stepId)?.title ?? stepId;
@@ -124,6 +125,12 @@ export function advanceAfterStepCompleted(
   completedStepId: StepId
 ): QueueAdvanceResult {
   let next: SessionSlots = clearStale(session, completedStepId);
+  const sub = maybeCompleteParentSubgraph(pack, next, completedStepId);
+  next = sub.session;
+  if (sub.completedParent) {
+    // Parent exits subgraph; treat parent as completed for queue resume.
+    next = clearStale(next, sub.completedParent);
+  }
   const head = next.actionQueue[0];
 
   if (head?.stepId === completedStepId) {
@@ -135,9 +142,12 @@ export function advanceAfterStepCompleted(
     };
   }
 
+  const assumeComplete = [completedStepId];
+  if (sub.completedParent) assumeComplete.push(sub.completedParent);
+
   const resumed = planResumeQueue(pack, next, ctx, {
     // Host just asserted completion — binders/getContext often lag one tick.
-    assumeComplete: [completedStepId],
+    assumeComplete,
   });
   if (resumed.executeNext || resumed.messages.length > 0) {
     return resumed;

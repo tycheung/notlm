@@ -8,11 +8,12 @@ import {
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
   invokeLlmFallback,
-  isLearningModeEnabled,
+  isDecisionFallbackEnabled,
   isMissKind,
   listMissingRequires,
   markActiveStep,
   mintConversationId,
+  createMemoryPhraseLru,
   type AssistantFeatures,
   type ChatChoice,
   type ChatMessage,
@@ -26,6 +27,7 @@ import {
   type MissLogTransport,
   type PackRuntime,
   type ParseUtteranceFn,
+  type PhraseLruStore,
   type RuntimeContextBase,
   type SessionSlots,
   type SlotBag,
@@ -183,8 +185,8 @@ export type UiPilotProviderProps = {
     getPathname?: () => string | undefined;
   };
   /**
-   * Host BYO backup LLM (server proxy). Only used when `features.learningMode` is true
-   * (default off — offline NLU with canned repair).
+   * Host BYO decision fallback (Laya sidecar proxy). Used when
+   * `features.layaDecisionFallback` is not false (default on).
    */
   fallbackLlm?: LlmFallbackFn;
   children: ReactNode;
@@ -228,6 +230,15 @@ export function UiPilotProvider({
 
   const conversationIdRef = useRef(mintConversationId());
   const conversationPipelineRef = useRef<ConversationLogPipeline | null>(null);
+  const phraseLruRef = useRef<PhraseLruStore>(createMemoryPhraseLru());
+
+  const [session, setSession] = useState<SessionSlots>(() => emptySession());
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    newMessage('assistant', 'How can I help? Ask for a workflow step or open the command palette.'),
+  ]);
 
   const pushAssistantRef = useRef<
     (
@@ -268,9 +279,10 @@ export function UiPilotProvider({
     conversationPipelineRef.current = convPipeline;
 
     const fallbackEnabled =
-      Boolean(fallbackLlm) && isLearningModeEnabled(features);
+      Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
 
     const knownStepIds = new Set(pack.steps.map((s) => s.id));
+    const thinkingLabel = labels?.thinking ?? 'Thinking…';
 
     const onFallbackMiss = (event: CoachEvent) => {
       if (!fallbackEnabled || !fallbackLlm) return;
@@ -278,6 +290,17 @@ export function UiPilotProvider({
       const missKind = event.kind;
       const text = (event.text ?? '').trim();
       if (!text) return;
+      const thinkingId = `thinking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: thinkingId,
+          role: 'assistant' as const,
+          text: thinkingLabel,
+          at: Date.now(),
+          status: 'thinking' as const,
+        },
+      ]);
       void (async () => {
         let pathname: string | undefined;
         try {
@@ -298,12 +321,31 @@ export function UiPilotProvider({
           },
           { knownStepIds }
         );
-        if (!result) return;
+        const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
+          setMessages((prev) => {
+            const without = prev.filter((m) => m.id !== thinkingId);
+            return [
+              ...without,
+              {
+                id: `a-${Date.now()}`,
+                role: 'assistant' as const,
+                text: reply,
+                at: Date.now(),
+                choices,
+                status: 'final' as const,
+              },
+            ];
+          });
+        };
+        if (!result) {
+          setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+          return;
+        }
         const choices =
           result.proposed?.type === 'goto' && result.proposed.stepId
             ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
             : undefined;
-        pushAssistantRef.current(result.reply, choices ? { choices } : undefined);
+        replaceThinking(result.reply, choices);
         const exchangeTransport = missLog?.exchangeTransport;
         if (exchangeTransport) {
           void Promise.resolve(
@@ -343,6 +385,7 @@ export function UiPilotProvider({
     onCoachEvent,
     pack.id,
     pack.steps,
+    labels?.thinking,
   ]);
 
   const chrome = useMemo<UiPilotChromeConfig>(
@@ -359,13 +402,6 @@ export function UiPilotProvider({
     .filter(Boolean)
     .join(' ');
 
-  const [session, setSession] = useState<SessionSlots>(() => emptySession());
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
-
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    newMessage('assistant', 'How can I help? Ask for a workflow step or open the command palette.'),
-  ]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -570,6 +606,7 @@ export function UiPilotProvider({
           },
           navigate: (path) => navigate(path),
           parseUtteranceFn,
+          phraseLru: phraseLruRef.current,
           draftCompilers,
           onApplyDraft,
           onCoachEvent: coachEventHandler,

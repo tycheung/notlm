@@ -35,6 +35,8 @@ export type UiPilotChromeLabels = {
   paletteAriaLabel?: string;
   palettePlaceholder?: string;
   paletteSearchAriaLabel?: string;
+  /** Shown while decision fallback (Laya) is in flight. */
+  thinking?: string;
 };
 
 export type UiPilotChromeConfig = {

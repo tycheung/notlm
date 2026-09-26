@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   invokeLlmFallback,
+  isDecisionFallbackEnabled,
   isLearningModeEnabled,
   validateProposedAgainstPack,
 } from './fallbackLlm.js';
@@ -14,6 +15,17 @@ describe('isLearningModeEnabled', () => {
   it('respects learningMode only', () => {
     expect(isLearningModeEnabled({ learningMode: true })).toBe(true);
     expect(isLearningModeEnabled({ learningMode: false })).toBe(false);
+  });
+});
+
+describe('isDecisionFallbackEnabled', () => {
+  it('defaults on', () => {
+    expect(isDecisionFallbackEnabled(undefined)).toBe(true);
+    expect(isDecisionFallbackEnabled({})).toBe(true);
+  });
+
+  it('can be disabled', () => {
+    expect(isDecisionFallbackEnabled({ layaDecisionFallback: false })).toBe(false);
   });
 });
 

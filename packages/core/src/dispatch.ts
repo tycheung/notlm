@@ -12,6 +12,8 @@ import { runDraftCompiler } from './draftCompiler.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import { dispatchParsed } from './dispatchParsed.js';
+import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
+import { activeFlowSteps } from './subgraph.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 
 export type { DispatchDeps, ParseUtteranceFn } from './dispatchDeps.js';
@@ -97,7 +99,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
 
   const intentPackEarly: IntentParsePack = {
-    steps: live.pack.steps,
+    steps: activeFlowSteps(live.pack, live.session),
     aliases: live.pack.aliases,
     meta: live.pack.meta,
     faq: live.pack.faq,
@@ -167,31 +169,48 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
   const parseText = discourse.kind === 'entity' ? discourse.text : trimmed;
 
+  const flowSteps = activeFlowSteps(live.pack, live.session);
   const intentPack: IntentParsePack = {
-    steps: live.pack.steps,
+    steps: flowSteps,
     aliases: live.pack.aliases,
     meta: live.pack.meta,
     faq: live.pack.faq,
     normalize: live.pack.normalize,
   };
+  const lruKey = phraseLruKey(parseText, live.ctx.pathname);
+  if (live.phraseLru) {
+    const cached = phraseLruLookup(live.phraseLru, lruKey);
+    if (cached) {
+      live.text = parseText;
+      dispatchParsed(live, intentPack, applyContextBias(live, cached));
+      return;
+    }
+  }
   const parseFn = live.parseUtteranceFn ?? parseUtterance;
   const shortlist = shortlistStepIds(live.pack, live.ctx, live.session.stale, {
     preferPath: true,
-  });
+  }).filter((id) => flowSteps.some((s) => s.id === id));
   const parseOpts = {
     pathname: live.ctx.pathname,
-    shortlistStepIds: shortlist,
+    shortlistStepIds: shortlist.length ? shortlist : flowSteps.map((s) => s.id),
     data: live.ctx.data,
+  };
+  const finish = (parsed: ParseUtteranceResult) => {
+    const biased = applyContextBias(live, parsed);
+    if (
+      live.phraseLru &&
+      (biased.stepId || biased.rawIntent === 'faq' || biased.confidence === 'high')
+    ) {
+      phraseLruPromote(live.phraseLru, lruKey, biased);
+    }
+    live.text = parseText;
+    dispatchParsed(live, intentPack, biased);
   };
   const parsedOrPromise = parseFn(parseText, intentPack, parseOpts);
   if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
-    return (parsedOrPromise as Promise<ParseUtteranceResult>).then((parsed) => {
-      live.text = parseText;
-      dispatchParsed(live, intentPack, applyContextBias(live, parsed));
-    });
+    return (parsedOrPromise as Promise<ParseUtteranceResult>).then(finish);
   }
-  live.text = parseText;
-  dispatchParsed(live, intentPack, applyContextBias(live, parsedOrPromise as ParseUtteranceResult));
+  finish(parsedOrPromise as ParseUtteranceResult);
 }
 
 function applyContextBias(

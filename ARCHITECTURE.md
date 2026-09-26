@@ -125,6 +125,17 @@ corpus-trained tiny hashed-ngram ranker:
 `onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
 back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
+### Laya decision fallback + pack cache (System One)
+
+- **Cold path:** host `fallbackLlm` → BE proxy → **one** Laya sidecar (`uipilotCLI laya install`).
+  Default on (`features.layaDecisionFallback` unset = on). Chat shows **Thinking…** while waiting.
+- **Hot path:** rules + pack `ranker.json` + **session phrase LRU** (not durable learning).
+- **Durable learning:** Celery/nightly promotes MissExchanges → aliases/scenarios → `auto ranker`
+  (CPU only). Does **not** retrain Laya weights on the server.
+- **Mixed / OOD:** packed segments; in-DAG launches; OOD uses `repair.ood_capability` /
+  `repair.partial_ood` with `{{entities}}` / `{{product_role}}`.
+- **Fine-tune:** `uipilot-training laya convert|train` locally only. See `docs/VERIFY_LAYA_CACHE.md`.
+
 ### Optional miss logging (intent tuning)
 
 When the coach cannot understand an utterance (`unknown` / `ambiguous` /

@@ -9,6 +9,7 @@
   "exclude": ["src/**/*.test.ts"],
   "references": [
     { "path": "../core" },
+    { "path": "../ops" },
     { "path": "../schema" },
     { "path": "../ranker" }
   ]

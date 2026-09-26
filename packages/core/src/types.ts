@@ -164,6 +164,8 @@ export type ChatMessage = {
   choices?: ChatChoice[];
   links?: ChatMessageLink[];
   intentKey?: string;
+  /** Pending decision-fallback bubble (e.g. Thinking…). */
+  status?: 'thinking' | 'final';
 };
 
 /** Optional pack glossary for explain_field. */
@@ -333,15 +335,23 @@ export type AssistantFeatures = {
   conversationLog?: boolean;
   /**
    * Learning Mode: on miss, call host `fallbackLlm` and log MissExchange.
-   * **Default off** — production should run offline NLU only until a train window.
+   * Prefer `layaDecisionFallback` (default on when host wires fallback).
    */
   learningMode?: boolean;
+  /**
+   * Decision fallback (Laya): call host `fallbackLlm` on miss.
+   * **Default on** when unset — set `false` to force offline-only.
+   * Env hint for hosts: `UIPILOT_LAYA_ENABLED=1`.
+   */
+  layaDecisionFallback?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
 
 export type PackRuntime = {
   id: string;
+  /** Shown in OOD canned replies ({{product_role}}). */
+  productRole?: string;
   steps: FlowStepDef[];
   /** Nested flows keyed by subgraph id (parent step.subgraph). */
   subgraphs?: Record<string, FlowStepDef[]>;
@@ -432,7 +442,7 @@ export type NavSkipEntry = {
 };
 
 export type PackJsonInput = {
-  manifest: { id: string };
+  manifest: { id: string; productRole?: string };
   flow: FlowStepDef[];
   controls: ControlDef[];
   intents: IntentConfig;

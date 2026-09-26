@@ -5,7 +5,7 @@ import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
 import { looksLikeFaqQuestion, matchFaqEntry, matchGlossaryEntry } from './glossary.js';
 import { looksLikeSurfaceAsk } from './normalizeConfig.js';
-import { packedUtteranceSummary, parsePackedUtterance } from './packUtterance.js';
+import { packedUtteranceSummary, parsePackedUtterance, composeMixedIntentReply } from './packUtterance.js';
 import {
   formatBlockedQueueMessage,
   injectBeforeDeferred,
@@ -99,7 +99,51 @@ export function dispatchParsed(
     return;
   }
 
-  const packed = parsePackedUtterance(trimmed, intentPack);
+  const packed = parsePackedUtterance(trimmed, intentPack, {
+    parseUtteranceFn: deps.parseUtteranceFn,
+    pathname: ctx.pathname,
+    data: ctx.data,
+  });
+
+  // Pure or partial OOD with canned entity-aware refuse.
+  if (packed.oodSegments.length > 0) {
+    const mixed = composeMixedIntentReply(
+      packed,
+      pack.steps,
+      session,
+      pack.replies,
+      pack.productRole
+    );
+    if (mixed) {
+      setSession(() => mixed.session);
+      if (packed.actions.length === 0) {
+        pushAssistant(mixed.text);
+        emitCoachEvent(deps, {
+          type: 'repair',
+          kind: 'unknown',
+          text: trimmed,
+          rawIntent: 'ood',
+          confidence: parsed.confidence,
+        });
+        return;
+      }
+      // Partial: queue in-DAG actions then tell user about OOD remainder.
+      let nextSession = mixed.session;
+      let queue = session.actionQueue;
+      for (const action of packed.actions) {
+        nextSession = patchStepSlots(nextSession, action.stepId, action.slots);
+        const merged = mergeActionIntoQueue(queue, action);
+        queue = merged.queue;
+      }
+      nextSession = setActionQueue(nextSession, queue);
+      setSession(() => nextSession);
+      pushAssistant(mixed.text);
+      const head = queue[0];
+      if (head) executeStep(head.stepId, { prefill: head.slots });
+      return;
+    }
+  }
+
   if (packed.actions.length >= 2) {
     let nextSession = session;
     let queue = session.actionQueue;

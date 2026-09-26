@@ -1,0 +1,14 @@
+[Unit]
+Description=UiPilot Laya decision sidecar
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/uipilot_laya
+EnvironmentFile=-/opt/uipilot_laya/.env
+ExecStart=/opt/uipilot_laya/.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8765
+Restart=on-failure
+# One process only — do not run under Gunicorn multi-worker.
+
+[Install]
+WantedBy=multi-user.target
