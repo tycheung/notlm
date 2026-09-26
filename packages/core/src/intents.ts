@@ -7,6 +7,7 @@ import { looksLikeFaqQuestion, matchFaqEntry } from './glossary.js';
 import {
   normalizeUtterance,
   stripOpenVerbPrefix,
+  stripSurfaceNoise,
 } from './normalizeConfig.js';
 import { buildTypoLexicon, correctTypos } from './typoFix.js';
 import type {
@@ -150,8 +151,13 @@ function matchStepCandidates(
   const n = text.includes(' ') || text === text.toLowerCase() ? text : normalizeUtterance(text, pack.normalize);
   const haystack = normalizeUtterance(n, pack.normalize);
   const haystackBare = stripOpenVerbPrefix(haystack, pack.normalize);
-  const haystacks =
-    haystackBare && haystackBare !== haystack ? [haystack, haystackBare] : [haystack];
+  const haystackNoSurface = stripSurfaceNoise(haystack, pack.normalize);
+  const haystackBareNoSurface = stripSurfaceNoise(haystackBare, pack.normalize);
+  const haystacks = [
+    ...new Set(
+      [haystack, haystackBare, haystackNoSurface, haystackBareNoSurface].filter(Boolean)
+    ),
+  ];
   const bestByStep = new Map<StepId, number>();
 
   for (const step of pack.steps) {

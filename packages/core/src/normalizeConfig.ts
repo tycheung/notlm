@@ -1,6 +1,10 @@
 /**
  * Pack-driven utterance normalization.
  * Mechanisms live in core; synonym / surface / open-verb lists live in pack JSON.
+ *
+ * surfaceWords are NOT stripped here — they are noise for entity-name leftovers
+ * and optional step-scoring variants, not for global speech (so “next wizard step”
+ * is not collapsed to “next step”).
  */
 import type { NormalizeConfig, NormalizePhrasePair } from './types.js';
 
@@ -26,6 +30,18 @@ function stripPhrases(text: string, phrases: string[] | undefined): string {
   for (const p of sorted) {
     if (!p.trim()) continue;
     t = t.replace(phraseBoundaryRe(p), ' ');
+  }
+  return t;
+}
+
+function stripTrailingPhrases(text: string, phrases: string[] | undefined): string {
+  if (!phrases?.length) return text;
+  let t = text;
+  const sorted = [...phrases].sort((a, b) => b.length - a.length);
+  for (const p of sorted) {
+    if (!p.trim()) continue;
+    const re = new RegExp(`(?:\\s+${escapeRe(p).replace(/\s+/g, '\\s+')})+$`, 'i');
+    t = t.replace(re, '');
   }
   return t;
 }
@@ -56,6 +72,7 @@ function stripLeadingPhrases(text: string, phrases: string[] | undefined): strin
 /**
  * Normalize an utterance using pack `normalize` config.
  * When config is omitted/empty, only basic cleanup runs (no domain synonyms).
+ * Does not strip UI surface nouns — use `stripSurfaceNoise` for that.
  */
 export function normalizeUtterance(text: string, config?: NormalizeConfig | null): string {
   let t = text.trim().toLowerCase().replace(/[’']/g, "'");
@@ -64,10 +81,17 @@ export function normalizeUtterance(text: string, config?: NormalizeConfig | null
 
   t = applyPairs(t, config.replacements);
   t = applyPairs(t, config.openVerbAliases);
-  t = stripPhrases(t, config.surfaceWords);
-  t = stripPhrases(t, config.trailingFillers);
+  t = stripTrailingPhrases(t, config.trailingFillers);
   t = stripLeadingPhrases(t, config.leadingPoliteness);
   return t.replace(/\s+/g, ' ').trim();
+}
+
+/** Drop pack surface nouns (form/page/wizard/…) for entity leftovers / step variants. */
+export function stripSurfaceNoise(
+  text: string,
+  config?: NormalizeConfig | null
+): string {
+  return stripPhrases(text, config?.surfaceWords).replace(/\s+/g, ' ').trim();
 }
 
 /** Haystack variant with leading open-verb prefixes removed (for step scoring). */

@@ -1,5 +1,5 @@
 import { editDistance } from './fuzzyText.js';
-import { normalizeUtterance } from './normalizeConfig.js';
+import { normalizeUtterance, stripSurfaceNoise } from './normalizeConfig.js';
 import type {
   LookupDef,
   LookupMatchResult,
@@ -56,11 +56,10 @@ function escapeRe(s: string): string {
 }
 
 function stripConfiguredNoise(rest: string, normalize?: NormalizeConfig | null): string {
-  let t = rest;
-  const surfaces = normalize?.surfaceWords ?? [];
+  let t = stripSurfaceNoise(rest, normalize);
   const fillers = normalize?.trailingFillers ?? [];
   const leading = normalize?.leadingPoliteness ?? [];
-  for (const p of [...surfaces, ...fillers].sort((a, b) => b.length - a.length)) {
+  for (const p of [...fillers].sort((a, b) => b.length - a.length)) {
     if (!p.trim()) continue;
     const parts = p.trim().split(/\s+/).map(escapeRe);
     t = t.replace(new RegExp(`\\b${parts.join('\\s+')}\\b`, 'gi'), ' ');
