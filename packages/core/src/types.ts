@@ -350,6 +350,12 @@ export type AssistantFeatures = {
    * Host env hint: `UIPILOT_FALLBACK_LLM_ON_LAYA_MISS=yes`.
    */
   llmFallbackOnLayaMiss?: boolean;
+  /**
+   * When decision fallback returns a pack-validated goto, call `executeStep`
+   * immediately (no choice chip). **Default on** when unset; set `false` for
+   * chip-only UX.
+   */
+  autoExecuteTrustedGoto?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;

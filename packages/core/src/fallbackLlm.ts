@@ -9,6 +9,10 @@ export type LlmFallbackRequest = {
   pathname?: string;
   /** Redacted / digest-only host context — never secrets. */
   contextDigest?: string;
+  /** Allowed pack step ids for goto proposals (host + LLM catalog). */
+  stepIds?: string[];
+  /** Allowed FAQ ids when the host wants FAQ proposals constrained. */
+  faqIds?: string[];
 };
 
 export type LlmFallbackResult = {
@@ -81,6 +85,26 @@ export function validateProposedAgainstPack(
     knownStepIds instanceof Set ? knownStepIds : new Set(knownStepIds);
   if (!set.has(id)) return { type: 'refuse' };
   return proposed;
+}
+
+/**
+ * Trusted goto = type goto with a non-empty stepId present in the pack catalog.
+ * Used by hosts to auto-executeStep after decision fallback.
+ */
+export function isTrustedGoto(
+  proposed: MissProposed | undefined,
+  knownStepIds: ReadonlySet<string> | readonly string[]
+): proposed is MissProposed & { type: 'goto'; stepId: string } {
+  const v = validateProposedAgainstPack(proposed, knownStepIds);
+  return v.type === 'goto' && Boolean(v.stepId);
+}
+
+/** Auto-execute trusted gotos unless the host sets `autoExecuteTrustedGoto: false`. */
+export function isAutoExecuteTrustedGotoEnabled(
+  features?: AssistantFeatures | null
+): boolean {
+  if (!features) return true;
+  return features.autoExecuteTrustedGoto !== false;
 }
 
 /**

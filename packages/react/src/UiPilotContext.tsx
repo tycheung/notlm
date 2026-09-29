@@ -8,9 +8,11 @@ import {
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
   invokeChainedDecisionFallback,
+  isAutoExecuteTrustedGotoEnabled,
   isDecisionFallbackEnabled,
   isDecisionFallbackMissKind,
   isSecondaryLlmFallbackEnabled,
+  isTrustedGoto,
   listMissingRequires,
   markActiveStep,
   mintConversationId,
@@ -238,6 +240,10 @@ export function UiPilotProvider({
   const conversationIdRef = useRef(mintConversationId());
   const conversationPipelineRef = useRef<ConversationLogPipeline | null>(null);
   const phraseLruRef = useRef<PhraseLruStore>(createMemoryPhraseLru());
+  /** Filled after executeStep is defined; used by decision-fallback auto-nav. */
+  const executeStepRef = useRef<(stepId: StepId, opts?: ExecuteStepOpts) => void>(
+    () => {}
+  );
 
   const [session, setSession] = useState<SessionSlots>(() => emptySession());
   const sessionRef = useRef(session);
@@ -291,7 +297,15 @@ export function UiPilotProvider({
       Boolean(secondaryFallbackLlm) && isSecondaryLlmFallbackEnabled(features);
 
     const knownStepIds = new Set(pack.steps.map((s) => s.id));
+    const stepIdList = pack.steps.map((s) => s.id).slice(0, 50);
+    const faqIdList = (pack.faq ?? []).map((f) => f.id).slice(0, 50);
+    const stepCatalogDigest = pack.steps
+      .slice(0, 50)
+      .map((s) => `${s.id}:${s.title}`)
+      .join('|')
+      .slice(0, 1800);
     const thinkingLabel = labels?.thinking ?? 'Thinking…';
+    const autoNav = isAutoExecuteTrustedGotoEnabled(features);
 
     const onFallbackMiss = (event: CoachEvent) => {
       if (!fallbackEnabled || !fallbackLlm) return;
@@ -321,6 +335,10 @@ export function UiPilotProvider({
         } catch {
           pathname = undefined;
         }
+        const contextDigest = [pathname ? `path=${pathname}` : '', stepCatalogDigest]
+          .filter(Boolean)
+          .join(';')
+          .slice(0, 2000);
         const result = await invokeChainedDecisionFallback({
           primary: fallbackLlm,
           secondary: secondaryFallbackLlm,
@@ -330,6 +348,9 @@ export function UiPilotProvider({
             kind: missKind,
             packId: missLog?.packId ?? conversationLog?.packId ?? pack.id,
             pathname,
+            contextDigest: contextDigest || undefined,
+            stepIds: stepIdList,
+            faqIds: faqIdList.length ? faqIdList : undefined,
           },
           opts: { knownStepIds },
         });
@@ -353,11 +374,22 @@ export function UiPilotProvider({
           setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
           return;
         }
-        const choices =
-          result.proposed?.type === 'goto' && result.proposed.stepId
-            ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
+        const trusted =
+          autoNav && isTrustedGoto(result.proposed, knownStepIds)
+            ? result.proposed.stepId
             : undefined;
-        replaceThinking(result.reply, choices);
+        if (trusted) {
+          replaceThinking(result.reply);
+          queueMicrotask(() => {
+            executeStepRef.current(trusted);
+          });
+        } else {
+          const choices =
+            result.proposed?.type === 'goto' && result.proposed.stepId
+              ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
+              : undefined;
+          replaceThinking(result.reply, choices);
+        }
         const exchangeTransport = missLog?.exchangeTransport;
         if (exchangeTransport) {
           void Promise.resolve(
@@ -398,6 +430,7 @@ export function UiPilotProvider({
     onCoachEvent,
     pack.id,
     pack.steps,
+    pack.faq,
     labels?.thinking,
   ]);
 
@@ -551,7 +584,6 @@ export function UiPilotProvider({
     [features.spotlight, getContext, navigate, openModal, openSurface, onWizardPage, pack, pushAssistant, showSpotlight]
   );
 
-  const executeStepRef = useRef(executeStep);
   executeStepRef.current = executeStep;
 
   const notifyStepCompleted = useCallback(

@@ -3,10 +3,12 @@ import {
   composeDecisionFallbackChain,
   invokeChainedDecisionFallback,
   invokeLlmFallback,
+  isAutoExecuteTrustedGotoEnabled,
   isDecisionFallbackEnabled,
   isFallbackRefuse,
   isLearningModeEnabled,
   isSecondaryLlmFallbackEnabled,
+  isTrustedGoto,
   validateProposedAgainstPack,
 } from './fallbackLlm.js';
 
@@ -75,6 +77,54 @@ describe('validateProposedAgainstPack', () => {
         new Set(['create_list'])
       )
     ).toEqual({ type: 'goto', stepId: 'create_list' });
+  });
+});
+
+describe('isTrustedGoto', () => {
+  it('is true only for pack-validated goto', () => {
+    expect(isTrustedGoto({ type: 'goto', stepId: 'create_list' }, ['create_list'])).toBe(
+      true
+    );
+    expect(isTrustedGoto({ type: 'goto', stepId: 'nope' }, ['create_list'])).toBe(false);
+    expect(isTrustedGoto({ type: 'refuse' }, ['create_list'])).toBe(false);
+  });
+});
+
+describe('isAutoExecuteTrustedGotoEnabled', () => {
+  it('defaults on', () => {
+    expect(isAutoExecuteTrustedGotoEnabled(undefined)).toBe(true);
+    expect(isAutoExecuteTrustedGotoEnabled({})).toBe(true);
+  });
+
+  it('can be disabled', () => {
+    expect(isAutoExecuteTrustedGotoEnabled({ autoExecuteTrustedGoto: false })).toBe(
+      false
+    );
+  });
+});
+
+describe('invokeLlmFallback catalog request', () => {
+  it('forwards stepIds and faqIds on the request to the host fn', async () => {
+    const seen: { stepIds?: string[]; faqIds?: string[] } = {};
+    await invokeLlmFallback(
+      async (req) => {
+        seen.stepIds = req.stepIds;
+        seen.faqIds = req.faqIds;
+        return {
+          reply: 'go',
+          proposed: { type: 'goto', stepId: 'create_list' },
+        };
+      },
+      {
+        text: 'x',
+        kind: 'unknown',
+        stepIds: ['create_list', 'other'],
+        faqIds: ['faq-1'],
+      },
+      { knownStepIds: ['create_list', 'other'] }
+    );
+    expect(seen.stepIds).toEqual(['create_list', 'other']);
+    expect(seen.faqIds).toEqual(['faq-1']);
   });
 });
 
