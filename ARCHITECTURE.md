@@ -89,8 +89,11 @@ Core evaluates these against `RuntimeContext.data` from the host’s `getContext
 Default attribute: `data-guide-id="<id>"` (set in `config.json` → `guideAttr`).  
 Spotlight and flash **only** query this contract.
 
-**UI-actions only:** `executeStep` resolves to path / modal / spotlight / prefill.
-The coach must not import host `*API` clients or issue domain HTTP. Playwright demos
+**UI-actions + host-injected typed reads/writes/tours:** `executeStep` resolves to
+path / modal / spotlight / prefill. Pack `queries` / `mutations` / `tours` / `search`
+are matched in core; hosts inject `resolveQuery` / `previewMutation` / `executeMutation`
+/ `runTour` / `openSearchHit`. The coach must not import host `*API` clients or issue
+domain HTTP. Playwright demos stub those host deps.
 **click** annotated controls.
 
 **Chrome personalization:** Hosts brand FAB/chat/palette via CSS variables

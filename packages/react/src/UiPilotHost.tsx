@@ -44,6 +44,12 @@ export function UiPilotHost({
   conversationLog,
   fallbackLlm,
   secondaryFallbackLlm,
+  resolveQuery,
+  previewMutation,
+  executeMutation,
+  runTour,
+  openSearchHit,
+  resolveContextAsk,
   appearance,
   className,
   classNames,
@@ -70,6 +76,12 @@ export function UiPilotHost({
       conversationLog={conversationLog}
       fallbackLlm={fallbackLlm}
       secondaryFallbackLlm={secondaryFallbackLlm}
+      resolveQuery={resolveQuery}
+      previewMutation={previewMutation}
+      executeMutation={executeMutation}
+      runTour={runTour}
+      openSearchHit={openSearchHit}
+      resolveContextAsk={resolveContextAsk}
       appearance={appearance}
       className={className}
       classNames={classNames}

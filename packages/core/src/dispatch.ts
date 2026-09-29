@@ -12,6 +12,12 @@ import { runDraftCompiler } from './draftCompiler.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import { dispatchParsed } from './dispatchParsed.js';
+import {
+  tryDispatchCapabilityCatalog,
+  tryHandleContextAsk,
+  tryHandleExplainLast,
+  tryHandlePendingMutationConfirm,
+} from './dispatchCapability.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
 import { activeFlowSteps } from './subgraph.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
@@ -96,6 +102,23 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
       );
     }
     return;
+  }
+
+  const pendingMutation = tryHandlePendingMutationConfirm(live, trimmed);
+  if (pendingMutation === true) return;
+  if (pendingMutation && typeof (pendingMutation as Promise<unknown>).then === 'function') {
+    return (async () => {
+      await (pendingMutation as Promise<boolean>);
+    })();
+  }
+  if (tryHandleExplainLast(live, trimmed)) return;
+  if (tryHandleContextAsk(live, trimmed)) return;
+  const capEarly = tryDispatchCapabilityCatalog(live, trimmed);
+  if (capEarly === true) return;
+  if (capEarly && typeof (capEarly as Promise<unknown>).then === 'function') {
+    return (async () => {
+      await (capEarly as Promise<boolean>);
+    })();
   }
 
   const intentPackEarly: IntentParsePack = {

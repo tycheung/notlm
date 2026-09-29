@@ -35,6 +35,7 @@ import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 import { isConceptualQuestion } from './utteranceIntent.js';
+import { tryDispatchCapabilityCatalog } from './dispatchCapability.js';
 
 export function dispatchParsed(
   deps: DispatchDeps,
@@ -44,6 +45,30 @@ export function dispatchParsed(
   const { pack, session, ctx, pushAssistant, executeStep, setSession, flashField, clickField } =
     deps;
   const trimmed = deps.text.trim();
+
+  // Parsed capability catalog ids (ranker / fallback).
+  if (
+    parsed.queryId ||
+    parsed.mutationId ||
+    parsed.tourId ||
+    parsed.searchId ||
+    parsed.rawIntent === 'data_query' ||
+    parsed.rawIntent === 'mutation' ||
+    parsed.rawIntent === 'tour' ||
+    parsed.rawIntent === 'search'
+  ) {
+    const cap = tryDispatchCapabilityCatalog(deps, trimmed, {
+      queryId: parsed.queryId,
+      mutationId: parsed.mutationId,
+      tourId: parsed.tourId,
+      searchId: parsed.searchId,
+    });
+    if (cap === true) return;
+    if (cap && typeof (cap as Promise<unknown>).then === 'function') {
+      void (cap as Promise<boolean>);
+      return;
+    }
+  }
 
   // First-class FAQ intent from parse (question-shaped catalog hit).
   if (parsed.rawIntent === 'faq' && parsed.faqId) {

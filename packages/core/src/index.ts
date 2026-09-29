@@ -1,3 +1,5 @@
+export * from './capabilityCatalog.js';
+export * from './dispatchCapability.js';
 export * from './confidenceBands.js';
 export * from './types.js';
 export * from './fuzzyText.js';

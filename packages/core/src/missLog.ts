@@ -12,12 +12,24 @@ export type MissRecord = {
   at: string;
 };
 
-export type MissProposedType = 'faq' | 'goto' | 'meta' | 'refuse';
+export type MissProposedType =
+  | 'faq'
+  | 'goto'
+  | 'meta'
+  | 'refuse'
+  | 'query'
+  | 'mutation'
+  | 'tour'
+  | 'search';
 
 export type MissProposed = {
   type: MissProposedType;
   stepId?: string;
   faqId?: string;
+  queryId?: string;
+  mutationId?: string;
+  tourId?: string;
+  searchId?: string;
   aliases?: string[];
 };
 

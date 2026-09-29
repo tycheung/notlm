@@ -138,6 +138,8 @@ export type DiscourseState = {
   lastChoiceIds?: string[];
   /** Round-robin cursor for reply-bank variants. */
   replyCursor?: number;
+  /** Last coach capability action (audit / explain_last). */
+  lastCoachAction?: { kind: string; id: string; summary: string };
 };
 
 export type SlotAskDef = {
@@ -265,6 +267,14 @@ export type ParseUtteranceResult = {
   decision?: ParseDecisionHeads;
   /** When FAQ matching wins at parse time. */
   faqId?: string;
+  /** Typed data-query catalog id. */
+  queryId?: string;
+  /** Typed mutation catalog id. */
+  mutationId?: string;
+  /** Tour catalog id. */
+  tourId?: string;
+  /** Search surface catalog id. */
+  searchId?: string;
 };
 
 /** Structured coach telemetry for hosts (no secrets / raw credentials). */
@@ -356,6 +366,11 @@ export type AssistantFeatures = {
    * chip-only UX.
    */
   autoExecuteTrustedGoto?: boolean;
+  /**
+   * Multimodal / vision fallback. **Default off.** Only call a vision-capable
+   * secondary LLM when true and the host wires `visionFallbackLlm`.
+   */
+  visionFallback?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
@@ -376,6 +391,14 @@ export type PackRuntime = {
   replies?: ReplyBank;
   /** Pack-driven utterance normalization. */
   normalize?: NormalizeConfig;
+  /** Typed user/data read catalog (host `resolveQuery`). */
+  queries?: import('./capabilityCatalog.js').QueryDef[];
+  /** Confirm-gated write catalog (host preview/executeMutation). */
+  mutations?: import('./capabilityCatalog.js').MutationDef[];
+  /** Spotlight / step tour catalog. */
+  tours?: import('./capabilityCatalog.js').TourDef[];
+  /** Search / discovery surfaces. */
+  search?: import('./capabilityCatalog.js').SearchSurfaceDef[];
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -467,6 +490,10 @@ export type PackJsonInput = {
   subgraphs?: Record<string, FlowStepDef[]>;
   /** Utterance normalization synonyms (surfaces, open verbs, typos). */
   normalize?: NormalizeConfig;
+  queries?: import('./capabilityCatalog.js').QueryDef[];
+  mutations?: import('./capabilityCatalog.js').MutationDef[];
+  tours?: import('./capabilityCatalog.js').TourDef[];
+  search?: import('./capabilityCatalog.js').SearchSurfaceDef[];
 };
 
 /** Host-registered NL → draft patch compiler (no domain types in core). */

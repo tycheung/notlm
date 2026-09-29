@@ -13,6 +13,13 @@ export type LlmFallbackRequest = {
   stepIds?: string[];
   /** Allowed FAQ ids when the host wants FAQ proposals constrained. */
   faqIds?: string[];
+  queryIds?: string[];
+  mutationIds?: string[];
+  tourIds?: string[];
+  searchIds?: string[];
+  /** Optional image payload for vision LLM (host only when visionFallback on). */
+  imageBase64?: string;
+  imageMime?: string;
 };
 
 export type LlmFallbackResult = {
@@ -123,6 +130,31 @@ export function isAutoExecuteTrustedGotoEnabled(
   return features.autoExecuteTrustedGoto !== false;
 }
 
+export function isVisionFallbackEnabled(features?: AssistantFeatures | null): boolean {
+  if (!features) return false;
+  return features.visionFallback === true;
+}
+
+function clampCatalogId(
+  proposed: MissProposed,
+  key: 'queryId' | 'mutationId' | 'tourId' | 'searchId',
+  known: ReadonlySet<string> | readonly string[]
+): MissProposed {
+  const id = (proposed[key] ?? '').trim();
+  const set = known instanceof Set ? known : new Set(known);
+  if (!id || !set.has(id)) return { type: 'refuse' };
+  return proposed;
+}
+
+export type InvokeLlmFallbackOpts = {
+  timeoutMs?: number;
+  knownStepIds?: ReadonlySet<string> | readonly string[];
+  knownQueryIds?: ReadonlySet<string> | readonly string[];
+  knownMutationIds?: ReadonlySet<string> | readonly string[];
+  knownTourIds?: ReadonlySet<string> | readonly string[];
+  knownSearchIds?: ReadonlySet<string> | readonly string[];
+};
+
 /**
  * Call host BYO fallback with a timeout. Returns null on failure/timeout
  * so the coach can keep the canned repair reply.
@@ -130,7 +162,7 @@ export function isAutoExecuteTrustedGotoEnabled(
 export async function invokeLlmFallback(
   fn: LlmFallbackFn,
   request: LlmFallbackRequest,
-  opts?: { timeoutMs?: number; knownStepIds?: ReadonlySet<string> | readonly string[] }
+  opts?: InvokeLlmFallbackOpts
 ): Promise<LlmFallbackResult | null> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_LLM_FALLBACK_TIMEOUT_MS;
   try {
@@ -150,7 +182,11 @@ export async function invokeLlmFallback(
         result.proposed.type === 'faq' ||
         result.proposed.type === 'goto' ||
         result.proposed.type === 'meta' ||
-        result.proposed.type === 'refuse'
+        result.proposed.type === 'refuse' ||
+        result.proposed.type === 'query' ||
+        result.proposed.type === 'mutation' ||
+        result.proposed.type === 'tour' ||
+        result.proposed.type === 'search'
           ? result.proposed
           : { type: 'refuse' };
     } else {
@@ -158,6 +194,18 @@ export async function invokeLlmFallback(
     }
     if (opts?.knownStepIds) {
       proposed = validateProposedAgainstPack(proposed, opts.knownStepIds);
+    }
+    if (opts?.knownQueryIds && proposed.type === 'query') {
+      proposed = clampCatalogId(proposed, 'queryId', opts.knownQueryIds);
+    }
+    if (opts?.knownMutationIds && proposed.type === 'mutation') {
+      proposed = clampCatalogId(proposed, 'mutationId', opts.knownMutationIds);
+    }
+    if (opts?.knownTourIds && proposed.type === 'tour') {
+      proposed = clampCatalogId(proposed, 'tourId', opts.knownTourIds);
+    }
+    if (opts?.knownSearchIds && proposed.type === 'search') {
+      proposed = clampCatalogId(proposed, 'searchId', opts.knownSearchIds);
     }
     out.proposed = proposed;
     if (result.provider?.id && result.provider?.model) {
@@ -178,7 +226,7 @@ export type InvokeChainedDecisionFallbackInput = {
   /** When false, never call secondary (default). */
   secondaryEnabled?: boolean;
   request: LlmFallbackRequest;
-  opts?: { timeoutMs?: number; knownStepIds?: ReadonlySet<string> | readonly string[] };
+  opts?: InvokeLlmFallbackOpts;
 };
 
 /**

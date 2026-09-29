@@ -52,4 +52,16 @@ export type DispatchDeps = {
   deferDecisionFallbackUi?: boolean;
   /** Skip low-confidence Yes/No; emit repair for Laya→LLM when admin LLM fallback is on. */
   deferLowConfidenceToFallback?: boolean;
+  /** Host typed data-query resolver. */
+  resolveQuery?: import('./capabilityCatalog.js').ResolveQueryFn;
+  previewMutation?: import('./capabilityCatalog.js').PreviewMutationFn;
+  executeMutation?: import('./capabilityCatalog.js').ExecuteMutationFn;
+  runTour?: import('./capabilityCatalog.js').RunTourFn;
+  openSearchHit?: import('./capabilityCatalog.js').OpenSearchHitFn;
+  /** Contextual “why can’t I save / what’s missing” host narrator. */
+  resolveContextAsk?: (req: {
+    text: string;
+    ctx: { pathname: string; data: Record<string, unknown> };
+    session: SessionSlots;
+  }) => string | null;
 };

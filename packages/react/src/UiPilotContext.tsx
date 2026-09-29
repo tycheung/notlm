@@ -38,6 +38,12 @@ import {
   type StepStatus,
   type DraftCompiler,
   type ChatMessageLink,
+  type ResolveQueryFn,
+  type PreviewMutationFn,
+  type ExecuteMutationFn,
+  type RunTourFn,
+  type OpenSearchHitFn,
+  tryDispatchCapabilityCatalog,
 } from '@uipilot/core';
 import {
   createContext,
@@ -197,6 +203,17 @@ export type UiPilotProviderProps = {
    * `features.llmFallbackOnLayaMiss === true` (default off).
    */
   secondaryFallbackLlm?: LlmFallbackFn;
+  /** Host typed capability resolvers (reads / writes / tours / search). */
+  resolveQuery?: ResolveQueryFn;
+  previewMutation?: PreviewMutationFn;
+  executeMutation?: ExecuteMutationFn;
+  runTour?: RunTourFn;
+  openSearchHit?: OpenSearchHitFn;
+  resolveContextAsk?: (req: {
+    text: string;
+    ctx: RuntimeContextBase;
+    session: SessionSlots;
+  }) => string | null;
   children: ReactNode;
 } & UiPilotChromeConfig;
 
@@ -218,6 +235,12 @@ export function UiPilotProvider({
   conversationLog,
   fallbackLlm,
   secondaryFallbackLlm,
+  resolveQuery,
+  previewMutation,
+  executeMutation,
+  runTour,
+  openSearchHit,
+  resolveContextAsk,
   appearance,
   className,
   classNames,
@@ -300,6 +323,14 @@ export function UiPilotProvider({
     const knownStepIds = new Set(pack.steps.map((s) => s.id));
     const stepIdList = pack.steps.map((s) => s.id).slice(0, 50);
     const faqIdList = (pack.faq ?? []).map((f) => f.id).slice(0, 50);
+    const queryIdList = (pack.queries ?? []).map((q) => q.id).slice(0, 50);
+    const mutationIdList = (pack.mutations ?? []).map((m) => m.id).slice(0, 50);
+    const tourIdList = (pack.tours ?? []).map((t) => t.id).slice(0, 50);
+    const searchIdList = (pack.search ?? []).map((s) => s.id).slice(0, 50);
+    const knownQueryIds = new Set(queryIdList);
+    const knownMutationIds = new Set(mutationIdList);
+    const knownTourIds = new Set(tourIdList);
+    const knownSearchIds = new Set(searchIdList);
     const stepCatalogDigest = pack.steps
       .slice(0, 50)
       .map((s) => `${s.id}:${s.title}`)
@@ -358,8 +389,18 @@ export function UiPilotProvider({
             contextDigest: contextDigest || undefined,
             stepIds: stepIdList,
             faqIds: faqIdList.length ? faqIdList : undefined,
+            queryIds: queryIdList.length ? queryIdList : undefined,
+            mutationIds: mutationIdList.length ? mutationIdList : undefined,
+            tourIds: tourIdList.length ? tourIdList : undefined,
+            searchIds: searchIdList.length ? searchIdList : undefined,
           },
-          opts: { knownStepIds },
+          opts: {
+            knownStepIds,
+            knownQueryIds,
+            knownMutationIds,
+            knownTourIds,
+            knownSearchIds,
+          },
         });
         const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
           setMessages((prev) => {
@@ -381,21 +422,78 @@ export function UiPilotProvider({
           setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
           return;
         }
-        const trusted =
-          autoNav && isTrustedGoto(result.proposed, knownStepIds)
-            ? result.proposed.stepId
-            : undefined;
-        if (trusted) {
-          replaceThinking(result.reply);
-          queueMicrotask(() => {
-            executeStepRef.current(trusted);
+        const proposed = result.proposed;
+        if (
+          proposed &&
+          (proposed.type === 'query' ||
+            proposed.type === 'mutation' ||
+            proposed.type === 'tour' ||
+            proposed.type === 'search')
+        ) {
+          setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+          const capDeps = {
+            text,
+            pack: asLoadedPack(pack),
+            session: sessionRef.current,
+            ctx: getContext(),
+            pushAssistant: (
+              reply: string,
+              opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[] }
+            ) => {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: `a-${Date.now()}`,
+                  role: 'assistant' as const,
+                  text: reply,
+                  at: Date.now(),
+                  choices: opts?.choices,
+                  links: opts?.links,
+                  status: 'final' as const,
+                },
+              ]);
+            },
+            executeStep: executeStepRef.current,
+            setSession: (updater: (s: SessionSlots) => SessionSlots) => {
+              setSession((prev) => {
+                const next = updater(prev);
+                sessionRef.current = next;
+                return next;
+              });
+            },
+            navigate: (path: string) => navigate(path),
+            resolveQuery,
+            previewMutation,
+            executeMutation,
+            runTour,
+            openSearchHit,
+          };
+          const cap = tryDispatchCapabilityCatalog(capDeps, text, {
+            queryId: proposed.queryId,
+            mutationId: proposed.mutationId,
+            tourId: proposed.tourId,
+            searchId: proposed.searchId,
           });
+          if (cap && typeof (cap as Promise<unknown>).then === 'function') {
+            void (cap as Promise<boolean>);
+          }
         } else {
-          const choices =
-            result.proposed?.type === 'goto' && result.proposed.stepId
-              ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
+          const trusted =
+            autoNav && isTrustedGoto(result.proposed, knownStepIds)
+              ? result.proposed.stepId
               : undefined;
-          replaceThinking(result.reply, choices);
+          if (trusted) {
+            replaceThinking(result.reply);
+            queueMicrotask(() => {
+              executeStepRef.current(trusted);
+            });
+          } else {
+            const choices =
+              result.proposed?.type === 'goto' && result.proposed.stepId
+                ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
+                : undefined;
+            replaceThinking(result.reply, choices);
+          }
         }
         const exchangeTransport = missLog?.exchangeTransport;
         if (exchangeTransport) {
@@ -438,7 +536,17 @@ export function UiPilotProvider({
     pack.id,
     pack.steps,
     pack.faq,
+    pack.queries,
+    pack.mutations,
+    pack.tours,
+    pack.search,
     labels?.thinking,
+    navigate,
+    resolveQuery,
+    previewMutation,
+    executeMutation,
+    runTour,
+    openSearchHit,
   ]);
 
   const chrome = useMemo<UiPilotChromeConfig>(
@@ -668,6 +776,12 @@ export function UiPilotProvider({
           onCoachEvent: coachEventHandler,
           deferDecisionFallbackUi: decisionFallbackOn,
           deferLowConfidenceToFallback: secondaryOn,
+          resolveQuery,
+          previewMutation,
+          executeMutation,
+          runTour,
+          openSearchHit,
+          resolveContextAsk,
         });
         if (result && typeof (result as Promise<unknown>).then === 'function') {
           void (result as Promise<void>).catch(() => {
@@ -708,6 +822,12 @@ export function UiPilotProvider({
       parseUtteranceFn,
       pushAssistant,
       tryHandleUtterance,
+      resolveQuery,
+      previewMutation,
+      executeMutation,
+      runTour,
+      openSearchHit,
+      resolveContextAsk,
     ]
   );
 
