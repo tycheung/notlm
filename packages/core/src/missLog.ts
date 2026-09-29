@@ -25,7 +25,7 @@ export type MissProposed = {
 export type MissExchange = MissRecord & {
   llmReply: string;
   proposed?: MissProposed;
-  provider?: { id: string; model: string };
+  provider?: { id: string; model: string; chain?: string; prior?: string };
   exchangeId?: string;
 };
 

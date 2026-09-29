@@ -129,6 +129,9 @@ back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
 - **Cold path:** host `fallbackLlm` → BE proxy → **one** Laya sidecar (`uipilotCLI laya install`).
   Default on (`features.layaDecisionFallback` unset = on). Chat shows **Thinking…** while waiting.
+  Optional **secondary LLM** after Laya refuse: wire `secondaryFallbackLlm` and set
+  `features.llmFallbackOnLayaMiss: true` (default off). Chain lives in `@uipilot/core`
+  (`invokeChainedDecisionFallback`) — not in the host proxy.
 - **Hot path:** rules + pack `ranker.json` + **session phrase LRU** (not durable learning).
 - **Durable learning:** Celery/nightly promotes MissExchanges → aliases/scenarios → `auto ranker`
   (CPU only). Does **not** retrain Laya weights on the server.

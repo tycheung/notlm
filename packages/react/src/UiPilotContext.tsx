@@ -7,9 +7,10 @@ import {
   emptySession,
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
-  invokeLlmFallback,
+  invokeChainedDecisionFallback,
   isDecisionFallbackEnabled,
   isDecisionFallbackMissKind,
+  isSecondaryLlmFallbackEnabled,
   listMissingRequires,
   markActiveStep,
   mintConversationId,
@@ -189,6 +190,11 @@ export type UiPilotProviderProps = {
    * `features.layaDecisionFallback` is not false (default on).
    */
   fallbackLlm?: LlmFallbackFn;
+  /**
+   * Optional secondary LLM after Laya refuses. Used only when
+   * `features.llmFallbackOnLayaMiss === true` (default off).
+   */
+  secondaryFallbackLlm?: LlmFallbackFn;
   children: ReactNode;
 } & UiPilotChromeConfig;
 
@@ -209,6 +215,7 @@ export function UiPilotProvider({
   missLog,
   conversationLog,
   fallbackLlm,
+  secondaryFallbackLlm,
   appearance,
   className,
   classNames,
@@ -280,6 +287,8 @@ export function UiPilotProvider({
 
     const fallbackEnabled =
       Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
+    const secondaryEnabled =
+      Boolean(secondaryFallbackLlm) && isSecondaryLlmFallbackEnabled(features);
 
     const knownStepIds = new Set(pack.steps.map((s) => s.id));
     const thinkingLabel = labels?.thinking ?? 'Thinking…';
@@ -312,16 +321,18 @@ export function UiPilotProvider({
         } catch {
           pathname = undefined;
         }
-        const result = await invokeLlmFallback(
-          fallbackLlm,
-          {
+        const result = await invokeChainedDecisionFallback({
+          primary: fallbackLlm,
+          secondary: secondaryFallbackLlm,
+          secondaryEnabled,
+          request: {
             text,
             kind: missKind,
             packId: missLog?.packId ?? conversationLog?.packId ?? pack.id,
             pathname,
           },
-          { knownStepIds }
-        );
+          opts: { knownStepIds },
+        });
         const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
           setMessages((prev) => {
             const without = prev.filter((m) => m.id !== thinkingId);
@@ -380,6 +391,7 @@ export function UiPilotProvider({
     conversationLog,
     defaultPathname,
     fallbackLlm,
+    secondaryFallbackLlm,
     features,
     getContext,
     missLog,

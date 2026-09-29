@@ -14,7 +14,7 @@ export type LlmFallbackRequest = {
 export type LlmFallbackResult = {
   reply: string;
   proposed?: MissProposed;
-  provider?: { id: string; model: string };
+  provider?: { id: string; model: string; chain?: string; prior?: string };
   exchangeId?: string;
 };
 
@@ -40,6 +40,29 @@ export function isDecisionFallbackEnabled(features?: AssistantFeatures | null): 
   if (features.layaDecisionFallback === true) return true;
   // Unset: default on (ease of use). learningMode false alone does not disable.
   return true;
+}
+
+/**
+ * Secondary LLM after Laya refuse: **default off**. Opt in with
+ * `features.llmFallbackOnLayaMiss: true` and wire `secondaryFallbackLlm`.
+ */
+export function isSecondaryLlmFallbackEnabled(
+  features?: AssistantFeatures | null
+): boolean {
+  if (!features) return false;
+  return features.llmFallbackOnLayaMiss === true;
+}
+
+/**
+ * True when primary (Laya) missed — null, refuse, or no actionable proposal.
+ * Used to decide whether to call `secondaryFallbackLlm`.
+ */
+export function isFallbackRefuse(
+  result: LlmFallbackResult | null | undefined
+): boolean {
+  if (!result) return true;
+  if (!result.proposed) return true;
+  return result.proposed.type === 'refuse';
 }
 
 /**
@@ -105,4 +128,67 @@ export async function invokeLlmFallback(
   } catch {
     return null;
   }
+}
+
+export type InvokeChainedDecisionFallbackInput = {
+  /** Primary decision fallback (Laya / System Two sidecar proxy). */
+  primary: LlmFallbackFn;
+  /** Optional secondary LLM — only called when primary refuses. */
+  secondary?: LlmFallbackFn | null;
+  /** When false, never call secondary (default). */
+  secondaryEnabled?: boolean;
+  request: LlmFallbackRequest;
+  opts?: { timeoutMs?: number; knownStepIds?: ReadonlySet<string> | readonly string[] };
+};
+
+/**
+ * NLU miss cold path inside the operating runtime:
+ * primary (Laya) → if refuse and secondary enabled+wired → secondary LLM.
+ * Secondary failure keeps the primary refuse (or null if primary failed).
+ */
+export async function invokeChainedDecisionFallback(
+  input: InvokeChainedDecisionFallbackInput
+): Promise<LlmFallbackResult | null> {
+  const primary = await invokeLlmFallback(input.primary, input.request, input.opts);
+  if (!isFallbackRefuse(primary)) return primary;
+  if (!input.secondaryEnabled || !input.secondary) return primary;
+
+  const secondary = await invokeLlmFallback(
+    input.secondary,
+    input.request,
+    input.opts
+  );
+  if (!secondary) return primary;
+
+  const prior = primary?.provider?.id ?? 'laya';
+  return {
+    ...secondary,
+    provider: secondary.provider
+      ? {
+          id: secondary.provider.id,
+          model: secondary.provider.model,
+          chain: 'laya_then_llm',
+          prior,
+        }
+      : { id: 'llm', model: 'unknown', chain: 'laya_then_llm', prior },
+    exchangeId: secondary.exchangeId ?? primary?.exchangeId,
+  };
+}
+
+/**
+ * Compose primary + optional secondary into one `LlmFallbackFn` for hosts that
+ * still pass a single prop. Prefer wiring `secondaryFallbackLlm` on the React host.
+ */
+export function composeDecisionFallbackChain(input: {
+  primary: LlmFallbackFn;
+  secondary?: LlmFallbackFn | null;
+  secondaryEnabled?: boolean;
+}): LlmFallbackFn {
+  return (request) =>
+    invokeChainedDecisionFallback({
+      primary: input.primary,
+      secondary: input.secondary,
+      secondaryEnabled: input.secondaryEnabled,
+      request,
+    });
 }

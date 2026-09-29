@@ -41,7 +41,9 @@ export function UiPilotHost({
   tryHandleUtterance,
   onCoachEvent,
   missLog,
+  conversationLog,
   fallbackLlm,
+  secondaryFallbackLlm,
   appearance,
   className,
   classNames,
@@ -65,7 +67,9 @@ export function UiPilotHost({
       tryHandleUtterance={tryHandleUtterance}
       onCoachEvent={onCoachEvent}
       missLog={missLog}
+      conversationLog={conversationLog}
       fallbackLlm={fallbackLlm}
+      secondaryFallbackLlm={secondaryFallbackLlm}
       appearance={appearance}
       className={className}
       classNames={classNames}

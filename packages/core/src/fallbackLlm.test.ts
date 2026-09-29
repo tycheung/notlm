@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  composeDecisionFallbackChain,
+  invokeChainedDecisionFallback,
   invokeLlmFallback,
   isDecisionFallbackEnabled,
+  isFallbackRefuse,
   isLearningModeEnabled,
+  isSecondaryLlmFallbackEnabled,
   validateProposedAgainstPack,
 } from './fallbackLlm.js';
 
@@ -26,6 +30,31 @@ describe('isDecisionFallbackEnabled', () => {
 
   it('can be disabled', () => {
     expect(isDecisionFallbackEnabled({ layaDecisionFallback: false })).toBe(false);
+  });
+});
+
+describe('isSecondaryLlmFallbackEnabled', () => {
+  it('defaults off', () => {
+    expect(isSecondaryLlmFallbackEnabled(undefined)).toBe(false);
+    expect(isSecondaryLlmFallbackEnabled({})).toBe(false);
+    expect(isSecondaryLlmFallbackEnabled({ layaDecisionFallback: true })).toBe(false);
+  });
+
+  it('opt-in only', () => {
+    expect(isSecondaryLlmFallbackEnabled({ llmFallbackOnLayaMiss: true })).toBe(true);
+  });
+});
+
+describe('isFallbackRefuse', () => {
+  it('treats null and refuse as miss', () => {
+    expect(isFallbackRefuse(null)).toBe(true);
+    expect(isFallbackRefuse({ reply: 'no', proposed: { type: 'refuse' } })).toBe(true);
+    expect(
+      isFallbackRefuse({
+        reply: 'go',
+        proposed: { type: 'goto', stepId: 'create_list' },
+      })
+    ).toBe(false);
   });
 });
 
@@ -90,5 +119,103 @@ describe('invokeLlmFallback', () => {
       { text: 'x', kind: 'unknown' }
     );
     expect(result).toBeNull();
+  });
+});
+
+describe('invokeChainedDecisionFallback', () => {
+  it('returns Laya hit without calling secondary', async () => {
+    const secondary = vi.fn(async () => ({
+      reply: 'llm',
+      proposed: { type: 'goto' as const, stepId: 'create_list' },
+      provider: { id: 'openai', model: 'gpt' },
+    }));
+    const result = await invokeChainedDecisionFallback({
+      primary: async () => ({
+        reply: 'laya',
+        proposed: { type: 'goto', stepId: 'create_list' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary,
+      secondaryEnabled: true,
+      request: { text: 'create list', kind: 'unknown' },
+      opts: { knownStepIds: ['create_list'] },
+    });
+    expect(result?.reply).toBe('laya');
+    expect(secondary).not.toHaveBeenCalled();
+  });
+
+  it('escalates to secondary on Laya refuse when enabled', async () => {
+    const result = await invokeChainedDecisionFallback({
+      primary: async () => ({
+        reply: 'no',
+        proposed: { type: 'refuse' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary: async () => ({
+        reply: 'try create_list',
+        proposed: { type: 'goto', stepId: 'create_list' },
+        provider: { id: 'openai', model: 'gpt' },
+        exchangeId: 'llm-1',
+      }),
+      secondaryEnabled: true,
+      request: { text: 'make a list', kind: 'unknown' },
+      opts: { knownStepIds: ['create_list'] },
+    });
+    expect(result?.proposed).toEqual({ type: 'goto', stepId: 'create_list' });
+    expect(result?.provider).toMatchObject({
+      id: 'openai',
+      chain: 'laya_then_llm',
+      prior: 'laya',
+    });
+  });
+
+  it('keeps Laya refuse when secondary disabled or missing', async () => {
+    const secondary = vi.fn();
+    const refused = await invokeChainedDecisionFallback({
+      primary: async () => ({
+        reply: 'no',
+        proposed: { type: 'refuse' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary,
+      secondaryEnabled: false,
+      request: { text: 'x', kind: 'unknown' },
+    });
+    expect(refused?.proposed?.type).toBe('refuse');
+    expect(secondary).not.toHaveBeenCalled();
+  });
+
+  it('keeps Laya refuse when secondary returns null', async () => {
+    const result = await invokeChainedDecisionFallback({
+      primary: async () => ({
+        reply: 'no',
+        proposed: { type: 'refuse' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary: async () => null,
+      secondaryEnabled: true,
+      request: { text: 'x', kind: 'unknown' },
+    });
+    expect(result?.reply).toBe('no');
+    expect(result?.provider?.id).toBe('laya');
+  });
+
+  it('composeDecisionFallbackChain wraps the same behavior', async () => {
+    const fn = composeDecisionFallbackChain({
+      primary: async () => ({
+        reply: 'no',
+        proposed: { type: 'refuse' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary: async () => ({
+        reply: 'llm ok',
+        proposed: { type: 'meta' },
+        provider: { id: 'ollama', model: 'llama' },
+      }),
+      secondaryEnabled: true,
+    });
+    const result = await fn({ text: 'x', kind: 'unknown' });
+    expect(result?.reply).toBe('llm ok');
+    expect(result?.provider?.chain).toBe('laya_then_llm');
   });
 });

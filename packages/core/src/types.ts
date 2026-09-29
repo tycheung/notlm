@@ -344,6 +344,12 @@ export type AssistantFeatures = {
    * Env hint for hosts: `UIPILOT_LAYA_ENABLED=1`.
    */
   layaDecisionFallback?: boolean;
+  /**
+   * After Laya (`fallbackLlm`) refuses, call host `secondaryFallbackLlm`.
+   * **Default off.** Requires both the feature flag and a wired secondary fn.
+   * Host env hint: `UIPILOT_FALLBACK_LLM_ON_LAYA_MISS=yes`.
+   */
+  llmFallbackOnLayaMiss?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
