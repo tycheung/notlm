@@ -48,4 +48,8 @@ export type DispatchDeps = {
   onApplyDraft?: (draftKey: string, draft: Record<string, unknown>) => void | Promise<void>;
   /** Optional structured telemetry (no secrets). */
   onCoachEvent?: (event: CoachEvent) => void;
+  /** Skip canned repair copy when Laya/LLM fallback will answer (unknown/ambiguous). */
+  deferDecisionFallbackUi?: boolean;
+  /** Skip low-confidence Yes/No; emit repair for Laya→LLM when admin LLM fallback is on. */
+  deferLowConfidenceToFallback?: boolean;
 };

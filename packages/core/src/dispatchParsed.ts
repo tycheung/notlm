@@ -29,10 +29,12 @@ import {
   unintelligiblePrompt,
 } from './dispatchResolve.js';
 import { pickReply } from './replies.js';
+import { pushRepairAssistant } from './repairUi.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
+import { isConceptualQuestion } from './utteranceIntent.js';
 
 export function dispatchParsed(
   deps: DispatchDeps,
@@ -105,8 +107,36 @@ export function dispatchParsed(
     data: ctx.data,
   });
 
+  if (
+    isConceptualQuestion(trimmed) &&
+    packed.actions.length > 0 &&
+    parsed.confidence !== 'high'
+  ) {
+    emitCoachEvent(deps, {
+      type: 'repair',
+      kind: 'unknown',
+      text: trimmed,
+      rawIntent: 'conceptual_question',
+      confidence: parsed.confidence,
+    });
+    pushRepairAssistant(deps, 'unknown', '');
+    return;
+  }
+
   // Pure or partial OOD with canned entity-aware refuse.
   if (packed.oodSegments.length > 0) {
+    // Conceptual FAQ-style asks must not queue spurious step hits from shared tokens.
+    if (isConceptualQuestion(trimmed) && packed.actions.length > 0) {
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'unknown',
+        text: trimmed,
+        rawIntent: 'conceptual_question',
+        confidence: parsed.confidence,
+      });
+      pushRepairAssistant(deps, 'unknown', '');
+      return;
+    }
     const mixed = composeMixedIntentReply(
       packed,
       pack.steps,
@@ -117,7 +147,7 @@ export function dispatchParsed(
     if (mixed) {
       setSession(() => mixed.session);
       if (packed.actions.length === 0) {
-        pushAssistant(mixed.text);
+        pushRepairAssistant(deps, 'unknown', mixed.text);
         emitCoachEvent(deps, {
           type: 'repair',
           kind: 'unknown',
@@ -189,7 +219,9 @@ export function dispatchParsed(
         lastChoiceIds: parsed.candidates,
       },
     }));
-    pushAssistant(picked.text, { choices: stepChoices(pack, parsed.candidates) });
+    pushRepairAssistant(deps, 'ambiguous', picked.text, {
+      choices: stepChoices(pack, parsed.candidates),
+    });
     emitCoachEvent(deps, {
       type: 'repair',
       kind: 'ambiguous',
@@ -227,7 +259,25 @@ export function dispatchParsed(
       if (hit.guideId) flashField?.(hit.guideId);
       return;
     }
-    pushAssistant('Tell me which field you want explained.');
+    const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
+    if (faqHit) {
+      const offer = faqHit.stepId
+        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
+        : '';
+      pushAssistant(`${faqHit.text}${offer}`, {
+        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+        intentKey: faqHit.id,
+      });
+      return;
+    }
+    emitCoachEvent(deps, {
+      type: 'repair',
+      kind: 'unknown',
+      text: trimmed,
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+    });
+    pushRepairAssistant(deps, 'unknown', 'Tell me which field you want explained.');
     return;
   }
 
@@ -405,7 +455,7 @@ export function dispatchParsed(
         const message = `I didn’t catch that. ${formatBlockedQueueMessage(pack, head.stepId, missing)}`;
         const picked = pickReply(session, pack.replies, 'repair.unknown', { message });
         setSession(() => picked.session);
-        pushAssistant(picked.text);
+        pushRepairAssistant(deps, 'unknown', picked.text);
         emitCoachEvent(deps, {
           type: 'repair',
           kind: 'unknown',
@@ -418,7 +468,7 @@ export function dispatchParsed(
     }
     const picked = unintelligiblePrompt(pack, options, session);
     setSession(() => picked.session);
-    pushAssistant(picked.text, {
+    pushRepairAssistant(deps, 'unknown', picked.text, {
       choices: options.length ? stepChoices(pack, options.map((o) => o.id)) : undefined,
     });
     emitCoachEvent(deps, {
@@ -437,6 +487,16 @@ export function dispatchParsed(
     packed.actions.length < 2 &&
     !(pack.confirm ?? []).includes(targetStep)
   ) {
+    if (deps.deferLowConfidenceToFallback) {
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'low_confidence',
+        text: trimmed,
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+      });
+      return;
+    }
     // Mid with near-tie candidates → chips; otherwise soft Yes/No confirm.
     if (
       parsed.confidence === 'mid' &&
@@ -451,7 +511,9 @@ export function dispatchParsed(
           lastChoiceIds: parsed.candidates,
         },
       }));
-      pushAssistant(picked.text, { choices: stepChoices(pack, parsed.candidates) });
+      pushRepairAssistant(deps, 'ambiguous', picked.text, {
+        choices: stepChoices(pack, parsed.candidates),
+      });
       emitCoachEvent(deps, {
         type: 'repair',
         kind: 'ambiguous',
@@ -470,12 +532,18 @@ export function dispatchParsed(
         lastChoiceIds: ['__yes__', '__no__'],
       },
     }));
-    pushAssistant(picked.text, {
-      choices: [
-        { id: '__yes__', label: 'Yes' },
-        { id: '__no__', label: 'No' },
-      ],
-    });
+    pushRepairAssistant(
+      deps,
+      'low_confidence',
+      picked.text,
+      {
+        choices: [
+          { id: '__yes__', label: 'Yes' },
+          { id: '__no__', label: 'No' },
+        ],
+      },
+      { includeLowConfidence: true }
+    );
     emitCoachEvent(deps, {
       type: 'repair',
       kind: 'low_confidence',

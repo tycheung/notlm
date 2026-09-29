@@ -59,7 +59,11 @@ export function isMissKind(kind: string): kind is MissKind {
   return MISS_KIND_SET.has(kind);
 }
 
-export function isDecisionFallbackMissKind(kind: string): kind is MissKind {
+export function isDecisionFallbackMissKind(
+  kind: string,
+  opts?: { includeLowConfidence?: boolean }
+): kind is MissKind {
+  if (kind === 'low_confidence' && opts?.includeLowConfidence) return true;
   return FALLBACK_MISS_KIND_SET.has(kind);
 }
 

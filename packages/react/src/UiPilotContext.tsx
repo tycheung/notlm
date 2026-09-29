@@ -295,6 +295,7 @@ export function UiPilotProvider({
       Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
     const secondaryEnabled =
       Boolean(secondaryFallbackLlm) && isSecondaryLlmFallbackEnabled(features);
+    const includeLowConfidenceFallback = secondaryEnabled;
 
     const knownStepIds = new Set(pack.steps.map((s) => s.id));
     const stepIdList = pack.steps.map((s) => s.id).slice(0, 50);
@@ -309,8 +310,14 @@ export function UiPilotProvider({
 
     const onFallbackMiss = (event: CoachEvent) => {
       if (!fallbackEnabled || !fallbackLlm) return;
-      // Soft mid-confirm (`low_confidence`) stays local — do not race Laya refuse alongside Yes/No.
-      if (event.type !== 'repair' || !isDecisionFallbackMissKind(event.kind)) return;
+      if (event.type !== 'repair') return;
+      if (
+        !isDecisionFallbackMissKind(event.kind, {
+          includeLowConfidence: includeLowConfidenceFallback,
+        })
+      ) {
+        return;
+      }
       const missKind = event.kind;
       const text = (event.text ?? '').trim();
       if (!text) return;
@@ -629,6 +636,10 @@ export function UiPilotProvider({
       setPanelOpen(true);
 
       const runCore = () => {
+        const decisionFallbackOn =
+          Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
+        const secondaryOn =
+          Boolean(secondaryFallbackLlm) && isSecondaryLlmFallbackEnabled(features);
         const result = dispatchUserUtterance({
           text: trimmed,
           pack: asLoadedPack(pack),
@@ -655,6 +666,8 @@ export function UiPilotProvider({
           draftCompilers,
           onApplyDraft,
           onCoachEvent: coachEventHandler,
+          deferDecisionFallbackUi: decisionFallbackOn,
+          deferLowConfidenceToFallback: secondaryOn,
         });
         if (result && typeof (result as Promise<unknown>).then === 'function') {
           void (result as Promise<void>).catch(() => {
@@ -688,6 +701,9 @@ export function UiPilotProvider({
       navigate,
       onApplyDraft,
       coachEventHandler,
+      fallbackLlm,
+      secondaryFallbackLlm,
+      features,
       pack,
       parseUtteranceFn,
       pushAssistant,
