@@ -109,8 +109,7 @@ export function dispatchParsed(
 
   if (
     isConceptualQuestion(trimmed) &&
-    packed.actions.length > 0 &&
-    parsed.confidence !== 'high'
+    (packed.actions.length > 0 || packed.oodSegments.length > 0)
   ) {
     emitCoachEvent(deps, {
       type: 'repair',
@@ -145,6 +144,17 @@ export function dispatchParsed(
       pack.productRole
     );
     if (mixed) {
+      if (isConceptualQuestion(trimmed)) {
+        emitCoachEvent(deps, {
+          type: 'repair',
+          kind: 'unknown',
+          text: trimmed,
+          rawIntent: 'conceptual_question',
+          confidence: parsed.confidence,
+        });
+        pushRepairAssistant(deps, 'unknown', '');
+        return;
+      }
       setSession(() => mixed.session);
       if (packed.actions.length === 0) {
         pushRepairAssistant(deps, 'unknown', mixed.text);

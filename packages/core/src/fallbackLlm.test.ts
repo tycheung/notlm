@@ -194,6 +194,26 @@ describe('invokeChainedDecisionFallback', () => {
     expect(secondary).not.toHaveBeenCalled();
   });
 
+  it('escalates when Laya returns canned OOD text with non-refuse proposed', async () => {
+    const result = await invokeChainedDecisionFallback({
+      primary: async () => ({
+        reply:
+          'No — I am a bowling tournament guide, and I do not have the ability to help with tournaments events.',
+        proposed: { type: 'meta' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary: async () => ({
+        reply: 'Tournaments contain events.',
+        proposed: { type: 'meta' },
+        provider: { id: 'ollama', model: 'llama' },
+      }),
+      secondaryEnabled: true,
+      request: { text: 'how do tournaments relate to events', kind: 'unknown' },
+    });
+    expect(result?.reply).toContain('Tournaments contain events');
+    expect(result?.provider).toMatchObject({ chain: 'laya_then_llm' });
+  });
+
   it('escalates to secondary on Laya refuse when enabled', async () => {
     const result = await invokeChainedDecisionFallback({
       primary: async () => ({

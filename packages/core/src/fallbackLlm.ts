@@ -69,6 +69,22 @@ export function isFallbackRefuse(
   return result.proposed.type === 'refuse';
 }
 
+/** Canned OOD template from Laya sidecar / degraded proxy — still a miss for chaining. */
+const CANNED_OOD_REFUSE_RE = /\bdo not have the ability to help with\b/i;
+
+/**
+ * Whether primary (Laya) should trigger secondary LLM — includes canned refuse
+ * text even when `proposed.type` is meta/faq (sidecar bug or degraded stub).
+ */
+export function shouldEscalateToSecondaryLlm(
+  result: LlmFallbackResult | null | undefined
+): boolean {
+  if (isFallbackRefuse(result)) return true;
+  const reply = result?.reply?.trim() ?? '';
+  if (reply && CANNED_OOD_REFUSE_RE.test(reply)) return true;
+  return false;
+}
+
 /**
  * Ensure proposed.goto.stepId exists in the pack; otherwise force refuse.
  * Invalid faq/meta proposals are left as-is (host may still show reply text).
@@ -174,7 +190,7 @@ export async function invokeChainedDecisionFallback(
   input: InvokeChainedDecisionFallbackInput
 ): Promise<LlmFallbackResult | null> {
   const primary = await invokeLlmFallback(input.primary, input.request, input.opts);
-  if (!isFallbackRefuse(primary)) return primary;
+  if (!shouldEscalateToSecondaryLlm(primary)) return primary;
   if (!input.secondaryEnabled || !input.secondary) return primary;
 
   const secondary = await invokeLlmFallback(
