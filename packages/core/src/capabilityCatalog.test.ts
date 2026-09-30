@@ -71,6 +71,25 @@ describe('askNormalize / FAQ compare', () => {
     expect(looksLikeClearOod('when is my next tournament')).toBe(false);
   });
 
+  it('does not map trivia OOD onto meta FAQ entries', () => {
+    const faq = [
+      {
+        id: 'who_are_you',
+        aliases: ['who are you', 'what are you'],
+        text: 'I am a coach.',
+      },
+      {
+        id: 'what_just_happened',
+        aliases: ['what just happened', 'what did you do'],
+        text: 'I only navigate.',
+      },
+    ];
+    expect(matchFaqEntry(faq, 'who won the world series')).toBeNull();
+    expect(matchFaqEntry(faq, 'what is the capital of france')).toBeNull();
+    expect(looksLikeClearOod('who won the world series')).toBe(true);
+    expect(looksLikeClearOod('what is the capital of france')).toBe(true);
+  });
+
   it('matches compare FAQ with paraphrase coverage', () => {
     const faq = [
       {

@@ -4,6 +4,7 @@
  */
 import {
   aliasContentCoverage,
+  contentTokens,
   normalizeAsk,
 } from './askNormalize.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
@@ -125,7 +126,13 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
       const coverage = label.includes(' ')
         ? aliasContentCoverage(needle, label)
         : 0;
-      const covered = coverage >= ALIAS_COVERAGE_MIN && label.split(/\s+/).length >= 2;
+      // Require ≥2 content tokens so short FAQ aliases ("who are you"→"who")
+      // cannot swallow clear OOD asks like "who won the world series".
+      const labelTokens = contentTokens(label);
+      const covered =
+        coverage >= ALIAS_COVERAGE_MIN &&
+        labelTokens.length >= 2 &&
+        Math.round(coverage * labelTokens.length) >= 2;
       if (boundary || looseMulti || covered) {
         const score =
           label.length +

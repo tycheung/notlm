@@ -1,3 +1,4 @@
+import { looksLikeClearOod } from './askNormalize.js';
 import { editDistance, hasTokenBoundaryMatch } from './fuzzyText.js';
 import {
   probabilityToConfidence,
@@ -208,8 +209,12 @@ export function parseUtterance(
   );
 
   // First-class FAQ: catalog hits win at parse time (including compare asks),
-  // unless the utterance is an explicit nav/create command.
-  if (pack.faq?.length && !looksLikeNavCommand(text)) {
+  // unless the utterance is an explicit nav/create command or clear OOD.
+  if (
+    pack.faq?.length &&
+    !looksLikeNavCommand(text) &&
+    !looksLikeClearOod(text)
+  ) {
     const faqHit = matchFaqEntry(pack.faq, text);
     if (faqHit) {
       return {

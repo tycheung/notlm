@@ -1,6 +1,12 @@
 import type { MissKind, MissProposed } from './missLog.js';
 import { DEFAULT_MISS_REPLY_CAP, sanitizeMissText } from './missLog.js';
-import { looksLikeClearOod } from './askNormalize.js';
+import {
+  aliasContentCoverage,
+  contentTokens,
+  looksLikeClearOod,
+  normalizeAsk,
+} from './askNormalize.js';
+import { hasTokenBoundaryMatch } from './fuzzyText.js';
 import type { AssistantFeatures } from './types.js';
 
 export type LlmFallbackRequest = {
@@ -123,6 +129,54 @@ export function isTrustedGoto(
   return v.type === 'goto' && Boolean(v.stepId);
 }
 
+/** Domain tokens that must agree with Laya goto aliases / step id. */
+const GOTO_DOMAIN = new Set([
+  'scoring',
+  'score',
+  'scores',
+  'subscription',
+  'billing',
+  'averages',
+  'centers',
+  'tournament',
+  'event',
+  'squad',
+  'squads',
+  'pot',
+  'pots',
+  'sa',
+  'lane',
+  'lanes',
+  'report',
+  'reports',
+  'lookup',
+  'bowler',
+  'prize',
+  'format',
+  'formats',
+]);
+
+function gotoAgreesWithUtterance(
+  userText: string,
+  proposed: MissProposed & { type: 'goto'; stepId: string }
+): boolean {
+  const needle = normalizeAsk(userText);
+  const userDomain = contentTokens(needle).filter((t) => GOTO_DOMAIN.has(t));
+  if (!userDomain.length) return true;
+  const stepToks = contentTokens(proposed.stepId.replace(/_/g, ' '));
+  if (userDomain.some((t) => stepToks.includes(t) || proposed.stepId.includes(t))) {
+    return true;
+  }
+  const aliases = proposed.aliases ?? [];
+  for (const alias of aliases) {
+    const a = String(alias).toLowerCase().trim();
+    if (!a) continue;
+    if (userDomain.some((t) => hasTokenBoundaryMatch(a, t))) return true;
+    if (aliasContentCoverage(needle, a) >= 0.5) return true;
+  }
+  return false;
+}
+
 /**
  * Auto-execute only high-confidence trusted gotos (Laya sets `aliases` when
  * conf ≥ 0.85). Medium-confidence or refuse-shaped replies must not navigate —
@@ -141,7 +195,11 @@ export function isAutoExecutableTrustedGoto(
   if (/\bdo not have the ability\b/i.test(text)) return false;
   // High-confidence signal from Laya (aliases attached only when conf ≥ 0.85).
   const aliases = proposed.aliases;
-  return Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0);
+  if (!(Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0))) {
+    return false;
+  }
+  if (userText && !gotoAgreesWithUtterance(userText, proposed)) return false;
+  return true;
 }
 
 /**
@@ -156,6 +214,7 @@ export function shouldSurfaceTrustedGoto(
 ): boolean {
   if (looksLikeClearOod(userText)) return false;
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
+  if (!gotoAgreesWithUtterance(userText, proposed)) return false;
   const text = (reply ?? '').trim();
   if (CANNED_OOD_REFUSE_RE.test(text) || /\bdo not have the ability\b/i.test(text)) {
     return false;
@@ -171,6 +230,18 @@ export function shouldSurfaceTrustedGoto(
 export function defaultOodRefuseReply(userText?: string): string {
   const topic = (userText ?? 'that').trim().slice(0, 48) || 'that';
   return `No — I am a bowling tournament guide, and I do not have the ability to help with ${topic}. Try a workflow step name or product question.`;
+}
+
+/** Clarify when Laya proposes a goto that disagrees with the user's domain words. */
+export function mismatchedGotoClarifyReply(userText?: string): string {
+  const n = normalizeAsk(userText ?? '');
+  if (/\bscor/.test(n)) {
+    return 'Which one — Game Scoring / enter scores, or a different desk screen?';
+  }
+  if (/\b(sa|pot)\b/.test(n)) {
+    return 'Which one — side actions / pots, or a different desk screen?';
+  }
+  return 'Which screen did you mean? Name the step (for example scoring or side actions).';
 }
 
 /** Auto-execute trusted gotos unless the host sets `autoExecuteTrustedGoto: false`. */

@@ -124,6 +124,18 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     })();
   }
 
+  // Clear OOD before FAQ — meta FAQ aliases must never swallow trivia / jokes.
+  if (looksLikeClearOod(trimmed)) {
+    const assembled = assembleOodReply(trimmed, {
+      session: live.session,
+      bank: live.pack.replies,
+      productRole: live.pack.productRole,
+    });
+    live.setSession(() => assembled.session);
+    live.pushAssistant(assembled.text);
+    return;
+  }
+
   // FAQ before parse/ranker/Laya so compare + product facts never OOD-refuse.
   {
     const faqHit = matchFaqEntry(live.pack.faq ?? [], trimmed);
@@ -150,18 +162,6 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
       });
       return;
     }
-  }
-
-  // Clear OOD before parse/Laya — never surface a spurious billing goto chip.
-  if (looksLikeClearOod(trimmed)) {
-    const assembled = assembleOodReply(trimmed, {
-      session: live.session,
-      bank: live.pack.replies,
-      productRole: live.pack.productRole,
-    });
-    live.setSession(() => assembled.session);
-    live.pushAssistant(assembled.text);
-    return;
   }
 
   const intentPackEarly: IntentParsePack = {

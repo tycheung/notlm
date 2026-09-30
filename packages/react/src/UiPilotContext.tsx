@@ -13,8 +13,10 @@ import {
   isDecisionFallbackEnabled,
   isDecisionFallbackMissKind,
   isSecondaryLlmFallbackEnabled,
+  isTrustedGoto,
   defaultOodRefuseReply,
   looksLikeClearOod,
+  mismatchedGotoClarifyReply,
   shouldSurfaceTrustedGoto,
   listMissingRequires,
   markActiveStep,
@@ -529,6 +531,12 @@ export function UiPilotProvider({
               !/\b(go|open|take|navigate|show|find)\b/i.test(text))
           ) {
             replaceThinking(defaultOodRefuseReply(text));
+          } else if (
+            isTrustedGoto(result.proposed, knownStepIds) &&
+            /i can take you to/i.test(result.reply)
+          ) {
+            // Domain mismatch (e.g. "go to scoring" → billing_ready): clarify.
+            replaceThinking(mismatchedGotoClarifyReply(text));
           } else {
             replaceThinking(result.reply);
           }
