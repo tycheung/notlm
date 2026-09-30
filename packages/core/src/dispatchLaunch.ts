@@ -173,7 +173,19 @@ export function launchStep(
   const text = isCorrection
     ? `Updated details for “${stepTitle(pack, targetStep)}”. ${picked.text}`
     : picked.text;
-  setSession(() => picked.session);
+  const withAudit = {
+    ...picked.session,
+    discourse: {
+      ...(picked.session.discourse ?? {}),
+      lastStepId: targetStep,
+      lastCoachAction: {
+        kind: 'goto',
+        id: targetStep,
+        summary: `Opened “${stepTitle(pack, targetStep)}”.`,
+      },
+    },
+  };
+  setSession(() => withAudit);
   pushAssistant(text);
   emitCoachEvent(deps, {
     type: 'launch',

@@ -1,4 +1,5 @@
 import type { FaqEntry, GlossaryEntry } from './types.js';
+import { aliasContentCoverage, normalizeAsk } from './askNormalize.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
 
 function stripExplainLead(utterance: string): string {
@@ -13,24 +14,9 @@ function stripExplainLead(utterance: string): string {
     .trim();
 }
 
-function normalizeAsk(utterance: string): string {
-  let n = utterance
-    .trim()
-    .toLowerCase()
-    .replace(/[’']/g, "'")
-    .replace(/[^a-z0-9'\s-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  // Strip leading disfluencies so "uhh what are …" still looks like a FAQ question.
-  for (let i = 0; i < 3; i++) {
-    const next = n.replace(/^(uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls)\s+/, '');
-    if (next === n) break;
-    n = next;
-  }
-  return n;
-}
-
 type AliasCatalog = { id: string; aliases: string[] };
+
+const ALIAS_COVERAGE_MIN = 0.84;
 
 function matchAliasCatalog<T extends AliasCatalog>(
   catalog: T[],
@@ -44,12 +30,20 @@ function matchAliasCatalog<T extends AliasCatalog>(
     for (const label of labels) {
       if (!label) continue;
       if (needle === label) return entry;
-      // Prefer token-boundary containment; allow exact substring only for multi-word labels.
-      const boundary = hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
+      const boundary =
+        hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
       const looseMulti =
         label.includes(' ') && (needle.includes(label) || label.includes(needle));
-      if (boundary || looseMulti) {
-        const score = label.length + (boundary ? 50 : 0);
+      const coverage = label.includes(' ')
+        ? aliasContentCoverage(needle, label)
+        : 0;
+      const covered =
+        coverage >= ALIAS_COVERAGE_MIN && label.split(/\s+/).length >= 2;
+      if (boundary || looseMulti || covered) {
+        const score =
+          label.length +
+          (boundary ? 50 : 0) +
+          (covered ? Math.round(coverage * 40) : 0);
         if (score > bestScore) {
           best = entry;
           bestScore = score;
@@ -82,7 +76,7 @@ export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | nu
 export function looksLikeNavCommand(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n) return false;
-  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it)\b/.test(
+  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it|navigate(\s+to)?|find|search|locate)\b/.test(
     n
   );
 }
@@ -92,7 +86,7 @@ export function looksLikeFaqQuestion(utterance: string): boolean {
   if (!n) return false;
   if (looksLikeNavCommand(n)) return false;
   if (
-    /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand)\b/.test(
+    /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand|compare|difference)\b/.test(
       n
     )
   ) {
@@ -103,6 +97,9 @@ export function looksLikeFaqQuestion(utterance: string): boolean {
     /\b(vs|versus)\b/.test(n) ||
     /\bdifference between\b/.test(n) ||
     /\bcompared to\b/.test(n) ||
+    /\bcompare\b/.test(n) ||
+    /\bwhat is better\b/.test(n) ||
+    /\bshould i (run|use|create)\b/.test(n) ||
     /\b(how are|how do)\b.+\b(relate|different|differ)\b/.test(n)
   );
 }

@@ -13,7 +13,9 @@ import {
   isDecisionFallbackEnabled,
   isDecisionFallbackMissKind,
   isSecondaryLlmFallbackEnabled,
-  isTrustedGoto,
+  defaultOodRefuseReply,
+  looksLikeClearOod,
+  shouldSurfaceTrustedGoto,
   listMissingRequires,
   markActiveStep,
   utteranceMatchesTypedCatalog,
@@ -487,7 +489,8 @@ export function UiPilotProvider({
             isAutoExecutableTrustedGoto(
               result.proposed,
               knownStepIds,
-              result.reply
+              result.reply,
+              text
             )
               ? result.proposed!.stepId
               : undefined;
@@ -495,11 +498,37 @@ export function UiPilotProvider({
             replaceThinking(result.reply);
             queueMicrotask(() => {
               executeStepRef.current(trusted, { skipCoach: true });
+              setSession((s) => ({
+                ...s,
+                discourse: {
+                  ...(s.discourse ?? {}),
+                  lastStepId: trusted,
+                  lastCoachAction: {
+                    kind: 'goto',
+                    id: trusted,
+                    summary: `Opened “${trusted}”.`,
+                  },
+                },
+              }));
             });
-          } else if (isTrustedGoto(result.proposed, knownStepIds)) {
+          } else if (
+            shouldSurfaceTrustedGoto(
+              result.proposed,
+              knownStepIds,
+              result.reply,
+              text
+            )
+          ) {
+            const stepId = result.proposed!.stepId!;
             replaceThinking(result.reply, [
-              { id: result.proposed.stepId, label: result.proposed.stepId },
+              { id: stepId, label: stepId },
             ]);
+          } else if (
+            looksLikeClearOod(text) ||
+            (/i can take you to/i.test(result.reply) &&
+              !/\b(go|open|take|navigate|show|find)\b/i.test(text))
+          ) {
+            replaceThinking(defaultOodRefuseReply(text));
           } else {
             replaceThinking(result.reply);
           }

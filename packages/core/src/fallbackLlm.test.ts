@@ -122,6 +122,56 @@ describe('isAutoExecutableTrustedGoto', () => {
         'I do not have the ability to help with jokes.'
       )
     ).toBe(false);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['open billing'],
+        },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'tell me a joke'
+      )
+    ).toBe(false);
+  });
+});
+
+describe('shouldSurfaceTrustedGoto', () => {
+  it('refuses clear OOD and non-nav take-you-to chips', async () => {
+    const { shouldSurfaceTrustedGoto } = await import('./fallbackLlm.js');
+    expect(
+      shouldSurfaceTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['open billing'],
+        },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'tell me a joke'
+      )
+    ).toBe(false);
+    expect(
+      shouldSurfaceTrustedGoto(
+        { type: 'goto', stepId: 'billing_ready' },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'form validation help'
+      )
+    ).toBe(false);
+    expect(
+      shouldSurfaceTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['navigate to subscription'],
+        },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'navigate to subscription'
+      )
+    ).toBe(true);
   });
 });
 

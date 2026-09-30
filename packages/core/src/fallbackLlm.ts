@@ -1,5 +1,6 @@
 import type { MissKind, MissProposed } from './missLog.js';
 import { DEFAULT_MISS_REPLY_CAP, sanitizeMissText } from './missLog.js';
+import { looksLikeClearOod } from './askNormalize.js';
 import type { AssistantFeatures } from './types.js';
 
 export type LlmFallbackRequest = {
@@ -130,15 +131,46 @@ export function isTrustedGoto(
 export function isAutoExecutableTrustedGoto(
   proposed: MissProposed | undefined,
   knownStepIds: ReadonlySet<string> | readonly string[],
-  reply?: string
+  reply?: string,
+  userText?: string
 ): proposed is MissProposed & { type: 'goto'; stepId: string } {
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
+  if (userText && looksLikeClearOod(userText)) return false;
   const text = (reply ?? '').trim();
   if (text && CANNED_OOD_REFUSE_RE.test(text)) return false;
   if (/\bdo not have the ability\b/i.test(text)) return false;
   // High-confidence signal from Laya (aliases attached only when conf ≥ 0.85).
   const aliases = proposed.aliases;
   return Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0);
+}
+
+/**
+ * Whether the host should surface a goto chip / take-you-to reply from Laya.
+ * Blocks clear OOD and untrusted take-you-to chips that steal the turn.
+ */
+export function shouldSurfaceTrustedGoto(
+  proposed: MissProposed | undefined,
+  knownStepIds: ReadonlySet<string> | readonly string[],
+  reply: string | undefined,
+  userText: string
+): boolean {
+  if (looksLikeClearOod(userText)) return false;
+  if (!isTrustedGoto(proposed, knownStepIds)) return false;
+  const text = (reply ?? '').trim();
+  if (CANNED_OOD_REFUSE_RE.test(text) || /\bdo not have the ability\b/i.test(text)) {
+    return false;
+  }
+  if (isAutoExecutableTrustedGoto(proposed, knownStepIds, reply, userText)) {
+    return true;
+  }
+  // Medium-confidence goto chip only when the user clearly asked to navigate.
+  return /\b(go|open|take|navigate|show|find|locate|search)\b/i.test(userText);
+}
+
+/** Default System One refuse when Laya would otherwise offer a spurious goto. */
+export function defaultOodRefuseReply(userText?: string): string {
+  const topic = (userText ?? 'that').trim().slice(0, 48) || 'that';
+  return `No — I am a bowling tournament guide, and I do not have the ability to help with ${topic}. Try a workflow step name or product question.`;
 }
 
 /** Auto-execute trusted gotos unless the host sets `autoExecuteTrustedGoto: false`. */

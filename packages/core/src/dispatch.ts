@@ -18,7 +18,9 @@ import {
   tryHandleExplainLast,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
+import { looksLikeClearOod } from './askNormalize.js';
 import { looksLikeNavCommand, matchFaqEntry } from './glossary.js';
+import { assembleOodReply } from './oodReply.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
 import { activeFlowSteps } from './subgraph.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
@@ -150,6 +152,18 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     }
   }
 
+  // Clear OOD before parse/Laya — never surface a spurious billing goto chip.
+  if (looksLikeClearOod(trimmed)) {
+    const assembled = assembleOodReply(trimmed, {
+      session: live.session,
+      bank: live.pack.replies,
+      productRole: live.pack.productRole,
+    });
+    live.setSession(() => assembled.session);
+    live.pushAssistant(assembled.text);
+    return;
+  }
+
   const intentPackEarly: IntentParsePack = {
     steps: activeFlowSteps(live.pack, live.session),
     aliases: live.pack.aliases,
@@ -177,12 +191,24 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   if (discourse.kind === 'undo') {
     const prev = resolveGoBackStep(live.session);
     if (!prev) {
-      live.pushAssistant('Nothing to undo yet.');
+      live.pushAssistant('Canceled — nothing pending to undo or go back to.');
       return;
     }
     live.setSession((s) => goBackToStep(s, prev, []));
     live.pushAssistant(`Okay — back to “${stepTitle(live.pack, prev)}”.`);
     live.executeStep(prev);
+    return;
+  }
+  if (discourse.kind === 'clarify_choice') {
+    live.pushAssistant(
+      'Which option did you mean? Say the step name, or number 1 / 2 if I offered choices.'
+    );
+    return;
+  }
+  if (discourse.kind === 'choice_index') {
+    live.pushAssistant(
+      'I don’t have numbered choices open — say which screen or option you want.'
+    );
     return;
   }
   if (discourse.kind === 'repair_slot') {

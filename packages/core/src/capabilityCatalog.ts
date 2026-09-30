@@ -2,6 +2,10 @@
  * Typed capability catalogs: queries (reads), mutations (confirm-gated writes),
  * tours, and search surfaces. Hosts execute; core only matches + dispatches.
  */
+import {
+  aliasContentCoverage,
+  normalizeAsk,
+} from './askNormalize.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
 import type { ChatChoice, ChatMessageLink, StepId } from './types.js';
 
@@ -97,21 +101,8 @@ export type OpenSearchHitFn = (req: {
 
 type AliasCatalog = { id: string; aliases: string[]; title?: string };
 
-function normalizeAsk(utterance: string): string {
-  let n = utterance
-    .trim()
-    .toLowerCase()
-    .replace(/[’']/g, "'")
-    .replace(/[^a-z0-9'\s-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  for (let i = 0; i < 3; i++) {
-    const next = n.replace(/^(uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls)\s+/, '');
-    if (next === n) break;
-    n = next;
-  }
-  return n;
-}
+/** Min content-token coverage for fuzzy multi-word alias hits. */
+const ALIAS_COVERAGE_MIN = 0.84;
 
 export function matchAliasCatalogEntry<T extends AliasCatalog>(
   catalog: T[],
@@ -131,8 +122,15 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
         hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
       const looseMulti =
         label.includes(' ') && (needle.includes(label) || label.includes(needle));
-      if (boundary || looseMulti) {
-        const score = label.length + (boundary ? 50 : 0);
+      const coverage = label.includes(' ')
+        ? aliasContentCoverage(needle, label)
+        : 0;
+      const covered = coverage >= ALIAS_COVERAGE_MIN && label.split(/\s+/).length >= 2;
+      if (boundary || looseMulti || covered) {
+        const score =
+          label.length +
+          (boundary ? 50 : 0) +
+          (covered ? Math.round(coverage * 40) : 0);
         if (score > bestScore) {
           best = entry;
           bestScore = score;
@@ -180,15 +178,16 @@ export function looksLikeConfirmNo(text: string): boolean {
 export function looksLikeExplainLast(text: string): boolean {
   const n = normalizeAsk(text);
   return (
-    /\b(what did you (just )?(do|open|change)|why did you|explain (that|what you did)|what would that change)\b/.test(
+    /\b(what did you (just )?(do|open|change)|why did you|explain (that|what you did|last)|what would that change)\b/.test(
       n
     ) ||
-    /\b(audit( that)?|explain your last|what was that action|recap (that|the last))\b/.test(
+    /\b(audit( that)?|audit the last|explain your last|explain last|recount your last|say what you opened|what was that action|recap (that|the last))\b/.test(
       n
     ) ||
     n === 'what was that' ||
     n === 'why' ||
-    n === 'explain'
+    n === 'explain' ||
+    n === 'explain last'
   );
 }
 
@@ -203,6 +202,9 @@ export function looksLikeContextAsk(text: string): boolean {
       n
     ) ||
     /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step))\b/.test(
+      n
+    ) ||
+    /\b(form validation( help)?|what am i missing|what'?s required on this (page|form|screen)|blocked step help)\b/.test(
       n
     )
   );
@@ -232,24 +234,6 @@ export function utteranceMatchesTypedCatalog(
   if (matchSearchEntry(pack.search ?? [], trimmed)) return true;
   // FAQ: avoid pulling in glossary — callers pass pack.faq; match via aliases only.
   const faq = pack.faq ?? [];
-  if (faq.length) {
-    const needle = normalizeAsk(trimmed);
-    for (const entry of faq) {
-      const labels = [entry.id, ...entry.aliases].map((a) => a.toLowerCase().trim());
-      for (const label of labels) {
-        if (!label) continue;
-        if (needle === label) return true;
-        if (label.includes(' ') && (needle.includes(label) || label.includes(needle))) {
-          return true;
-        }
-        if (
-          hasTokenBoundaryMatch(needle, label) ||
-          hasTokenBoundaryMatch(label, needle)
-        ) {
-          return true;
-        }
-      }
-    }
-  }
+  if (faq.length && matchAliasCatalogEntry(faq, trimmed)) return true;
   return false;
 }

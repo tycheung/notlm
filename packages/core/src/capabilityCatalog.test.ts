@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  matchMutationEntry,
   matchQueryEntry,
   looksLikeContextAsk,
   looksLikeExplainLast,
   utteranceMatchesTypedCatalog,
 } from './capabilityCatalog.js';
+import { looksLikeClearOod } from './askNormalize.js';
+import { matchFaqEntry, looksLikeFaqQuestion } from './glossary.js';
 
 describe('capabilityCatalog', () => {
   const queries = [
@@ -30,8 +33,26 @@ describe('capabilityCatalog', () => {
     expect(looksLikeContextAsk("why can't I save this form")).toBe(true);
     expect(looksLikeContextAsk("what's blocking me")).toBe(true);
     expect(looksLikeContextAsk('why is save disabled')).toBe(true);
+    expect(looksLikeContextAsk('form validation help')).toBe(true);
+    expect(looksLikeContextAsk('what am I missing')).toBe(true);
     expect(looksLikeExplainLast('what did you just open')).toBe(true);
     expect(looksLikeExplainLast('audit that')).toBe(true);
+    expect(looksLikeExplainLast('explain last')).toBe(true);
+    expect(looksLikeExplainLast('recount your last action')).toBe(true);
+  });
+
+  it('matches mutations with filler words via content coverage', () => {
+    const mutations = [
+      {
+        id: 'td.assign_usbc_confirm',
+        title: 'Assign USBC',
+        aliases: ['fix temporary usbc'],
+        risk: 'high' as const,
+      },
+    ];
+    expect(matchMutationEntry(mutations, 'fix the temporary usbc please')?.id).toBe(
+      'td.assign_usbc_confirm'
+    );
   });
 
   it('utteranceMatchesTypedCatalog prefers queries over free text', () => {
@@ -40,6 +61,30 @@ describe('capabilityCatalog', () => {
     ).toBe(true);
     expect(utteranceMatchesTypedCatalog({ queries }, 'open tournament Alpha')).toBe(
       false
+    );
+  });
+});
+
+describe('askNormalize / FAQ compare', () => {
+  it('flags clear OOD', () => {
+    expect(looksLikeClearOod('tell me a joke')).toBe(true);
+    expect(looksLikeClearOod('when is my next tournament')).toBe(false);
+  });
+
+  it('matches compare FAQ with paraphrase coverage', () => {
+    const faq = [
+      {
+        id: 'sa_vs_full',
+        aliases: ['SA only vs full tournament', 'compare SA only and full tournament'],
+        text: 'Use a full tournament when…',
+      },
+    ];
+    expect(looksLikeFaqQuestion('compare SA only and full tournament')).toBe(true);
+    expect(matchFaqEntry(faq, 'compare SA only and full tournament')?.id).toBe(
+      'sa_vs_full'
+    );
+    expect(matchFaqEntry(faq, 'should I run SA only or a full tournament')?.id).toBe(
+      'sa_vs_full'
     );
   });
 });

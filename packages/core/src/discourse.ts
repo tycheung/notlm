@@ -1,3 +1,4 @@
+import { normalizeAsk } from './askNormalize.js';
 import type { DiscourseState, StepId } from './types.js';
 
 export type DiscourseResolution =
@@ -5,7 +6,9 @@ export type DiscourseResolution =
   | { kind: 'step'; text: string; stepId: StepId }
   | { kind: 'entity'; text: string; name: string }
   | { kind: 'repair_slot'; text: string; slotHint?: string }
-  | { kind: 'undo'; text: string };
+  | { kind: 'undo'; text: string }
+  | { kind: 'choice_index'; text: string; index: number }
+  | { kind: 'clarify_choice'; text: string };
 
 const AGAIN =
   /^(do\s+)?(that|it|the same)(\s+again)?[.!?]*$/i;
@@ -14,14 +17,28 @@ const THAT_STEP =
 const OTHER =
   /^(the )?other(\s+one)?[.!?]*$/i;
 const THAT_ENTITY =
-  /^(that|the same)\s+(list|contact|item|one)[.!?]*$/i;
+  /^(that|the same)\s+(list|contact|item|one|tournament|event|center)[.!?]*$/i;
 const UNDO =
-  /^(undo( that)?|never ?mind|scratch that)[.!?]*$/i;
+  /^(undo( that)?|never ?mind|scratch that|cancel that)[.!?]*$/i;
+const CHOICE_INDEX =
+  /^(?:(?:number|option|choice)\s+)?([1-9]|one|two|three|first|second|third)\b/i;
 const CHANGE_NAME =
   /^(change|rename|update|fix)\s+(the\s+)?(name|title|list name|contact name)\b/i;
 const CHANGE_NAME_VALUE =
   /^(?:change|rename|update|fix)\s+(?:the\s+)?(?:name|title)\s+(?:to\s+)?(.+)$/i;
 const RENAME_TO = /^(?:rename|change)\s+to\s+(.+)$/i;
+
+const INDEX_WORDS: Record<string, number> = {
+  '1': 0,
+  one: 0,
+  first: 0,
+  '2': 1,
+  two: 1,
+  second: 1,
+  '3': 2,
+  three: 2,
+  third: 2,
+};
 
 /**
  * Resolve light anaphora / repair against discourse before NLU.
@@ -30,33 +47,52 @@ export function resolveDiscourse(
   utterance: string,
   discourse: DiscourseState | undefined
 ): DiscourseResolution {
-  const text = utterance.trim();
-  if (!text) return { kind: 'none', text };
+  const raw = utterance.trim();
+  if (!raw) return { kind: 'none', text: raw };
+  const text = normalizeAsk(raw) || raw;
 
-  if (UNDO.test(text)) {
-    return { kind: 'undo', text };
+  if (UNDO.test(text) || UNDO.test(raw)) {
+    return { kind: 'undo', text: raw };
   }
 
-  const renameTo = text.match(RENAME_TO);
+  const renameTo = raw.match(RENAME_TO);
   if (renameTo?.[1]) {
-    return { kind: 'repair_slot', text, slotHint: renameTo[1].trim() };
+    return { kind: 'repair_slot', text: raw, slotHint: renameTo[1].trim() };
   }
-  const rename = text.match(CHANGE_NAME_VALUE);
+  const rename = raw.match(CHANGE_NAME_VALUE);
   if (rename?.[1]) {
-    return { kind: 'repair_slot', text, slotHint: rename[1].trim() };
+    return { kind: 'repair_slot', text: raw, slotHint: rename[1].trim() };
   }
-  if (CHANGE_NAME.test(text)) {
-    return { kind: 'repair_slot', text };
+  if (CHANGE_NAME.test(text) || CHANGE_NAME.test(raw)) {
+    return { kind: 'repair_slot', text: raw };
   }
 
-  if (!discourse) return { kind: 'none', text };
-
-  if (OTHER.test(text) && discourse.lastChoiceIds && discourse.lastChoiceIds.length >= 2) {
-    return { kind: 'step', text, stepId: discourse.lastChoiceIds[1]! };
+  const choiceMatch = text.match(CHOICE_INDEX) ?? raw.match(CHOICE_INDEX);
+  if (choiceMatch?.[1]) {
+    const idx = INDEX_WORDS[choiceMatch[1].toLowerCase()];
+    if (idx != null) {
+      if (discourse?.lastChoiceIds && discourse.lastChoiceIds.length > idx) {
+        return {
+          kind: 'step',
+          text: raw,
+          stepId: discourse.lastChoiceIds[idx]!,
+        };
+      }
+      return { kind: 'choice_index', text: raw, index: idx };
+    }
   }
+
+  if (OTHER.test(text) || OTHER.test(raw)) {
+    if (discourse?.lastChoiceIds && discourse.lastChoiceIds.length >= 2) {
+      return { kind: 'step', text: raw, stepId: discourse.lastChoiceIds[1]! };
+    }
+    return { kind: 'clarify_choice', text: raw };
+  }
+
+  if (!discourse) return { kind: 'none', text: raw };
 
   if ((AGAIN.test(text) || THAT_STEP.test(text)) && discourse.lastStepId) {
-    return { kind: 'step', text, stepId: discourse.lastStepId };
+    return { kind: 'step', text: raw, stepId: discourse.lastStepId };
   }
 
   if (THAT_ENTITY.test(text) && discourse.lastEntityName) {
@@ -67,7 +103,7 @@ export function resolveDiscourse(
     };
   }
 
-  return { kind: 'none', text };
+  return { kind: 'none', text: raw };
 }
 
 /** Naive slot value from a follow-up answer (“Shopping”, “called Errands”). */

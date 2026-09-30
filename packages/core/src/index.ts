@@ -1,3 +1,4 @@
+export * from './askNormalize.js';
 export * from './capabilityCatalog.js';
 export * from './dispatchCapability.js';
 export * from './confidenceBands.js';

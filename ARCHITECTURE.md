@@ -144,7 +144,7 @@ back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
   (CPU only). Does **not** retrain Laya weights on the server.
 - **Mixed / OOD:** packed segments; in-DAG launches; OOD uses `repair.ood_capability` /
   `repair.partial_ood` with `{{entities}}` / `{{product_role}}`.
-- **Fine-tune:** `uipilot-training laya convert|train` locally only. See `docs/VERIFY_LAYA_CACHE.md`.
+- **Fine-tune:** train Laya checkpoints locally (separate training repo / CLI); see `docs/VERIFY_LAYA_CACHE.md`.
 
 ### Optional miss logging (intent tuning)
 
