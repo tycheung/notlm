@@ -182,7 +182,13 @@ export function looksLikeExplainLast(text: string): boolean {
   return (
     /\b(what did you (just )?(do|open|change)|why did you|explain (that|what you did)|what would that change)\b/.test(
       n
-    ) || n === 'what was that'
+    ) ||
+    /\b(audit( that)?|explain your last|what was that action|recap (that|the last))\b/.test(
+      n
+    ) ||
+    n === 'what was that' ||
+    n === 'why' ||
+    n === 'explain'
   );
 }
 
@@ -192,6 +198,58 @@ export function looksLikeContextAsk(text: string): boolean {
   return (
     /\b(why can'?t i (save|submit|continue)|what'?s missing|what do i need|why is (this|the) (blocked|disabled)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
       n
+    ) ||
+    /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete)|why won'?t (it|this|save|submit))\b/.test(
+      n
+    ) ||
+    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step))\b/.test(
+      n
     )
   );
+}
+
+/**
+ * True when the utterance matches a typed catalog (query/mutation/tour/search)
+ * or FAQ / context / explain-last heuristics. Hosts use this to prefer System One
+ * catalogs over entity-open adapters.
+ */
+export function utteranceMatchesTypedCatalog(
+  pack: {
+    queries?: QueryDef[];
+    mutations?: MutationDef[];
+    tours?: TourDef[];
+    search?: SearchSurfaceDef[];
+    faq?: { id: string; aliases: string[] }[];
+  },
+  utterance: string
+): boolean {
+  const trimmed = utterance.trim();
+  if (!trimmed) return false;
+  if (looksLikeContextAsk(trimmed) || looksLikeExplainLast(trimmed)) return true;
+  if (matchQueryEntry(pack.queries ?? [], trimmed)) return true;
+  if (matchMutationEntry(pack.mutations ?? [], trimmed)) return true;
+  if (matchTourEntry(pack.tours ?? [], trimmed)) return true;
+  if (matchSearchEntry(pack.search ?? [], trimmed)) return true;
+  // FAQ: avoid pulling in glossary — callers pass pack.faq; match via aliases only.
+  const faq = pack.faq ?? [];
+  if (faq.length) {
+    const needle = normalizeAsk(trimmed);
+    for (const entry of faq) {
+      const labels = [entry.id, ...entry.aliases].map((a) => a.toLowerCase().trim());
+      for (const label of labels) {
+        if (!label) continue;
+        if (needle === label) return true;
+        if (label.includes(' ') && (needle.includes(label) || label.includes(needle))) {
+          return true;
+        }
+        if (
+          hasTokenBoundaryMatch(needle, label) ||
+          hasTokenBoundaryMatch(label, needle)
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }

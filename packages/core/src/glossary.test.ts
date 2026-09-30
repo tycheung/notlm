@@ -50,6 +50,8 @@ describe('looksLikeFaqQuestion', () => {
     expect(looksLikeFaqQuestion('how do I create a tournament')).toBe(true);
     expect(looksLikeFaqQuestion('what is a side action')).toBe(true);
     expect(looksLikeFaqQuestion('why cant i score')).toBe(true);
+    expect(looksLikeFaqQuestion('tournament vs event')).toBe(true);
+    expect(looksLikeFaqQuestion('SA vs full')).toBe(true);
     expect(looksLikeFaqQuestion('create a tournament')).toBe(false);
     expect(looksLikeFaqQuestion('take me to billing')).toBe(false);
     expect(looksLikeFaqQuestion('open squads')).toBe(false);

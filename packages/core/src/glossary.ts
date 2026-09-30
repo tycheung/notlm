@@ -78,18 +78,32 @@ export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | nu
  * Used so FAQ answers can win over step aliases that appear as substrings
  * (e.g. “how do I create a tournament” vs alias “create tournament”).
  */
+/** True when the utterance is a direct navigation/create command (not FAQ). */
+export function looksLikeNavCommand(utterance: string): boolean {
+  const n = normalizeAsk(utterance);
+  if (!n) return false;
+  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it)\b/.test(
+    n
+  );
+}
+
 export function looksLikeFaqQuestion(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n) return false;
+  if (looksLikeNavCommand(n)) return false;
   if (
-    /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it)\b/.test(
+    /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand)\b/.test(
       n
     )
   ) {
-    return false;
+    return true;
   }
-  return /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand)\b/.test(
-    n
+  // Compare / product-fact asks ("tournament vs event", "SA vs full").
+  return (
+    /\b(vs|versus)\b/.test(n) ||
+    /\bdifference between\b/.test(n) ||
+    /\bcompared to\b/.test(n) ||
+    /\b(how are|how do)\b.+\b(relate|different|differ)\b/.test(n)
   );
 }
 

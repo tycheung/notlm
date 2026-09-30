@@ -1,12 +1,20 @@
 import { installLayaSidecar, installNightlyCelery } from '@uipilot/ops';
 import { resolve } from 'node:path';
 
+function argValue(args: string[], flag: string): string | undefined {
+  const idx = args.indexOf(flag);
+  if (idx < 0) return undefined;
+  return args[idx + 1];
+}
+
 export async function cmdLayaInstall(args: string[]): Promise<void> {
   const dir = resolve(args.find((a) => !a.startsWith('-')) ?? '.');
   const celery = args.includes('--with-celery');
+  const productRole = argValue(args, '--product-role');
   const result = installLayaSidecar({
     targetDir: dir,
     enabledByDefault: !args.includes('--disabled'),
+    productRole,
   });
   console.log(`Laya sidecar → ${result.sidecarDir}`);
   for (const f of result.files) console.log(`  ${f}`);

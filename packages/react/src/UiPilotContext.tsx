@@ -9,12 +9,14 @@ import {
   formatBlockedQueueMessage,
   invokeChainedDecisionFallback,
   isAutoExecuteTrustedGotoEnabled,
+  isAutoExecutableTrustedGoto,
   isDecisionFallbackEnabled,
   isDecisionFallbackMissKind,
   isSecondaryLlmFallbackEnabled,
   isTrustedGoto,
   listMissingRequires,
   markActiveStep,
+  utteranceMatchesTypedCatalog,
   mintConversationId,
   createMemoryPhraseLru,
   type AssistantFeatures,
@@ -169,6 +171,7 @@ export type UiPilotProviderProps = {
    * Host adapter hook (format NLU, entity open, …).
    * Return true to skip core dispatch for this utterance.
    */
+  clearPendingChoices?: (text: string) => boolean | Promise<boolean>;
   tryHandleUtterance?: (text: string) => boolean | Promise<boolean>;
   /** Optional structured coach telemetry (no secrets). */
   onCoachEvent?: (event: CoachEvent) => void;
@@ -229,6 +232,7 @@ export function UiPilotProvider({
   onApplyDraft,
   features: featuresProp,
   parseUtteranceFn,
+  clearPendingChoices,
   tryHandleUtterance,
   onCoachEvent,
   missLog,
@@ -479,20 +483,25 @@ export function UiPilotProvider({
           }
         } else {
           const trusted =
-            autoNav && isTrustedGoto(result.proposed, knownStepIds)
-              ? result.proposed.stepId
+            autoNav &&
+            isAutoExecutableTrustedGoto(
+              result.proposed,
+              knownStepIds,
+              result.reply
+            )
+              ? result.proposed!.stepId
               : undefined;
           if (trusted) {
             replaceThinking(result.reply);
             queueMicrotask(() => {
-              executeStepRef.current(trusted);
+              executeStepRef.current(trusted, { skipCoach: true });
             });
+          } else if (isTrustedGoto(result.proposed, knownStepIds)) {
+            replaceThinking(result.reply, [
+              { id: result.proposed.stepId, label: result.proposed.stepId },
+            ]);
           } else {
-            const choices =
-              result.proposed?.type === 'goto' && result.proposed.stepId
-                ? [{ id: result.proposed.stepId, label: result.proposed.stepId }]
-                : undefined;
-            replaceThinking(result.reply, choices);
+            replaceThinking(result.reply);
           }
         }
         const exchangeTransport = missLog?.exchangeTransport;
@@ -685,8 +694,9 @@ export function UiPilotProvider({
         queueMicrotask(() => {
           flashGuideFieldsSequential(userFill, { onlyEmpty: false });
         });
-      } else if (coachCreate && nav.openModal) {
+      } else if (coachCreate && nav.openModal && !opts?.skipCoach) {
         // Re-open path: brief coach nudge when form has no userFill list.
+        // Skip when caller already coached (capability/goto) via skipCoach.
         pushAssistant('Opening the form — fill what’s needed, then save.');
       } else if (spotlightOnly && nav.spotlight && !coached) {
         pushAssistant(
@@ -790,24 +800,57 @@ export function UiPilotProvider({
         }
       };
 
-      if (tryHandleUtterance) {
-        const intercepted = tryHandleUtterance(trimmed);
-        if (intercepted && typeof (intercepted as Promise<unknown>).then === 'function') {
-          void (intercepted as Promise<boolean>).then((handled) => {
+      // Always clear stuck numbered-match traps (or consume a valid pick) first.
+      const runAfterPending = () => {
+        // Prefer typed catalogs / FAQ / context over host entity-open adapters.
+        const preferCore = utteranceMatchesTypedCatalog(
+          {
+            queries: pack.queries,
+            mutations: pack.mutations,
+            tours: pack.tours,
+            search: pack.search,
+            faq: pack.faq,
+          },
+          trimmed
+        );
+        if (!preferCore && tryHandleUtterance) {
+          const intercepted = tryHandleUtterance(trimmed);
+          if (intercepted && typeof (intercepted as Promise<unknown>).then === 'function') {
+            void (intercepted as Promise<boolean>).then((handled) => {
+              if (handled) {
+                conversationPipelineRef.current?.markLastUserOutcome('adapter');
+              } else {
+                runCore();
+              }
+            });
+            return;
+          }
+          if (intercepted) {
+            conversationPipelineRef.current?.markLastUserOutcome('adapter');
+            return;
+          }
+        }
+        runCore();
+      };
+
+      if (clearPendingChoices) {
+        const picked = clearPendingChoices(trimmed);
+        if (picked && typeof (picked as Promise<unknown>).then === 'function') {
+          void (picked as Promise<boolean>).then((handled) => {
             if (handled) {
               conversationPipelineRef.current?.markLastUserOutcome('adapter');
             } else {
-              runCore();
+              runAfterPending();
             }
           });
           return;
         }
-        if (intercepted) {
+        if (picked) {
           conversationPipelineRef.current?.markLastUserOutcome('adapter');
           return;
         }
       }
-      runCore();
+      runAfterPending();
     },
     [
       draftCompilers,
@@ -820,6 +863,7 @@ export function UiPilotProvider({
       features,
       pack,
       parseUtteranceFn,
+      clearPendingChoices,
       pushAssistant,
       tryHandleUtterance,
       resolveQuery,

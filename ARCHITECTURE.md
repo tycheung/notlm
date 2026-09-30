@@ -130,7 +130,11 @@ back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
 ### Laya decision fallback + pack cache (System One)
 
-- **Cold path:** host `fallbackLlm` → BE proxy → **one** Laya sidecar (`uipilotCLI laya install`).
+- **Cold path:** host `fallbackLlm` → BE proxy → **one** Laya sidecar.
+  Sidecar **source of truth:** `packages/ops/templates/laya/` (install with
+  `uipilotCLI laya install <backend-dir> [--product-role "…"]`).
+  FastAPI fallback route template: `packages/ops/templates/fastapi/`.
+  Local Ollama/tunnel helpers: `packages/ops/templates/dev/`.
   Default on (`features.layaDecisionFallback` unset = on). Chat shows **Thinking…** while waiting.
   Optional **secondary LLM** after Laya refuse: wire `secondaryFallbackLlm` and set
   `features.llmFallbackOnLayaMiss: true` (default off). Chain lives in `@uipilot/core`

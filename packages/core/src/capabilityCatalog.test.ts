@@ -3,6 +3,7 @@ import {
   matchQueryEntry,
   looksLikeContextAsk,
   looksLikeExplainLast,
+  utteranceMatchesTypedCatalog,
 } from './capabilityCatalog.js';
 
 describe('capabilityCatalog', () => {
@@ -27,6 +28,18 @@ describe('capabilityCatalog', () => {
 
   it('detects context and explain-last heuristics', () => {
     expect(looksLikeContextAsk("why can't I save this form")).toBe(true);
+    expect(looksLikeContextAsk("what's blocking me")).toBe(true);
+    expect(looksLikeContextAsk('why is save disabled')).toBe(true);
     expect(looksLikeExplainLast('what did you just open')).toBe(true);
+    expect(looksLikeExplainLast('audit that')).toBe(true);
+  });
+
+  it('utteranceMatchesTypedCatalog prefers queries over free text', () => {
+    expect(
+      utteranceMatchesTypedCatalog({ queries }, 'when is my next tournament')
+    ).toBe(true);
+    expect(utteranceMatchesTypedCatalog({ queries }, 'open tournament Alpha')).toBe(
+      false
+    );
   });
 });

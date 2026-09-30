@@ -3,7 +3,7 @@ import { extractMultiSlotPatches } from './discourse.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
-import { looksLikeFaqQuestion, matchFaqEntry, matchGlossaryEntry } from './glossary.js';
+import { looksLikeNavCommand, matchFaqEntry, matchGlossaryEntry } from './glossary.js';
 import { looksLikeSurfaceAsk } from './normalizeConfig.js';
 import { packedUtteranceSummary, parsePackedUtterance, composeMixedIntentReply } from './packUtterance.js';
 import {
@@ -111,7 +111,20 @@ export function dispatchParsed(
   }
 
   if (parsed.rawIntent === 'cancel_all') {
-    setSession(() => clearActionQueue(session));
+    setSession((s) => {
+      const cleared = clearActionQueue(s);
+      const flags = { ...cleared.flags };
+      delete flags.pendingMutation;
+      return {
+        ...cleared,
+        flags,
+        discourse: {
+          ...(cleared.discourse ?? {}),
+          lastChoiceIds: undefined,
+          lastOfferedSteps: undefined,
+        },
+      };
+    });
     pushAssistant('Cleared the queue.');
     return;
   }
@@ -388,17 +401,11 @@ export function dispatchParsed(
   const slotPatches = singleAction?.slots ?? parsed.slotPatches;
 
   // Question-shaped asks: answer product FAQ (with optional step chip) before navigating.
-  // Also prefer a strong FAQ alias hit over a weak mid/low step confirm (e.g. "house averages"
-  // incorrectly soft-matching bowling_center via keyword "house").
+  // Prefer any FAQ catalog hit over step nav unless this is an explicit nav/create command
+  // (compare asks like "tournament vs event" must not fall through to Laya OOD).
   {
     const faqHitEarly = matchFaqEntry(pack.faq ?? [], trimmed);
-    if (
-      faqHitEarly &&
-      (looksLikeFaqQuestion(trimmed) ||
-        parsed.confidence === 'low' ||
-        parsed.confidence === 'mid' ||
-        !targetStep)
-    ) {
+    if (faqHitEarly && !looksLikeNavCommand(trimmed)) {
       const offer = faqHitEarly.stepId
         ? ` If you want, I can take you to “${stepTitle(pack, faqHitEarly.stepId)}”.`
         : '';

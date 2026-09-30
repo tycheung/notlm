@@ -23,11 +23,14 @@ export type LayaInstallOpts = {
   sidecarName?: string;
   /** Default on in generated .env.example */
   enabledByDefault?: boolean;
+  /** Product role string for refuse copy (default: a product coach). */
+  productRole?: string;
 };
 
 /**
  * Scaffold Laya sidecar + systemd unit + env example into a host backend tree.
  * Default enabled for ease of use (UIPILOT_LAYA_ENABLED=1).
+ * Sidecar logic source of truth: packages/ops/templates/laya/sidecar_app.py
  */
 export function installLayaSidecar(opts: LayaInstallOpts): {
   sidecarDir: string;
@@ -35,6 +38,7 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
 } {
   const sidecarName = opts.sidecarName ?? 'uipilot_laya';
   const enabled = opts.enabledByDefault !== false;
+  const productRole = (opts.productRole ?? 'a product coach').trim() || 'a product coach';
   const root = opsTemplatesRoot();
   const sidecarDir = join(opts.targetDir, sidecarName);
   mkdirSync(sidecarDir, { recursive: true });
@@ -62,7 +66,7 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
       'UIPILOT_LAYA_HOST=127.0.0.1',
       'UIPILOT_LAYA_PORT=8765',
       'UIPILOT_LAYA_CHECKPOINT=',
-      'UIPILOT_LAYA_PRODUCT_ROLE=a bowling tournament guide',
+      `UIPILOT_LAYA_PRODUCT_ROLE=${productRole}`,
       '',
     ].join('\n'),
     'utf8'
@@ -79,6 +83,9 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
       'Keep **one** sidecar process — never load Laya inside each Gunicorn worker.',
       'If health fails, return canned repair (degraded mode). Nightly pack/ranker',
       'promotion is CPU-only and must not call `laya train` on the server.',
+      '',
+      'Sidecar `app.py` is installed from `@uipilot/ops` templates — edit the',
+      'template in the uipilot repo, then re-run `uipilotCLI laya install`.',
       '',
     ].join('\n'),
     'utf8'

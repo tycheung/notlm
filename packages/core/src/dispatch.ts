@@ -18,6 +18,7 @@ import {
   tryHandleExplainLast,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
+import { looksLikeNavCommand, matchFaqEntry } from './glossary.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
 import { activeFlowSteps } from './subgraph.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
@@ -119,6 +120,34 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     return (async () => {
       await (capEarly as Promise<boolean>);
     })();
+  }
+
+  // FAQ before parse/ranker/Laya so compare + product facts never OOD-refuse.
+  {
+    const faqHit = matchFaqEntry(live.pack.faq ?? [], trimmed);
+    if (faqHit && !looksLikeNavCommand(trimmed)) {
+      const offer = faqHit.stepId
+        ? ` If you want, I can take you to “${stepTitle(live.pack, faqHit.stepId)}”.`
+        : '';
+      const links =
+        faqHit.href || faqHit.action
+          ? [
+              {
+                label: faqHit.label ?? 'Learn more',
+                href: faqHit.href,
+                action: faqHit.action,
+              },
+            ]
+          : undefined;
+      live.pushAssistant(`${faqHit.text}${offer}`, {
+        choices: faqHit.stepId
+          ? [{ id: faqHit.stepId, label: stepTitle(live.pack, faqHit.stepId) }]
+          : undefined,
+        links,
+        intentKey: faqHit.id,
+      });
+      return;
+    }
   }
 
   const intentPackEarly: IntentParsePack = {

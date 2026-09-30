@@ -3,7 +3,7 @@ import {
   probabilityToConfidence,
   ruleScoreToProbability,
 } from './confidenceBands.js';
-import { looksLikeFaqQuestion, matchFaqEntry } from './glossary.js';
+import { looksLikeNavCommand, matchFaqEntry } from './glossary.js';
 import {
   normalizeUtterance,
   stripOpenVerbPrefix,
@@ -207,8 +207,9 @@ export function parseUtterance(
     buildTypoLexicon(pack)
   );
 
-  // First-class FAQ: question-shaped asks that hit the catalog win at parse time.
-  if (pack.faq?.length && looksLikeFaqQuestion(text)) {
+  // First-class FAQ: catalog hits win at parse time (including compare asks),
+  // unless the utterance is an explicit nav/create command.
+  if (pack.faq?.length && !looksLikeNavCommand(text)) {
     const faqHit = matchFaqEntry(pack.faq, text);
     if (faqHit) {
       return {

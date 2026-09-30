@@ -27,7 +27,8 @@ function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
     links: answer.links,
   });
   if (answer.navigatePath) deps.navigate?.(answer.navigatePath);
-  if (answer.stepId) deps.executeStep(answer.stepId);
+  // skipCoach: avoid a second bubble from executeStep coach/form nudges.
+  if (answer.stepId) deps.executeStep(answer.stepId, { skipCoach: true });
 }
 
 function recordCoachAction(
@@ -211,8 +212,8 @@ export function tryDispatchCapabilityCatalog(
     return (async () => {
       if (!deps.previewMutation) {
         if (mutationHit.stepId) {
-          deps.executeStep(mutationHit.stepId);
           deps.pushAssistant(`Opening “${mutationHit.title}”.`);
+          deps.executeStep(mutationHit.stepId, { skipCoach: true });
           return true;
         }
         deps.pushAssistant(`I can help with “${mutationHit.title}” once it’s wired.`);
@@ -266,7 +267,7 @@ export function tryDispatchCapabilityCatalog(
         return true;
       }
       if (preview.navigatePath) deps.navigate?.(preview.navigatePath);
-      if (preview.stepId) deps.executeStep(preview.stepId);
+      if (preview.stepId) deps.executeStep(preview.stepId, { skipCoach: true });
       deps.pushAssistant(preview.text);
       recordCoachAction(deps, {
         kind: 'mutation',
@@ -299,7 +300,7 @@ export function tryDispatchCapabilityCatalog(
       const line = tourHit.lines?.[0] ?? `Starting “${tourHit.title}”.`;
       deps.pushAssistant(line);
       const first = tourHit.steps[0];
-      if (first) deps.executeStep(first);
+      if (first) deps.executeStep(first, { skipCoach: true });
       recordCoachAction(deps, {
         kind: 'tour',
         id: tourHit.id,
@@ -325,9 +326,9 @@ export function tryDispatchCapabilityCatalog(
         );
         if (ok) return true;
       }
-      if (searchHit.path) deps.navigate?.(searchHit.path);
-      if (searchHit.stepId) deps.executeStep(searchHit.stepId);
       deps.pushAssistant(`Opening “${searchHit.title}”.`);
+      if (searchHit.path) deps.navigate?.(searchHit.path);
+      if (searchHit.stepId) deps.executeStep(searchHit.stepId, { skipCoach: true });
       return true;
     })();
   }

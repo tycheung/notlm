@@ -4,6 +4,7 @@ import {
   invokeChainedDecisionFallback,
   invokeLlmFallback,
   isAutoExecuteTrustedGotoEnabled,
+  isAutoExecutableTrustedGoto,
   isDecisionFallbackEnabled,
   isFallbackRefuse,
   isLearningModeEnabled,
@@ -87,6 +88,40 @@ describe('isTrustedGoto', () => {
     );
     expect(isTrustedGoto({ type: 'goto', stepId: 'nope' }, ['create_list'])).toBe(false);
     expect(isTrustedGoto({ type: 'refuse' }, ['create_list'])).toBe(false);
+  });
+});
+
+describe('isAutoExecutableTrustedGoto', () => {
+  it('requires high-confidence aliases and rejects OOD refuse text', () => {
+    expect(
+      isAutoExecutableTrustedGoto(
+        { type: 'goto', stepId: 'billing_ready' },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.'
+      )
+    ).toBe(false);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['open billing'],
+        },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.'
+      )
+    ).toBe(true);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['tell me a joke'],
+        },
+        ['billing_ready'],
+        'I do not have the ability to help with jokes.'
+      )
+    ).toBe(false);
   });
 });
 

@@ -12,6 +12,20 @@ describe('@uipilot/ops install', () => {
     expect(files.length).toBeGreaterThan(3);
     const env = readFileSync(join(sidecarDir, '.env.example'), 'utf8');
     expect(env).toMatch(/UIPILOT_LAYA_ENABLED=1/);
+    expect(env).toMatch(/UIPILOT_LAYA_PRODUCT_ROLE=a product coach/);
+    const app = readFileSync(join(sidecarDir, 'app.py'), 'utf8');
+    expect(app).toMatch(/queryIds/);
+    expect(app).toMatch(/Borderline OOD/);
+  });
+
+  it('accepts a host product role', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'uipilot-ops-role-'));
+    const { sidecarDir } = installLayaSidecar({
+      targetDir: dir,
+      productRole: 'a bowling tournament guide',
+    });
+    const env = readFileSync(join(sidecarDir, '.env.example'), 'utf8');
+    expect(env).toMatch(/a bowling tournament guide/);
   });
 
   it('scaffolds celery nightly promote', () => {

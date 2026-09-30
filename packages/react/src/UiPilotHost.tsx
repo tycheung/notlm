@@ -38,6 +38,7 @@ export function UiPilotHost({
   onApplyDraft,
   features,
   parseUtteranceFn,
+  clearPendingChoices,
   tryHandleUtterance,
   onCoachEvent,
   missLog,
@@ -70,6 +71,7 @@ export function UiPilotHost({
       onApplyDraft={onApplyDraft}
       features={features}
       parseUtteranceFn={parseUtteranceFn}
+      clearPendingChoices={clearPendingChoices}
       tryHandleUtterance={tryHandleUtterance}
       onCoachEvent={onCoachEvent}
       missLog={missLog}

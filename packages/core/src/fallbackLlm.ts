@@ -112,7 +112,7 @@ export function validateProposedAgainstPack(
 
 /**
  * Trusted goto = type goto with a non-empty stepId present in the pack catalog.
- * Used by hosts to auto-executeStep after decision fallback.
+ * Used by hosts to offer a chip; auto-execute requires {@link isAutoExecutableTrustedGoto}.
  */
 export function isTrustedGoto(
   proposed: MissProposed | undefined,
@@ -120,6 +120,25 @@ export function isTrustedGoto(
 ): proposed is MissProposed & { type: 'goto'; stepId: string } {
   const v = validateProposedAgainstPack(proposed, knownStepIds);
   return v.type === 'goto' && Boolean(v.stepId);
+}
+
+/**
+ * Auto-execute only high-confidence trusted gotos (Laya sets `aliases` when
+ * conf ≥ 0.85). Medium-confidence or refuse-shaped replies must not navigate —
+ * prevents OOD → silent `billing_ready` side-effects.
+ */
+export function isAutoExecutableTrustedGoto(
+  proposed: MissProposed | undefined,
+  knownStepIds: ReadonlySet<string> | readonly string[],
+  reply?: string
+): proposed is MissProposed & { type: 'goto'; stepId: string } {
+  if (!isTrustedGoto(proposed, knownStepIds)) return false;
+  const text = (reply ?? '').trim();
+  if (text && CANNED_OOD_REFUSE_RE.test(text)) return false;
+  if (/\bdo not have the ability\b/i.test(text)) return false;
+  // High-confidence signal from Laya (aliases attached only when conf ≥ 0.85).
+  const aliases = proposed.aliases;
+  return Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0);
 }
 
 /** Auto-execute trusted gotos unless the host sets `autoExecuteTrustedGoto: false`. */

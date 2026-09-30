@@ -35,10 +35,13 @@ export function mergeActionIntoQueue(
 }
 
 export function clearActionQueue(session: SessionSlots): SessionSlots {
+  const flags = { ...session.flags };
+  delete flags.pendingMutation;
   return {
     ...session,
     actionQueue: [],
     pending: null,
+    flags,
   };
 }
 

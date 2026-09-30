@@ -12,7 +12,7 @@ Date: 2026-09-25
 | LabelProvider + Laya labeler + convert/train CLI | PASS | `@uipilot-training/laya-train`, `layaLabeler.test.ts`, `convert.test.ts` |
 | Install scaffold + Celery option | PASS | `@uipilot/ops`, `uipilotCLI laya install` / `celery setup`, `ops/src/index.test.ts` |
 | Ranker = cache retrain; nightly ≠ Laya weight tune | PASS | Docs in ops templates + BE `uipilot_promote.py` |
-| Sidecar + degrade + VB proxy | PASS | `backend/uipilot_laya`, `uipilot_fallback.py`, 7 unit tests |
+| Sidecar + degrade + VB proxy | PASS | `@uipilot/ops` templates → `backend/uipilot_laya`, `uipilot_fallback.py`, 7 unit tests |
 | Full uipilot `npm test` | PASS | 259 tests |
 | uipilot-training laya unit tests | PASS | 5 tests |
 
