@@ -324,6 +324,14 @@
     {
       "from": "navigate toward",
       "to": "go to"
+    },
+    {
+      "from": "head toward",
+      "to": "go to"
+    },
+    {
+      "from": "go toward",
+      "to": "go to"
     }
   ],
   "openVerbPrefixes": [
@@ -434,6 +442,30 @@
     },
     {
       "from": "draft tournament shell",
+      "to": "create a tournament"
+    },
+    {
+      "from": "provision",
+      "to": "create"
+    },
+    {
+      "from": "stand up",
+      "to": "create"
+    },
+    {
+      "from": "shell out",
+      "to": "create"
+    },
+    {
+      "from": "brand-new event",
+      "to": "create an event"
+    },
+    {
+      "from": "insert event",
+      "to": "create an event"
+    },
+    {
+      "from": "launch tournament",
       "to": "create a tournament"
     }
   ]

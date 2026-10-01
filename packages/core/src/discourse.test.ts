@@ -36,12 +36,18 @@ describe('discourse repair', () => {
   it('detects undo without stealing go back meta', () => {
     expect(resolveDiscourse('undo that', {}).kind).toBe('undo');
     expect(resolveDiscourse('hey nevermind', {}).kind).toBe('undo');
+    expect(resolveDiscourse('cancel this', {}).kind).toBe('undo');
+    expect(resolveDiscourse('never mind that', {}).kind).toBe('undo');
     expect(resolveDiscourse('go back', {}).kind).toBe('none');
   });
 
   it('clarifies other-one / number without prior choices', () => {
     expect(resolveDiscourse('the other one', {}).kind).toBe('clarify_choice');
+    expect(resolveDiscourse('the other option', {}).kind).toBe('clarify_choice');
     expect(resolveDiscourse('number 2', {}).kind).toBe('choice_index');
+    expect(resolveDiscourse('pick number 2', { lastChoiceIds: ['a', 'b'] }).kind).toBe(
+      'step'
+    );
     expect(
       resolveDiscourse('number 2', { lastChoiceIds: ['a', 'b'] }).kind
     ).toBe('step');

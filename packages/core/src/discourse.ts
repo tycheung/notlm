@@ -15,13 +15,13 @@ const AGAIN =
 const THAT_STEP =
   /^(that(\s+one)?|the (last|previous) (one|step)|again)[.!?]*$/i;
 const OTHER =
-  /^(the )?other(\s+one)?[.!?]*$/i;
+  /^(the )?other(\s+(one|option))?[.!?]*$/i;
 const THAT_ENTITY =
   /^(that|the same)\s+(list|contact|item|one|tournament|event|center)[.!?]*$/i;
 const UNDO =
-  /^(undo( that)?|never ?mind|scratch that|cancel that)[.!?]*$/i;
+  /^(undo( that)?|never ?mind( that)?|scratch that|cancel (that|this)|never mind that)[.!?]*$/i;
 const CHOICE_INDEX =
-  /^(?:(?:number|option|choice)\s+)?([1-9]|one|two|three|first|second|third)\b/i;
+  /^(?:(?:pick\s+)?(?:number|option|choice)\s+|pick\s+)?([1-9]|one|two|three|first|second|third)\b/i;
 const CHANGE_NAME =
   /^(change|rename|update|fix)\s+(the\s+)?(name|title|list name|contact name)\b/i;
 const CHANGE_NAME_VALUE =

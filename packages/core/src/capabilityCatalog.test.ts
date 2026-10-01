@@ -42,6 +42,8 @@ describe('capabilityCatalog', () => {
     expect(looksLikeExplainLast('what action did you just take')).toBe(true);
     expect(looksLikeExplainLast('recount prior coach step')).toBe(true);
     expect(looksLikeExplainLast('explain the prior navigation')).toBe(true);
+    expect(looksLikeExplainLast('review your previous coach action')).toBe(true);
+    expect(looksLikeContextAsk('why can I not complete the page')).toBe(true);
   });
 
   it('matches mutations with filler words via content coverage', () => {

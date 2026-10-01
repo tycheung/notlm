@@ -83,7 +83,7 @@ export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | nu
 export function looksLikeNavCommand(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n) return false;
-  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it|navigate(\s+to)?|find|search|locate|bring up|pull up|jump to|route me|head over|land me|drop me|get me|launch|move to|switch to|spin up|kick off|scaffold|build|begin|mint|initiate|forge|establish|craft|assemble|steer|warp|surface|reveal|boot|expose)\b/.test(
+  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it|navigate(\s+to)?|find|search|locate|bring up|pull up|jump to|route me|head over|head toward|land me|drop me|get me|launch|move to|switch to|spin up|kick off|scaffold|build|begin|mint|initiate|forge|establish|craft|assemble|steer|warp|surface|reveal|boot|expose|provision|teleport|send me|point me)\b/.test(
     n
   );
 }
