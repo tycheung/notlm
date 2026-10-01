@@ -76,7 +76,9 @@ function stripLeadingPhrases(text: string, phrases: string[] | undefined): strin
  */
 export function normalizeUtterance(text: string, config?: NormalizeConfig | null): string {
   let t = text.trim().toLowerCase().replace(/[’']/g, "'");
-  t = t.replace(/[^a-z0-9'\s:-]/g, ' ').replace(/\s+/g, ' ').trim();
+  t = t.replace(/[^a-z0-9'\s:-]/g, ' ');
+  // Path-style tokens ("enter-scores", "create_event") should match spaced aliases.
+  t = t.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (!config) return t;
 
   t = applyPairs(t, config.replacements);

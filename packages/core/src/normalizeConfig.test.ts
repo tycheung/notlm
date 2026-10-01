@@ -37,6 +37,14 @@ describe('normalizeUtterance', () => {
     expect(normalizeUtterance('what now should i do', cfg)).toBe('what now should i do');
   });
 
+  it('expands path-style hyphens and underscores into spaces', () => {
+    expect(normalizeUtterance('open enter-scores', cfg)).toBe('open enter scores');
+    expect(normalizeUtterance('show actions-needed queue', cfg)).toBe(
+      'show actions needed queue'
+    );
+    expect(normalizeUtterance('open create_event', cfg)).toBe('open create event');
+  });
+
   it('stripSurfaceNoise drops UI nouns for lookup/step variants', () => {
     expect(stripSurfaceNoise('create tournament form', cfg)).toBe('create tournament');
   });
