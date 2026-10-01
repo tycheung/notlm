@@ -7,7 +7,8 @@
 const DISFLUENCY_LEAD =
   /^(uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please|can you|could you|would you|will you)\s+/;
 
-const POLITE_TRAIL = /\s+(please|pls|thanks|thank you|thx)$/;
+const POLITE_TRAIL =
+  /\s+(please|pls|thanks|thank you|thx|briefly|roughly|in one sentence|for me|right now)$/;
 
 /** Light stopwords ignored when scoring alias content coverage. */
 const CONTENT_STOP = new Set([
