@@ -126,38 +126,61 @@ export function looksLikeClearOod(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n) return false;
   if (
-    /\b(bake|baking|recipe|roast|chicken|apple pie|pie|joke|poem|cats?|capital of|world series|politics|movie|film|tonight|2\s*\+\s*2|math problem|xyzzy|plugh|nonsense|gibberish|sonnet|limerick|haiku|sourdough|paperclip|tungsten|parallel park|podcast|mocktail|klingon|merge sort|crypto|tariffs?|iphone)\b/.test(
+    /\b(bake|baking|recipe|roast|chicken|apple pie|pie|joke|poem|cats?|capital of|world series|politics|movie|film|tonight|2\s*\+\s*2|math problem|xyzzy|plugh|plover|nonsense|gibberish|sonnet|limerick|haiku|villanelle|sestina|sourdough|paperclip|tungsten|ethanol|parallel park|podcast|mocktail|smoothie|klingon|merge sort|quicksort|crypto|tariffs?|iphone|tire roadside|temper chocolate|ballpoint|bond yields)\b/.test(
       n
     )
   ) {
     return true;
   }
   if (/\bforget bowling\b/.test(n) || /\bignore bowling\b/.test(n)) return true;
-  if (/\brecommend a (movie|film|show|documentary|podcast)\b/.test(n)) return true;
-  if (/\bsuggest a (documentary|mocktail|cocktail)\b/.test(n)) return true;
+  if (/\brecommend a (movie|film|show|documentary|podcast|magazine)\b/.test(n)) return true;
+  if (/\bsuggest a (documentary|mocktail|cocktail|smoothie)\b/.test(n)) return true;
   if (/\bsolve\b.+\b(in depth|for me)\b/.test(n)) return true;
   if (/\bwrite me a poem\b/.test(n) || /\binvent a limerick\b/.test(n)) return true;
   if (/\bdraft a haiku\b/.test(n) || /\btell me a joke\b/.test(n)) return true;
-  if (/\bcompose a (sonnet|limerick)\b/.test(n)) return true;
+  if (/\bcompose a (sonnet|limerick|villanelle|sestina)\b/.test(n)) return true;
+  if (/\bwrite a villanelle\b/.test(n)) return true;
   if (/\bfitted sheet\b/.test(n) || /\bcaramelize\b/.test(n) || /\bonions\b/.test(n)) {
     return true;
   }
-  if (/\bboiling point\b/.test(n) || /\bmelting point\b/.test(n) || /\bfactorial\b/.test(n)) {
+  if (
+    /\bboiling point\b/.test(n) ||
+    /\bmelting point\b/.test(n) ||
+    /\bfreezing point\b/.test(n) ||
+    /\bfactorial\b/.test(n)
+  ) {
     return true;
   }
-  if (/\binvented the (zipper|paperclip)\b/.test(n) || /\bmoon landing\b/.test(n)) {
+  if (
+    /\binvented the (zipper|paperclip|ballpoint)\b/.test(n) ||
+    /\bmoon landing\b/.test(n) ||
+    /\bfirst email\b/.test(n)
+  ) {
     return true;
   }
-  if (/\bdebate taxes\b/.test(n) || /\bargue tariffs\b/.test(n) || /\bstock market\b/.test(n)) {
+  if (
+    /\bdebate taxes\b/.test(n) ||
+    /\bargue tariffs\b/.test(n) ||
+    /\bdiscuss rents\b/.test(n) ||
+    /\bstock market\b/.test(n)
+  ) {
     return true;
   }
-  if (/\bforecast tomorrow\b/.test(n) || /\bbubble sort\b/.test(n) || /\bmerge sort\b/.test(n)) {
+  if (
+    /\bforecast tomorrow\b/.test(n) ||
+    /\bbubble sort\b/.test(n) ||
+    /\bmerge sort\b/.test(n) ||
+    /\bquicksort\b/.test(n)
+  ) {
     return true;
   }
   if (/\bklingon\b/.test(n) || /\bcocktail recipe\b/.test(n) || /\bmocktail\b/.test(n)) {
     return true;
   }
-  if (/\bcompute\s+\d+\b/.test(n) || /\bpredict next week\b/.test(n)) return true;
-  if (/\bproof sourdough\b/.test(n) || /\bparallel park\b/.test(n)) return true;
+  if (/\bcompute\s+\d+\b/.test(n) || /\bpredict next (week|month)\b/.test(n)) return true;
+  if (/\bproof sourdough\b/.test(n) || /\bparallel park\b/.test(n) || /\bchange a tire\b/.test(n)) {
+    return true;
+  }
+  if (/\btemper chocolate\b/.test(n)) return true;
   return false;
 }
