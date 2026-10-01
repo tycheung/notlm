@@ -56,6 +56,8 @@ export function normalizeAsk(utterance: string): string {
     .toLowerCase()
     .replace(/[’']/g, "'")
     .replace(/[^a-z0-9'\s-]/g, ' ')
+    // Path-style tokens ("actions-needed") match spaced product language.
+    .replace(/[-_]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   for (let i = 0; i < 4; i++) {
@@ -136,8 +138,12 @@ export function looksLikeClearOod(utterance: string): boolean {
   if (/\brecommend a (movie|film|show|documentary|podcast|magazine)\b/.test(n)) return true;
   if (/\bsuggest a (documentary|mocktail|cocktail|smoothie)\b/.test(n)) return true;
   if (/\bsolve\b.+\b(in depth|for me)\b/.test(n)) return true;
-  if (/\bwrite me a poem\b/.test(n) || /\binvent a limerick\b/.test(n)) return true;
-  if (/\bdraft a haiku\b/.test(n) || /\btell me a joke\b/.test(n)) return true;
+  if (/\bwrite me a poem\b/.test(n) || /\binvent a limerick\b/.test(n) || /\bwrite a limerick\b/.test(n)) {
+    return true;
+  }
+  if (/\bdraft a haiku\b/.test(n) || /\bcompose a haiku\b/.test(n) || /\btell me a joke\b/.test(n)) {
+    return true;
+  }
   if (/\bcompose a (sonnet|limerick|villanelle|sestina)\b/.test(n)) return true;
   if (/\bwrite a villanelle\b/.test(n)) return true;
   if (/\bfitted sheet\b/.test(n) || /\bcaramelize\b/.test(n) || /\bonions\b/.test(n)) {

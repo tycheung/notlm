@@ -43,7 +43,13 @@ describe('capabilityCatalog', () => {
     expect(looksLikeExplainLast('recount prior coach step')).toBe(true);
     expect(looksLikeExplainLast('explain the prior navigation')).toBe(true);
     expect(looksLikeExplainLast('review your previous coach action')).toBe(true);
+    expect(looksLikeExplainLast('how that alters the desk')).toBe(true);
+    expect(looksLikeExplainLast('what you modified most recently')).toBe(true);
+    expect(looksLikeExplainLast('plain language last action')).toBe(true);
     expect(looksLikeContextAsk('why can I not complete the page')).toBe(true);
+    expect(looksLikeContextAsk('why next stays grey here')).toBe(true);
+    expect(looksLikeContextAsk('why primary button is dead')).toBe(true);
+    expect(looksLikeContextAsk('incomplete items on this wizard')).toBe(true);
   });
 
   it('matches mutations with filler words via content coverage', () => {

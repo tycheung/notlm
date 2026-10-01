@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { pushRepairAssistant, shouldDeferRepairUi } from './repairUi.js';
 
 describe('repairUi', () => {
-  it('defers unknown/ambiguous when policy on', () => {
+  it('defers unknown when policy on, keeps ambiguous local', () => {
     expect(shouldDeferRepairUi('unknown', { deferDecisionFallbackUi: true })).toBe(true);
-    expect(shouldDeferRepairUi('ambiguous', { deferDecisionFallbackUi: true })).toBe(true);
+    expect(shouldDeferRepairUi('ambiguous', { deferDecisionFallbackUi: true })).toBe(false);
     expect(shouldDeferRepairUi('low_confidence', { deferDecisionFallbackUi: true })).toBe(
       false
     );

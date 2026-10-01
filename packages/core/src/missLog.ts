@@ -58,11 +58,12 @@ export const DEFAULT_MISS_KINDS: readonly MissKind[] = [
   'low_confidence',
 ];
 
-/** Miss kinds that may invoke decision fallback (Laya). Soft mid-confirm stays local. */
-export const DECISION_FALLBACK_MISS_KINDS: readonly MissKind[] = [
-  'unknown',
-  'ambiguous',
-];
+/**
+ * Miss kinds that may invoke decision fallback (Laya).
+ * Keyword collisions stay local — System One always shows step chips.
+ * Soft mid-confirm stays local.
+ */
+export const DECISION_FALLBACK_MISS_KINDS: readonly MissKind[] = ['unknown'];
 
 const MISS_KIND_SET = new Set<string>(DEFAULT_MISS_KINDS);
 const FALLBACK_MISS_KIND_SET = new Set<string>(DECISION_FALLBACK_MISS_KINDS);
