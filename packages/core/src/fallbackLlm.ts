@@ -6,8 +6,16 @@ import {
   looksLikeClearOod,
   normalizeAsk,
 } from './askNormalize.js';
+import {
+  looksLikeContextAsk,
+  looksLikeExplainLast,
+} from './capabilityCatalog.js';
+import { looksLikeFaqQuestion } from './glossary.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
 import type { AssistantFeatures } from './types.js';
+
+const GOTO_NAV_RE =
+  /\b(go|open|take|navigate|show|find|locate|search|bring|jump|route|head|pull|switch|land|drop|get|launch|move|hop)\b/i;
 
 export type LlmFallbackRequest = {
   text: string;
@@ -162,7 +170,9 @@ function gotoAgreesWithUtterance(
 ): boolean {
   const needle = normalizeAsk(userText);
   const userDomain = contentTokens(needle).filter((t) => GOTO_DOMAIN.has(t));
-  if (!userDomain.length) return true;
+  // No domain words: only allow when the user clearly asked to navigate.
+  // Prevents context/FAQ/OOD from default-allowing a Laya goto chip.
+  if (!userDomain.length) return GOTO_NAV_RE.test(userText);
   const stepToks = contentTokens(proposed.stepId.replace(/_/g, ' '));
   if (userDomain.some((t) => stepToks.includes(t) || proposed.stepId.includes(t))) {
     return true;
@@ -213,6 +223,9 @@ export function shouldSurfaceTrustedGoto(
   userText: string
 ): boolean {
   if (looksLikeClearOod(userText)) return false;
+  if (looksLikeContextAsk(userText)) return false;
+  if (looksLikeExplainLast(userText)) return false;
+  if (looksLikeFaqQuestion(userText)) return false;
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
   if (!gotoAgreesWithUtterance(userText, proposed)) return false;
   const text = (reply ?? '').trim();
@@ -223,7 +236,7 @@ export function shouldSurfaceTrustedGoto(
     return true;
   }
   // Medium-confidence goto chip only when the user clearly asked to navigate.
-  return /\b(go|open|take|navigate|show|find|locate|search)\b/i.test(userText);
+  return GOTO_NAV_RE.test(userText);
 }
 
 /** Default System One refuse when Laya would otherwise offer a spurious goto. */

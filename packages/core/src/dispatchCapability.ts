@@ -6,6 +6,7 @@ import {
   looksLikeConfirmNo,
   looksLikeConfirmYes,
   looksLikeContextAsk,
+  looksLikeDeskHandoff,
   looksLikeExplainLast,
   matchMutationEntry,
   matchQueryEntry,
@@ -19,6 +20,7 @@ import {
 } from './capabilityCatalog.js';
 import { emitCoachEvent } from './coachEvents.js';
 import type { DispatchDeps } from './dispatchDeps.js';
+import { normalizeUtterance } from './normalizeConfig.js';
 import { pushRepairAssistant } from './repairUi.js';
 
 function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
@@ -161,9 +163,18 @@ export function tryDispatchCapabilityCatalog(
   const mutations = (deps.pack.mutations ?? []) as MutationDef[];
   const tours = (deps.pack.tours ?? []) as TourDef[];
   const search = (deps.pack.search ?? []) as SearchSurfaceDef[];
+  // Apply pack normalize (create/open verb aliases) before catalog match.
+  const matchText = normalizeUtterance(trimmed, deps.pack.normalize) || trimmed;
+
+  const deskForce =
+    !opts?.queryId &&
+    looksLikeDeskHandoff(trimmed) &&
+    queries.find((q) => q.id === 'td.desk_summary' || /desk|handoff|standup/i.test(q.id));
 
   const queryHit =
     (opts?.queryId && queries.find((q) => q.id === opts.queryId)) ||
+    deskForce ||
+    matchQueryEntry(queries, matchText) ||
     matchQueryEntry(queries, trimmed);
   if (queryHit && deps.resolveQuery) {
     return (async () => {
@@ -207,6 +218,7 @@ export function tryDispatchCapabilityCatalog(
 
   const mutationHit =
     (opts?.mutationId && mutations.find((m) => m.id === opts.mutationId)) ||
+    matchMutationEntry(mutations, matchText) ||
     matchMutationEntry(mutations, trimmed);
   if (mutationHit) {
     return (async () => {
@@ -280,6 +292,7 @@ export function tryDispatchCapabilityCatalog(
 
   const tourHit =
     (opts?.tourId && tours.find((t) => t.id === opts.tourId)) ||
+    matchTourEntry(tours, matchText) ||
     matchTourEntry(tours, trimmed);
   if (tourHit) {
     return (async () => {
@@ -312,6 +325,7 @@ export function tryDispatchCapabilityCatalog(
 
   const searchHit =
     (opts?.searchId && search.find((s) => s.id === opts.searchId)) ||
+    matchSearchEntry(search, matchText) ||
     matchSearchEntry(search, trimmed);
   if (searchHit) {
     return (async () => {

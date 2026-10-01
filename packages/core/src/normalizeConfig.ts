@@ -80,6 +80,7 @@ export function normalizeUtterance(text: string, config?: NormalizeConfig | null
   if (!config) return t;
 
   t = applyPairs(t, config.replacements);
+  t = applyPairs(t, config.createVerbAliases);
   t = applyPairs(t, config.openVerbAliases);
   t = stripTrailingPhrases(t, config.trailingFillers);
   t = stripLeadingPhrases(t, config.leadingPoliteness);

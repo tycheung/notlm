@@ -11,6 +11,7 @@ const cfg: NormalizeConfig = {
   trailingFillers: ['for me', 'please', 'now'],
   leadingPoliteness: ['can you', 'could you'],
   openVerbAliases: [{ from: 'pull up', to: 'open' }],
+  createVerbAliases: [{ from: 'spin up', to: 'create' }],
 };
 
 describe('normalizeUtterance', () => {
@@ -20,6 +21,11 @@ describe('normalizeUtterance', () => {
     );
   });
 
+  it('maps create-verb paraphrases before catalog match', () => {
+    expect(normalizeUtterance('spin up a tournament named midnight', cfg)).toBe(
+      'create a tournament named midnight'
+    );
+  });
   it('keeps wizard so next-wizard-step is not collapsed to next-step', () => {
     expect(normalizeUtterance('next wizard step', cfg)).toBe('next wizard step');
   });

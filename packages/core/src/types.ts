@@ -456,6 +456,8 @@ export type NormalizeConfig = {
   trailingFillers?: string[];
   leadingPoliteness?: string[];
   openVerbAliases?: NormalizePhrasePair[];
+  /** Map create/start paraphrases onto catalog verbs (spin up → create). */
+  createVerbAliases?: NormalizePhrasePair[];
   openVerbPrefixes?: string[];
 };
 

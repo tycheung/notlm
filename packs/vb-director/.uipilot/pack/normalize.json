@@ -1,44 +1,165 @@
 {
   "replacements": [
-    { "from": "tourney", "to": "tournament" },
-    { "from": "tornament", "to": "tournament" },
-    { "from": "tournamnt", "to": "tournament" },
-    { "from": "tournamnet", "to": "tournament" },
-    { "from": "creat", "to": "create" },
-    { "from": "crate", "to": "create" },
-    { "from": "creeate", "to": "create" },
-    { "from": "particpants", "to": "participants" },
-    { "from": "particiants", "to": "participants" },
-    { "from": "participents", "to": "participants" },
-    { "from": "bowlrs", "to": "bowlers" },
-    { "from": "squadz", "to": "squads" },
-    { "from": "sqauds", "to": "squads" },
-    { "from": "sqaud", "to": "squad" },
-    { "from": "lain", "to": "lane" },
-    { "from": "lains", "to": "lanes" },
-    { "from": "scors", "to": "scores" },
-    { "from": "scorin", "to": "scoring" },
-    { "from": "assgin", "to": "assign" },
-    { "from": "assgn", "to": "assign" },
-    { "from": "opn", "to": "open" },
-    { "from": "kut", "to": "cut" },
-    { "from": "teh", "to": "the" },
-    { "from": "steplader", "to": "stepladder" },
-    { "from": "reprt", "to": "report" },
-    { "from": "sideaction", "to": "side action" },
-    { "from": "side-action", "to": "side action" },
-    { "from": "lockin", "to": "lock in" },
-    { "from": "lock-in", "to": "lock in" },
-    { "from": "centre", "to": "center" },
-    { "from": "subscripshin", "to": "subscription" },
-    { "from": "wat", "to": "what" },
-    { "from": "u", "to": "you" },
-    { "from": "ya", "to": "you" },
-    { "from": "im", "to": "i'm" },
-    { "from": "idk", "to": "i do not know" },
-    { "from": "pls", "to": "please" },
-    { "from": "plz", "to": "please" },
-    { "from": "tho", "to": "though" }
+    {
+      "from": "tourney",
+      "to": "tournament"
+    },
+    {
+      "from": "tornament",
+      "to": "tournament"
+    },
+    {
+      "from": "tournamnt",
+      "to": "tournament"
+    },
+    {
+      "from": "tournamnet",
+      "to": "tournament"
+    },
+    {
+      "from": "creat",
+      "to": "create"
+    },
+    {
+      "from": "crate",
+      "to": "create"
+    },
+    {
+      "from": "creeate",
+      "to": "create"
+    },
+    {
+      "from": "particpants",
+      "to": "participants"
+    },
+    {
+      "from": "particiants",
+      "to": "participants"
+    },
+    {
+      "from": "participents",
+      "to": "participants"
+    },
+    {
+      "from": "bowlrs",
+      "to": "bowlers"
+    },
+    {
+      "from": "squadz",
+      "to": "squads"
+    },
+    {
+      "from": "sqauds",
+      "to": "squads"
+    },
+    {
+      "from": "sqaud",
+      "to": "squad"
+    },
+    {
+      "from": "lain",
+      "to": "lane"
+    },
+    {
+      "from": "lains",
+      "to": "lanes"
+    },
+    {
+      "from": "scors",
+      "to": "scores"
+    },
+    {
+      "from": "scorin",
+      "to": "scoring"
+    },
+    {
+      "from": "assgin",
+      "to": "assign"
+    },
+    {
+      "from": "assgn",
+      "to": "assign"
+    },
+    {
+      "from": "opn",
+      "to": "open"
+    },
+    {
+      "from": "kut",
+      "to": "cut"
+    },
+    {
+      "from": "teh",
+      "to": "the"
+    },
+    {
+      "from": "steplader",
+      "to": "stepladder"
+    },
+    {
+      "from": "reprt",
+      "to": "report"
+    },
+    {
+      "from": "sideaction",
+      "to": "side action"
+    },
+    {
+      "from": "side-action",
+      "to": "side action"
+    },
+    {
+      "from": "lockin",
+      "to": "lock in"
+    },
+    {
+      "from": "lock-in",
+      "to": "lock in"
+    },
+    {
+      "from": "centre",
+      "to": "center"
+    },
+    {
+      "from": "subscripshin",
+      "to": "subscription"
+    },
+    {
+      "from": "wat",
+      "to": "what"
+    },
+    {
+      "from": "u",
+      "to": "you"
+    },
+    {
+      "from": "ya",
+      "to": "you"
+    },
+    {
+      "from": "im",
+      "to": "i'm"
+    },
+    {
+      "from": "idk",
+      "to": "i do not know"
+    },
+    {
+      "from": "pls",
+      "to": "please"
+    },
+    {
+      "from": "plz",
+      "to": "please"
+    },
+    {
+      "from": "tho",
+      "to": "though"
+    },
+    {
+      "from": "greyed",
+      "to": "grayed"
+    }
   ],
   "surfaceWords": [
     "form",
@@ -88,12 +209,70 @@
     "will you"
   ],
   "openVerbAliases": [
-    { "from": "pull up", "to": "open" },
-    { "from": "bring up", "to": "open" },
-    { "from": "fire up", "to": "open" },
-    { "from": "hop into", "to": "open" },
-    { "from": "launch", "to": "open" },
-    { "from": "take me to", "to": "go to" }
+    {
+      "from": "pull up",
+      "to": "open"
+    },
+    {
+      "from": "bring up",
+      "to": "open"
+    },
+    {
+      "from": "fire up",
+      "to": "open"
+    },
+    {
+      "from": "hop into",
+      "to": "open"
+    },
+    {
+      "from": "launch",
+      "to": "open"
+    },
+    {
+      "from": "take me to",
+      "to": "go to"
+    },
+    {
+      "from": "take me into",
+      "to": "go to"
+    },
+    {
+      "from": "jump to",
+      "to": "go to"
+    },
+    {
+      "from": "route me to",
+      "to": "go to"
+    },
+    {
+      "from": "head over to",
+      "to": "go to"
+    },
+    {
+      "from": "land me on",
+      "to": "go to"
+    },
+    {
+      "from": "drop me into",
+      "to": "go to"
+    },
+    {
+      "from": "get me to",
+      "to": "go to"
+    },
+    {
+      "from": "move to",
+      "to": "go to"
+    },
+    {
+      "from": "switch to",
+      "to": "go to"
+    },
+    {
+      "from": "bring me to",
+      "to": "go to"
+    }
   ],
   "openVerbPrefixes": [
     "open",
@@ -102,6 +281,72 @@
     "find",
     "pull up",
     "bring up",
-    "launch"
+    "launch",
+    "jump to",
+    "route me",
+    "head over",
+    "land me",
+    "drop me",
+    "get me",
+    "move to",
+    "switch to"
+  ],
+  "createVerbAliases": [
+    {
+      "from": "spin up",
+      "to": "create"
+    },
+    {
+      "from": "kick off",
+      "to": "create"
+    },
+    {
+      "from": "scaffold",
+      "to": "create"
+    },
+    {
+      "from": "build a",
+      "to": "create a"
+    },
+    {
+      "from": "begin tournament",
+      "to": "create tournament"
+    },
+    {
+      "from": "begin a tournament",
+      "to": "create a tournament"
+    },
+    {
+      "from": "open a tournament draft",
+      "to": "create a tournament"
+    },
+    {
+      "from": "new event",
+      "to": "create an event"
+    },
+    {
+      "from": "add event",
+      "to": "create an event"
+    },
+    {
+      "from": "titled",
+      "to": "named"
+    },
+    {
+      "from": "labeled",
+      "to": "named"
+    },
+    {
+      "from": "create tournament",
+      "to": "create a tournament"
+    },
+    {
+      "from": "start tournament",
+      "to": "start a tournament"
+    },
+    {
+      "from": "make tournament",
+      "to": "make a tournament"
+    }
   ]
 }

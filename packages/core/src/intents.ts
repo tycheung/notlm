@@ -80,7 +80,8 @@ const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
   {
     intent: 'lookup_participant',
     patterns: [
-      /\bwhere is\b/i,
+      // Avoid matching schedule asks ("where is my next tournament").
+      /\bwhere is\b.+\b(bowler|participant|player|they|he|she|their)\b/i,
       /\bshow (?:me )?(?:their|his|her) scores\b/i,
       /\bwhat average\b/i,
       /\btheir average\b/i,

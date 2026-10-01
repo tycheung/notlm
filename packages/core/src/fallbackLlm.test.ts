@@ -172,6 +172,14 @@ describe('shouldSurfaceTrustedGoto', () => {
         'navigate to subscription'
       )
     ).toBe(true);
+    expect(
+      shouldSurfaceTrustedGoto(
+        { type: 'goto', stepId: 'billing_ready', aliases: ['open billing'] },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'why is continue greyed out'
+      )
+    ).toBe(false);
   });
 });
 

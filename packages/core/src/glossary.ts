@@ -1,6 +1,6 @@
 import type { FaqEntry, GlossaryEntry } from './types.js';
 import {
-  aliasContentCoverage,
+  bestAliasContentCoverage,
   contentTokens,
   normalizeAsk,
 } from './askNormalize.js';
@@ -39,7 +39,7 @@ function matchAliasCatalog<T extends AliasCatalog>(
       const looseMulti =
         label.includes(' ') && (needle.includes(label) || label.includes(needle));
       const coverage = label.includes(' ')
-        ? aliasContentCoverage(needle, label)
+        ? bestAliasContentCoverage(needle, label)
         : 0;
       const labelTokens = contentTokens(label);
       const covered =
@@ -83,7 +83,7 @@ export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | nu
 export function looksLikeNavCommand(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n) return false;
-  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it|navigate(\s+to)?|find|search|locate)\b/.test(
+  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it|navigate(\s+to)?|find|search|locate|bring up|pull up|jump to|route me|head over|land me|drop me|get me|launch|move to|switch to|spin up|kick off|scaffold|build|begin)\b/.test(
     n
   );
 }
@@ -93,7 +93,7 @@ export function looksLikeFaqQuestion(utterance: string): boolean {
   if (!n) return false;
   if (looksLikeNavCommand(n)) return false;
   if (
-    /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand|compare|difference)\b/.test(
+    /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand|compare|difference|contrast|break down|pick)\b/.test(
       n
     )
   ) {
@@ -103,11 +103,16 @@ export function looksLikeFaqQuestion(utterance: string): boolean {
   return (
     /\b(vs|versus)\b/.test(n) ||
     /\bdifference between\b/.test(n) ||
-    /\bcompared to\b/.test(n) ||
+    /\bcompared (to|with)\b/.test(n) ||
     /\bcompare\b/.test(n) ||
+    /\bcontrast\b/.test(n) ||
+    /\btradeoffs?\b/.test(n) ||
     /\bwhat is better\b/.test(n) ||
+    /\bbetter fit\b/.test(n) ||
     /\bshould i (run|use|create)\b/.test(n) ||
-    /\b(how are|how do)\b.+\b(relate|different|differ)\b/.test(n)
+    /\b(how are|how do)\b.+\b(relate|different|differ)\b/.test(n) ||
+    /\bor\b.+\bwhich\b/.test(n) ||
+    /\bwhich fits\b/.test(n)
   );
 }
 

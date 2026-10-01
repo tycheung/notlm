@@ -4,6 +4,7 @@
  */
 import {
   aliasContentCoverage,
+  bestAliasContentCoverage,
   contentTokens,
   normalizeAsk,
 } from './askNormalize.js';
@@ -124,7 +125,7 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
       const looseMulti =
         label.includes(' ') && (needle.includes(label) || label.includes(needle));
       const coverage = label.includes(' ')
-        ? aliasContentCoverage(needle, label)
+        ? bestAliasContentCoverage(needle, label)
         : 0;
       // Require ≥2 content tokens so short FAQ aliases ("who are you"→"who")
       // cannot swallow clear OOD asks like "who won the world series".
@@ -133,11 +134,19 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
         coverage >= ALIAS_COVERAGE_MIN &&
         labelTokens.length >= 2 &&
         Math.round(coverage * labelTokens.length) >= 2;
-      if (boundary || looseMulti || covered) {
+      // Mutation / create prefix: "spin up a tournament named X" hits alias "...named".
+      const prefixHit =
+        label.includes(' ') &&
+        (needle === label ||
+          needle.startsWith(`${label} `) ||
+          (/\b(named|called|titled|labeled|for)\s*$/.test(label) &&
+            needle.startsWith(label)));
+      if (boundary || looseMulti || covered || prefixHit) {
         const score =
           label.length +
           (boundary ? 50 : 0) +
-          (covered ? Math.round(coverage * 40) : 0);
+          (covered ? Math.round(coverage * 40) : 0) +
+          (prefixHit ? 60 : 0);
         if (score > bestScore) {
           best = entry;
           bestScore = score;
@@ -185,10 +194,10 @@ export function looksLikeConfirmNo(text: string): boolean {
 export function looksLikeExplainLast(text: string): boolean {
   const n = normalizeAsk(text);
   return (
-    /\b(what did you (just )?(do|open|change)|why did you|explain (that|what you did|last)|what would that change)\b/.test(
+    /\b(what did you (just )?(do|open|change|take|alter)|why did you|explain (that|what you did|last|the prior)|what would that change)\b/.test(
       n
     ) ||
-    /\b(audit( that)?|audit the last|explain your last|explain last|recount your last|say what you opened|what was that action|recap (that|the last))\b/.test(
+    /\b(audit( that)?|audit your previous|audit the last|explain your last|explain last|recount (your )?last|say what you opened|what was that action|recap (that|the last|the screen)|summarize last coach|name the last thing|replay your last|coach action audit|last action in plain|what did the last goto|remind me what that|how would that change)\b/.test(
       n
     ) ||
     n === 'what was that' ||
@@ -202,16 +211,29 @@ export function looksLikeExplainLast(text: string): boolean {
 export function looksLikeContextAsk(text: string): boolean {
   const n = normalizeAsk(text);
   return (
-    /\b(why can'?t i (save|submit|continue)|what'?s missing|what do i need|why is (this|the) (blocked|disabled)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
+    /\b(why can'?t i (save|submit|continue|finish)|what'?s missing|what do i need|why is (this|the|continue|next|the cta) (blocked|disabled|greyed|grayed|inactive)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
       n
     ) ||
-    /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete)|why won'?t (it|this|save|submit))\b/.test(
+    /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete|greyed|grayed)|why won'?t (it|this|save|submit|the form))\b/.test(
       n
     ) ||
-    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step))\b/.test(
+    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step|director step))\b/.test(
       n
     ) ||
-    /\b(form validation( help)?|what am i missing|what'?s required on this (page|form|screen)|blocked step help)\b/.test(
+    /\b(form validation( help)?|what am i missing|what'?s required on this (page|form|screen)|blocked step help|what fields are still empty|show me blockers|validation errors|what stops me from saving|page requirements|what must i fill|help me unblock|what required inputs)\b/.test(
+      n
+    )
+  );
+}
+
+/** Desk / standup handoff phrasing (routes to query catalog when present). */
+export function looksLikeDeskHandoff(text: string): boolean {
+  const n = normalizeAsk(text);
+  return (
+    /\b(desk (handoff|summary|briefing)|standup|counter (handoff|staff|standup)|front desk|shift (summary|change)|brief (the )?desk|brief counter|handoff (note|paragraph|summary)|notes the desk|tell the desk)\b/.test(
+      n
+    ) ||
+    /\b(write a (short )?desk|compact desk summary|copy-?ready front desk|standup (bullets|blurb|draft)|pending (chores|plus today|and today))\b/.test(
       n
     )
   );
