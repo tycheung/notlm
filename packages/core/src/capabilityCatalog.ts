@@ -194,10 +194,10 @@ export function looksLikeConfirmNo(text: string): boolean {
 export function looksLikeExplainLast(text: string): boolean {
   const n = normalizeAsk(text);
   return (
-    /\b(what did you (just )?(do|open|change|take|alter)|why did you|explain (that|what you did|last|the prior)|what would that change)\b/.test(
+    /\b(what did you (just )?(do|open|change|take|alter|modify)|what action did you|which coach move|why did you|explain (that|what you did|last|the prior|the prior navigation)|what would that change|how would that change|how does that alter|reason you opened)\b/.test(
       n
     ) ||
-    /\b(audit( that)?|audit your previous|audit the last|explain your last|explain last|recount (your )?last|say what you opened|what was that action|recap (that|the last|the screen)|summarize last coach|name the last thing|replay your last|coach action audit|last action in plain|what did the last goto|remind me what that|how would that change)\b/.test(
+    /\b(audit( that)?|audit your previous|audit the last|coach audit|explain your last|explain last|recount (your )?last|recount prior|narrate prior|say what you opened|what was that action|recap (that|the last|the screen)|restate the screen|summarize last coach|capsule of last|name the last thing|identify the last|replay your last|playback your last|coach action audit|last action in plain|plain-?language last|what did the last goto|effect of the last goto|remind me what that|jog my memory|prior (coach|navigation)|audit trail|clarify the prior)\b/.test(
       n
     ) ||
     n === 'what was that' ||
@@ -211,16 +211,16 @@ export function looksLikeExplainLast(text: string): boolean {
 export function looksLikeContextAsk(text: string): boolean {
   const n = normalizeAsk(text);
   return (
-    /\b(why can'?t i (save|submit|continue|finish)|what'?s missing|what do i need|why is (this|the|continue|next|the cta) (blocked|disabled|greyed|grayed|inactive)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
+    /\b(why can'?t i (save|submit|continue|finish|complete)|what'?s missing|what do i need|why is (this|the|continue|next|the cta|the primary cta|the continue control) (blocked|disabled|greyed|grayed|inactive|muted|dead)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
       n
     ) ||
-    /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete|greyed|grayed)|why won'?t (it|this|save|submit|the form))\b/.test(
+    /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|what remains incomplete|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete|greyed|grayed|muted)|why (won'?t|does) (it|this|save|submit|the form|submit refuse))\b/.test(
       n
     ) ||
-    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step|director step))\b/.test(
+    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step|director step)|director step incomplete|list blockers|which inputs remain|required blanks|remaining page obligations|fields i must complete)\b/.test(
       n
     ) ||
-    /\b(form validation( help)?|what am i missing|what'?s required on this (page|form|screen)|blocked step help|what fields are still empty|show me blockers|validation errors|what stops me from saving|page requirements|what must i fill|help me unblock|what required inputs)\b/.test(
+    /\b(form validation( help| messages)?|what am i missing|what'?s required on this (page|form|screen)|blocked step help|what fields are still empty|show me blockers|validation errors|what stops me from saving|what prevents a successful save|page requirements|what must i fill|help me unblock|unblock this checklist|what required inputs)\b/.test(
       n
     )
   );
@@ -230,10 +230,10 @@ export function looksLikeContextAsk(text: string): boolean {
 export function looksLikeDeskHandoff(text: string): boolean {
   const n = normalizeAsk(text);
   return (
-    /\b(desk (handoff|summary|briefing)|standup|counter (handoff|staff|standup)|front desk|shift (summary|change)|brief (the )?desk|brief counter|handoff (note|paragraph|summary)|notes the desk|tell the desk)\b/.test(
+    /\b(desk (handoff|summary|briefing)|standup|counter (handoff|staff|standup|crew|shift)|front desk|shift (summary|change)|brief (the )?desk|brief (the )?counter|handoff (note|paragraph|summary)|notes the desk|tell the desk|tell staff)\b/.test(
       n
     ) ||
-    /\b(write a (short )?desk|compact desk summary|copy-?ready front desk|standup (bullets|blurb|draft)|pending (chores|plus today|and today))\b/.test(
+    /\b(write a (short )?desk|compose a counter|compact desk summary|tight desk summary|copy-?ready front desk|pasteable front desk|standup (bullets|blurb|draft|note)|pending (chores|plus today|and today)|aloud-ready desk|shift-change)\b/.test(
       n
     )
   );

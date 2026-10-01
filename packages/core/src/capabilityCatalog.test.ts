@@ -39,6 +39,9 @@ describe('capabilityCatalog', () => {
     expect(looksLikeExplainLast('audit that')).toBe(true);
     expect(looksLikeExplainLast('explain last')).toBe(true);
     expect(looksLikeExplainLast('recount your last action')).toBe(true);
+    expect(looksLikeExplainLast('what action did you just take')).toBe(true);
+    expect(looksLikeExplainLast('recount prior coach step')).toBe(true);
+    expect(looksLikeExplainLast('explain the prior navigation')).toBe(true);
   });
 
   it('matches mutations with filler words via content coverage', () => {

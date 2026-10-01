@@ -272,6 +272,58 @@
     {
       "from": "bring me to",
       "to": "go to"
+    },
+    {
+      "from": "steer me to",
+      "to": "go to"
+    },
+    {
+      "from": "warp to",
+      "to": "go to"
+    },
+    {
+      "from": "surface",
+      "to": "open"
+    },
+    {
+      "from": "reveal",
+      "to": "open"
+    },
+    {
+      "from": "flip to",
+      "to": "go to"
+    },
+    {
+      "from": "park me on",
+      "to": "go to"
+    },
+    {
+      "from": "seat me in",
+      "to": "go to"
+    },
+    {
+      "from": "raise the",
+      "to": "open"
+    },
+    {
+      "from": "usher me to",
+      "to": "go to"
+    },
+    {
+      "from": "boot",
+      "to": "open"
+    },
+    {
+      "from": "shift into",
+      "to": "go to"
+    },
+    {
+      "from": "expose",
+      "to": "open"
+    },
+    {
+      "from": "navigate toward",
+      "to": "go to"
     }
   ],
   "openVerbPrefixes": [
@@ -347,6 +399,42 @@
     {
       "from": "make tournament",
       "to": "make a tournament"
+    },
+    {
+      "from": "mint",
+      "to": "create"
+    },
+    {
+      "from": "initiate",
+      "to": "create"
+    },
+    {
+      "from": "forge",
+      "to": "create"
+    },
+    {
+      "from": "establish",
+      "to": "create"
+    },
+    {
+      "from": "craft",
+      "to": "create"
+    },
+    {
+      "from": "assemble",
+      "to": "create"
+    },
+    {
+      "from": "append event",
+      "to": "create an event"
+    },
+    {
+      "from": "fresh event",
+      "to": "create an event"
+    },
+    {
+      "from": "draft tournament shell",
+      "to": "create a tournament"
     }
   ]
 }
