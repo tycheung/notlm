@@ -146,7 +146,7 @@ export function dispatchParsed(
   });
 
   if (
-    isConceptualQuestion(trimmed) &&
+    isConceptualQuestion(trimmed, pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens) &&
     (packed.actions.length > 0 || packed.oodSegments.length > 0)
   ) {
     emitCoachEvent(deps, {
@@ -163,7 +163,13 @@ export function dispatchParsed(
   // Pure or partial OOD with canned entity-aware refuse.
   if (packed.oodSegments.length > 0) {
     // Conceptual FAQ-style asks must not queue spurious step hits from shared tokens.
-    if (isConceptualQuestion(trimmed) && packed.actions.length > 0) {
+    if (
+      isConceptualQuestion(
+        trimmed,
+        pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens
+      ) &&
+      packed.actions.length > 0
+    ) {
       emitCoachEvent(deps, {
         type: 'repair',
         kind: 'unknown',
@@ -182,7 +188,12 @@ export function dispatchParsed(
       pack.productRole
     );
     if (mixed) {
-      if (isConceptualQuestion(trimmed)) {
+      if (
+        isConceptualQuestion(
+          trimmed,
+          pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens
+        )
+      ) {
         emitCoachEvent(deps, {
           type: 'repair',
           kind: 'unknown',

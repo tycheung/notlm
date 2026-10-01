@@ -291,7 +291,7 @@ describe('invokeChainedDecisionFallback', () => {
     const result = await invokeChainedDecisionFallback({
       primary: async () => ({
         reply:
-          'No — I am a bowling tournament guide, and I do not have the ability to help with tournaments events.',
+          'No — I am a product assistant, and I do not have the ability to help with tournaments events.',
         proposed: { type: 'meta' },
         provider: { id: 'laya', model: 'ckpt' },
       }),

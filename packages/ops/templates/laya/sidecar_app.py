@@ -25,7 +25,7 @@ app = FastAPI(title="uipilot-laya", version="0.1.0")
 
 _AGENT = None
 _CHECKPOINT = os.getenv("UIPILOT_LAYA_CHECKPOINT", "").strip()
-_PRODUCT_ROLE = os.getenv("UIPILOT_LAYA_PRODUCT_ROLE", "a product coach").strip()
+_PRODUCT_ROLE = os.getenv("UIPILOT_LAYA_PRODUCT_ROLE", "a product assistant").strip()
 _ENABLED = os.getenv("UIPILOT_LAYA_ENABLED", "1").strip() not in ("0", "false", "False")
 
 _DISFLUENCY = re.compile(

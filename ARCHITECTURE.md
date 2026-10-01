@@ -31,16 +31,21 @@ CLI: init / validate / intents check / ranker check (thin gates only)
 
 Prefer extract/split over growing god files.
 
-## Runtime data flow
+## Runtime data flow (smart cache → Laya → LLM)
 
 ```text
 User utterance / palette pick
   → react Host
-  → core.dispatch(packJson, session, ctx, utterance)
-  → nav resolve from controls.json
+  → core.dispatch(packJson, session, ctx, utterance)   # pack smart cache
+  → on miss: host fallbackLlm → Laya /decide → optional LLM
+  → nav resolve from controls.json (optional coaching pattern)
   → host.navigate + optional spotlight/flash
   → host save → notifyStepCompleted → queue advance
 ```
+
+UiPilot is a **generic SPA chatbot frontline**, not a “product coach” product.
+Coaching (`data-guide-id`, spotlight, `coachMessage`) is one optional pack pattern.
+Domain words and `productRole` live in host pack JSON only.
 
 ## Host folder
 
@@ -84,15 +89,16 @@ User utterance / palette pick
 
 Core evaluates these against `RuntimeContext.data` from the host’s `getContext()`.
 
-## Coaching DOM / actions
+## Coaching pattern (optional DOM / actions)
 
 Default attribute: `data-guide-id="<id>"` (set in `config.json` → `guideAttr`).  
-Spotlight and flash **only** query this contract.
+Spotlight and flash **only** query this contract. This is an optional **guide pattern**,
+not the assistant’s defining product surface.
 
 **UI-actions + host-injected typed reads/writes/tours:** `executeStep` resolves to
 path / modal / spotlight / prefill. Pack `queries` / `mutations` / `tours` / `search`
 are matched in core; hosts inject `resolveQuery` / `previewMutation` / `executeMutation`
-/ `runTour` / `openSearchHit`. The coach must not import host `*API` clients or issue
+/ `runTour` / `openSearchHit`. The runtime must not import host `*API` clients or issue
 domain HTTP. Playwright demos stub those host deps.
 **click** annotated controls.
 

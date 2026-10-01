@@ -137,39 +137,39 @@ export function isTrustedGoto(
   return v.type === 'goto' && Boolean(v.stepId);
 }
 
-/** Domain tokens that must agree with Laya goto aliases / step id. */
-const GOTO_DOMAIN = new Set([
-  'scoring',
-  'score',
-  'scores',
-  'subscription',
+/** Domain tokens that must agree with Laya goto aliases / step id (pack-extensible). */
+const DEFAULT_GOTO_DOMAIN = new Set([
+  'settings',
   'billing',
-  'averages',
-  'centers',
-  'tournament',
-  'event',
-  'squad',
-  'squads',
-  'pot',
-  'pots',
-  'sa',
-  'lane',
-  'lanes',
+  'profile',
+  'dashboard',
   'report',
   'reports',
-  'lookup',
-  'bowler',
-  'prize',
-  'format',
-  'formats',
+  'search',
+  'help',
 ]);
+
+function gotoDomainSet(
+  extra?: readonly string[] | null
+): Set<string> {
+  const set = new Set(DEFAULT_GOTO_DOMAIN);
+  if (extra?.length) {
+    for (const t of extra) {
+      const w = String(t).toLowerCase().trim();
+      if (w) set.add(w);
+    }
+  }
+  return set;
+}
 
 function gotoAgreesWithUtterance(
   userText: string,
-  proposed: MissProposed & { type: 'goto'; stepId: string }
+  proposed: MissProposed & { type: 'goto'; stepId: string },
+  domainTokens?: readonly string[] | null
 ): boolean {
   const needle = normalizeAsk(userText);
-  const userDomain = contentTokens(needle).filter((t) => GOTO_DOMAIN.has(t));
+  const domain = gotoDomainSet(domainTokens);
+  const userDomain = contentTokens(needle).filter((t) => domain.has(t));
   // No domain words: only allow when the user clearly asked to navigate.
   // Prevents context/FAQ/OOD from default-allowing a Laya goto chip.
   if (!userDomain.length) return GOTO_NAV_RE.test(userText);
@@ -196,7 +196,8 @@ export function isAutoExecutableTrustedGoto(
   proposed: MissProposed | undefined,
   knownStepIds: ReadonlySet<string> | readonly string[],
   reply?: string,
-  userText?: string
+  userText?: string,
+  domainTokens?: readonly string[] | null
 ): proposed is MissProposed & { type: 'goto'; stepId: string } {
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
   if (userText && looksLikeClearOod(userText)) return false;
@@ -208,7 +209,9 @@ export function isAutoExecutableTrustedGoto(
   if (!(Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0))) {
     return false;
   }
-  if (userText && !gotoAgreesWithUtterance(userText, proposed)) return false;
+  if (userText && !gotoAgreesWithUtterance(userText, proposed, domainTokens)) {
+    return false;
+  }
   return true;
 }
 
@@ -220,19 +223,20 @@ export function shouldSurfaceTrustedGoto(
   proposed: MissProposed | undefined,
   knownStepIds: ReadonlySet<string> | readonly string[],
   reply: string | undefined,
-  userText: string
+  userText: string,
+  domainTokens?: readonly string[] | null
 ): boolean {
   if (looksLikeClearOod(userText)) return false;
   if (looksLikeContextAsk(userText)) return false;
   if (looksLikeExplainLast(userText)) return false;
   if (looksLikeFaqQuestion(userText)) return false;
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
-  if (!gotoAgreesWithUtterance(userText, proposed)) return false;
+  if (!gotoAgreesWithUtterance(userText, proposed, domainTokens)) return false;
   const text = (reply ?? '').trim();
   if (CANNED_OOD_REFUSE_RE.test(text) || /\bdo not have the ability\b/i.test(text)) {
     return false;
   }
-  if (isAutoExecutableTrustedGoto(proposed, knownStepIds, reply, userText)) {
+  if (isAutoExecutableTrustedGoto(proposed, knownStepIds, reply, userText, domainTokens)) {
     return true;
   }
   // Medium-confidence goto chip only when the user clearly asked to navigate.
@@ -240,21 +244,18 @@ export function shouldSurfaceTrustedGoto(
 }
 
 /** Default System One refuse when Laya would otherwise offer a spurious goto. */
-export function defaultOodRefuseReply(userText?: string): string {
+export function defaultOodRefuseReply(
+  userText?: string,
+  productRole?: string
+): string {
   const topic = (userText ?? 'that').trim().slice(0, 48) || 'that';
-  return `No — I am a bowling tournament guide, and I do not have the ability to help with ${topic}. Try a workflow step name or product question.`;
+  const role = productRole?.trim() || 'a product assistant';
+  return `No — I am ${role}, and I do not have the ability to help with ${topic}. Try a workflow step name or product question.`;
 }
 
 /** Clarify when Laya proposes a goto that disagrees with the user's domain words. */
 export function mismatchedGotoClarifyReply(userText?: string): string {
-  const n = normalizeAsk(userText ?? '');
-  if (/\bscor/.test(n)) {
-    return 'Which one — Game Scoring / enter scores, or a different desk screen?';
-  }
-  if (/\b(sa|pot)\b/.test(n)) {
-    return 'Which one — side actions / pots, or a different desk screen?';
-  }
-  return 'Which screen did you mean? Name the step (for example scoring or side actions).';
+  return 'Which screen did you mean? Name the step or surface you want to open.';
 }
 
 /** Auto-execute trusted gotos unless the host sets `autoExecuteTrustedGoto: false`. */
@@ -292,7 +293,7 @@ export type InvokeLlmFallbackOpts = {
 
 /**
  * Call host BYO fallback with a timeout. Returns null on failure/timeout
- * so the coach can keep the canned repair reply.
+ * so the assistant can keep the canned repair reply.
  */
 export async function invokeLlmFallback(
   fn: LlmFallbackFn,

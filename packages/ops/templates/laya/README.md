@@ -19,6 +19,7 @@ python -m venv .venv
 
 Host API must **proxy** `/uipilot/fallback` → `http://127.0.0.1:8765/decide`.
 
-Set `UIPILOT_LAYA_PRODUCT_ROLE` per product (default: `a product coach`).
+Set `UIPILOT_LAYA_PRODUCT_ROLE` per product (default: `a product assistant`).
+Coaching / guide tours are a host pack pattern — not the sidecar’s identity.
 
 CPU pack/`ranker.json` promote is host/FE-owned. Do **not** retrain Laya weights on the API host.

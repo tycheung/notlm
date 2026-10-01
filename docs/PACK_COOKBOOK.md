@@ -1,7 +1,10 @@
-# Pack cookbook — wire up a UiPilot coach
+# Pack cookbook — wire up a UiPilot chatbot (smart cache)
 
 **Audience:** developers adding UiPilot to a host SPA.  
 **Goal:** ship a reviewable `.uipilot/pack/` by hand or after CLI drafts — not invent a new DSL.
+
+UiPilot is a **smart-cache SPA chatbot** (pack NLU → optional Laya → optional LLM).
+Pack JSON is the cache content. **Coaching** (spotlight / guide-id tours) is optional.
 
 Reference packs in this repo:
 
@@ -26,14 +29,16 @@ User says “add a todo” / picks a palette row
   → Host navigate() activates that control (UI click only)
   → Host UI mutates state as a normal user would
   → getContext() + binders.json say whether the step is complete
-  → optional: notifyStepCompleted(stepId) advances the coach queue
+  → optional: notifyStepCompleted(stepId) advances the assistant queue
 ```
 
 **Invariants**
 
-- Runtime NLU is **deterministic** (aliases / corpus). No LLM on the chat hot path.
-- Coach **never** calls your product APIs. It only navigates, spotlights, and activates annotated controls.
+- Pack runtime NLU is **deterministic** (aliases / corpus) — the smart-cache hot path.
+- Laya / LLM run only on **miss** (host-wired fallback).
+- Runtime **never** calls your product APIs. It only replies, navigates, spotlights, and activates annotated controls.
 - All pack learnings live under **one folder** (default `.uipilot/`). Do not generate `guideIds.ts` as source of truth.
+- Set `manifest.productRole` for OOD refuse voice; never rely on core brand defaults.
 
 ---
 

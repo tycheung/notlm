@@ -23,7 +23,7 @@ export type LayaInstallOpts = {
   sidecarName?: string;
   /** Default on in generated .env.example */
   enabledByDefault?: boolean;
-  /** Product role string for refuse copy (default: a product coach). */
+  /** Product role string for refuse copy (default: a product assistant). */
   productRole?: string;
 };
 
@@ -38,7 +38,8 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
 } {
   const sidecarName = opts.sidecarName ?? 'uipilot_laya';
   const enabled = opts.enabledByDefault !== false;
-  const productRole = (opts.productRole ?? 'a product coach').trim() || 'a product coach';
+  const productRole =
+    (opts.productRole ?? 'a product assistant').trim() || 'a product assistant';
   const root = opsTemplatesRoot();
   const sidecarDir = join(opts.targetDir, sidecarName);
   mkdirSync(sidecarDir, { recursive: true });

@@ -74,4 +74,12 @@ describe('ood + mixed intent', () => {
     });
     expect(text).toMatch(/bowling tournament guide/);
   });
+
+  it('defaults productRole to a generic product assistant', () => {
+    const { text } = assembleOodReply('make blueberry muffins', {
+      session: emptySession(),
+    });
+    expect(text.toLowerCase()).toMatch(/product assistant/);
+    expect(text.toLowerCase()).not.toMatch(/bowling/);
+  });
 });

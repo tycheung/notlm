@@ -4,7 +4,7 @@ Minimal second host proving `@uipilot/core` + `@uipilot/react` portability.
 
 ## Invariant
 
-The coach **never POSTs** and never calls product APIs. Steps resolve to `.click()` on
+The assistant **never POSTs** and never calls product APIs. Steps resolve to `.click()` on
 `data-guide-id` buttons (`guide-add-contact`, `guide-save-contact`). Contacts live in
 `useState` only.
 

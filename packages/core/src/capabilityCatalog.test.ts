@@ -50,6 +50,12 @@ describe('capabilityCatalog', () => {
     expect(looksLikeContextAsk('why next stays grey here')).toBe(true);
     expect(looksLikeContextAsk('why primary button is dead')).toBe(true);
     expect(looksLikeContextAsk('incomplete items on this wizard')).toBe(true);
+    expect(
+      looksLikeContextAsk('director step incomplete', [
+        'director step incomplete',
+        'incomplete director step',
+      ])
+    ).toBe(true);
   });
 
   it('matches mutations with filler words via content coverage', () => {

@@ -17,9 +17,9 @@ const THAT_STEP =
 const OTHER =
   /^(the )?other(\s+(one|option))?[.!?]*$/i;
 const THAT_ENTITY =
-  /^(that|the same)\s+(list|contact|item|one|tournament|event|center)[.!?]*$/i;
+  /^(that|the same)\s+(list|contact|item|one|record|entry)[.!?]*$/i;
 const UNDO =
-  /^(undo( that)?|never ?mind( that)?|scratch that|cancel (that|this)|never mind that)[.!?]*$/i;
+  /^(undo( that)?|never ?mind( that| this| the (choice|pick|selection))?|scratch that|cancel (that|this|the (choice|pick|selection))|never mind that (choice|pick|selection)|cancel that (choice|pick)|nevermind that (pick|choice))[.!?]*$/i;
 const CHOICE_INDEX =
   /^(?:(?:pick\s+)?(?:number|option|choice)\s+|pick\s+)?([1-9]|one|two|three|first|second|third)\b/i;
 const CHANGE_NAME =

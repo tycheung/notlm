@@ -1,0 +1,36 @@
+---
+description: UiPilot is a smart-cache SPA chatbot frontline with Laya then LLM fallback; coaching is one pattern
+globs: packages/**/*,docs/**/*,ARCHITECTURE.md,README.md
+alwaysApply: true
+---
+
+# Assistant stack (smart cache → Laya → LLM)
+
+## Identity
+
+UiPilot is a **generic SPA chatbot frontline**, not a “product coach” product.
+Deterministic pack NLU is a **smart cache** in front of optional neural backups.
+
+| Layer | Role |
+|-------|------|
+| 1. Pack runtime | Fast local intents / FAQ / queries / mutations / tours / search / discourse |
+| 2. Laya | Explicit domain-tuned miss fallback (`/decide`) |
+| 3. LLM | Optional secondary when Laya misses or is disabled |
+
+**Coaching** (spotlight, `data-guide-id`, step tours, `coachMessage`) is **one pack-driven pattern** among capabilities — optional, not the premium framing.
+
+## Defaults
+
+- User-facing voice defaults to a **generic product assistant**, never a host brand
+  (no bowling / Victory Bowling / “product coach” defaults in packages).
+- Hosts set `manifest.productRole` and reply copy in pack JSON.
+- Internal names like `CoachEvent` / `coachMessage` are guide-pattern telemetry;
+  do not treat them as the product identity in docs or new APIs.
+
+## Rules
+
+1. Miss path must remain **cache → Laya → LLM** (host may disable layers).
+2. Do not document or code UiPilot as “the coach.” Prefer “assistant,” “chat,”
+   “pack runtime,” or “smart cache.”
+3. Domain words, refuse copy, and role strings live in **host pack / env**, not core.
+---

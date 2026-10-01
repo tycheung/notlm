@@ -82,8 +82,9 @@ export function normalizeUtterance(text: string, config?: NormalizeConfig | null
   if (!config) return t;
 
   t = applyPairs(t, config.replacements);
-  t = applyPairs(t, config.createVerbAliases);
+  // Open verbs first so create aliases can specialize afterward (launch → create).
   t = applyPairs(t, config.openVerbAliases);
+  t = applyPairs(t, config.createVerbAliases);
   t = stripTrailingPhrases(t, config.trailingFillers);
   t = stripLeadingPhrases(t, config.leadingPoliteness);
   return t.replace(/\s+/g, ' ').trim();

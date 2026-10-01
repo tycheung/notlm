@@ -190,40 +190,64 @@ export function looksLikeConfirmNo(text: string): boolean {
   return /^(no|nope|nah|cancel|stop|never ?mind|don't)\b/i.test(text.trim());
 }
 
-/** Heuristic: user wants an explanation of the last coach action. */
-export function looksLikeExplainLast(text: string): boolean {
+/** Heuristic: user wants an explanation of the last assistant action. */
+export function looksLikeExplainLast(
+  text: string,
+  extraPhrases?: readonly string[] | null
+): boolean {
   const n = normalizeAsk(text);
-  return (
-    /\b(what did you (just )?(do|open|change|take|alter|modify)|what you (just )?(modified|changed|altered|opened|did)|what (you )?modified most recently|what action did you|which coach move|why did you|explain (that|what you did|last|the prior|the prior navigation)|what would that change|how would that change|how (does|did) that (alter|change)|how (does|did|that) alters?|how that (alters?|changes?)|reason (you opened|for opening))\b/.test(
+  if (
+    /\b(what did you (just )?(do|open|change|take|alter|modify)|what you (just )?(modified|changed|altered|opened|did)|what (you )?modified most recently|what action did you|which (coach|assistant) move|why did you|explain (that|what you did|last|the prior|the prior navigation)|what would that change|how would that change|how (does|did) that (alter|change)|how (does|did|that) alters?|how that (alters?|changes?)|reason (you opened|for opening))\b/.test(
       n
     ) ||
-    /\b(audit( that)?|audit your previous|audit the last|coach audit|review your previous coach|previous coach action|explain your last|explain last|recount (your )?last|recount prior|narrate (the )?prior|say what you opened|what was that action|recap (that|the last|the screen)|restate (the screen|where you)|summarize last coach|capsule of (the )?last|name the last thing|identify (the )?last|replay your last|playback (your )?last|coach action audit|last action in plain|plain[-\s]?language last|what did the last goto|effect (of|from) the last goto|remind me what that|jog (my )?memory|prior (coach|navigation)|audit trail|clarify (the )?prior)\b/.test(
+    /\b(audit( that)?|audit your previous|audit the last|(coach|assistant) audit|review your previous (coach|assistant)|previous (coach|assistant) action|explain your last|explain last|recount (your )?last|recount prior|narrate (the )?prior|say what you opened|what was that action|recap (that|the last|the screen)|restate (the screen|where you)|summarize last (coach|assistant)|capsule of (the )?last|name the last thing|identify (the )?last|replay your last|playback (your )?last|(coach|assistant) action audit|last action in plain|plain[-\s]?language last|what did the last goto|effect (of|from) the last goto|remind me what that|jog (my )?memory|prior ((coach|assistant)|navigation)|audit trail|clarify (the )?prior)\b/.test(
       n
     ) ||
     n === 'what was that' ||
     n === 'why' ||
     n === 'explain' ||
     n === 'explain last'
-  );
+  ) {
+    return true;
+  }
+  return phrasesHit(n, extraPhrases);
 }
 
 /** Heuristic: page/form context help. */
-export function looksLikeContextAsk(text: string): boolean {
+export function looksLikeContextAsk(
+  text: string,
+  extraPhrases?: readonly string[] | null
+): boolean {
   const n = normalizeAsk(text);
-  return (
+  if (
     /\b(why can'?t i (save|submit|continue|finish|complete)|why can i not (save|submit|continue|finish|complete|proceed)|why i cannot (finish|complete|save|submit)|what'?s missing|what do i need|why is (this|the|continue|next|the cta|the primary cta|the continue control|the primary button) (blocked|disabled|greyed|grayed|inactive|muted|dead|unavailable)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
       n
     ) ||
     /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|what remains incomplete|blank fields still|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete|greyed|grayed|muted|unavailable)|why (won'?t|does) (it|this|save|submit|the form|submit refuse|submit stay)|why next (stays|remains) (grey|gray|blocked|dead)|why (the )?primary (button|cta) (is |looks )?(dead|blocked|grey|gray|disabled)|why (the )?cta is (dead|blocked|grey|gray))\b/.test(
       n
     ) ||
-    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step|items?|wizard items?|director step|step assistance)|director step incomplete|list blockers|blockers on this|which inputs remain|required blanks|remaining page obligations|page obligations remaining|fields i must complete|fields required before)\b/.test(
+    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step|items?|wizard items?|step assistance)|list blockers|blockers on this|which inputs remain|required blanks|remaining page obligations|page obligations remaining|fields i must complete|fields required before)\b/.test(
       n
     ) ||
     /\b(form validation( help| messages)?|validation messages on form|what am i missing|what'?s required on this (page|form|screen)|blocked step help|what fields are still empty|show me blockers|validation errors|what stops me from saving|what prevents a successful save|what blocks a save|page requirements|what must i fill|help me unblock|help unblock|unblock this checklist|what required inputs|what still needs filling|needs filling on this)\b/.test(
       n
     )
-  );
+  ) {
+    return true;
+  }
+  return phrasesHit(n, extraPhrases);
+}
+
+function phrasesHit(
+  normalized: string,
+  phrases?: readonly string[] | null
+): boolean {
+  if (!phrases?.length) return false;
+  for (const raw of phrases) {
+    const p = normalizeAsk(raw);
+    if (p && normalized.includes(p)) return true;
+  }
+  return false;
 }
 
 /** Desk / standup handoff phrasing (routes to query catalog when present). */
@@ -251,12 +275,27 @@ export function utteranceMatchesTypedCatalog(
     tours?: TourDef[];
     search?: SearchSurfaceDef[];
     faq?: { id: string; aliases: string[] }[];
+    contextAskPhrases?: string[];
+    explainLastPhrases?: string[];
+    normalize?: {
+      contextAskPhrases?: string[];
+      explainLastPhrases?: string[];
+    };
   },
   utterance: string
 ): boolean {
   const trimmed = utterance.trim();
   if (!trimmed) return false;
-  if (looksLikeContextAsk(trimmed) || looksLikeExplainLast(trimmed)) return true;
+  const contextPhrases =
+    pack.contextAskPhrases ?? pack.normalize?.contextAskPhrases;
+  const explainPhrases =
+    pack.explainLastPhrases ?? pack.normalize?.explainLastPhrases;
+  if (
+    looksLikeContextAsk(trimmed, contextPhrases) ||
+    looksLikeExplainLast(trimmed, explainPhrases)
+  ) {
+    return true;
+  }
   if (matchQueryEntry(pack.queries ?? [], trimmed)) return true;
   if (matchMutationEntry(pack.mutations ?? [], trimmed)) return true;
   if (matchTourEntry(pack.tours ?? [], trimmed)) return true;

@@ -391,6 +391,18 @@ export type PackRuntime = {
   replies?: ReplyBank;
   /** Pack-driven utterance normalization. */
   normalize?: NormalizeConfig;
+  /** Extra typo-lexicon tokens (host domain words). */
+  lexicon?: string[];
+  /** Domain tokens for trusted-goto agreement (Laya). */
+  gotoDomainTokens?: string[];
+  /** Tokens that mark FAQ / conceptual product questions. */
+  faqDomainTokens?: string[];
+  /** Extra phrase substrings for context-ask detection. */
+  contextAskPhrases?: string[];
+  /** Extra phrase substrings for explain-last / audit detection. */
+  explainLastPhrases?: string[];
+  /** Pack-supplied meta intent patterns (regex source strings). */
+  metaPatterns?: MetaPatternDef[];
   /** Typed user/data read catalog (host `resolveQuery`). */
   queries?: import('./capabilityCatalog.js').QueryDef[];
   /** Confirm-gated write catalog (host preview/executeMutation). */
@@ -438,10 +450,18 @@ export type ControlDef = {
 export type IntentConfig = {
   aliases: Record<StepId, string[]>;
   meta?: string[];
+  /** Pack-supplied meta intents (regex source strings compiled at load). */
+  metaPatterns?: MetaPatternDef[];
   /** Required/optional slot asks before launching a step. */
   slots?: Record<StepId, SlotAskDef[]>;
   /** Steps that ask for confirmation before navigate/click. */
   confirm?: StepId[];
+};
+
+/** Host-defined meta intent with regex source strings (case-insensitive). */
+export type MetaPatternDef = {
+  intent: string;
+  patterns: string[];
 };
 
 /** Pack-driven utterance normalization (synonyms / surfaces / open verbs). */
@@ -459,6 +479,16 @@ export type NormalizeConfig = {
   /** Map create/start paraphrases onto catalog verbs (spin up → create). */
   createVerbAliases?: NormalizePhrasePair[];
   openVerbPrefixes?: string[];
+  /** Extra substrings that mark a context / blockers ask. */
+  contextAskPhrases?: string[];
+  /** Extra substrings that mark an explain-last / audit ask. */
+  explainLastPhrases?: string[];
+  /** Domain tokens for trusted-goto utterance agreement. */
+  gotoDomainTokens?: string[];
+  /** Domain tokens for conceptual / FAQ product questions. */
+  faqDomainTokens?: string[];
+  /** Extra typo-lexicon tokens. */
+  lexicon?: string[];
 };
 
 export type ScenarioCase = {
@@ -492,6 +522,16 @@ export type PackJsonInput = {
   subgraphs?: Record<string, FlowStepDef[]>;
   /** Utterance normalization synonyms (surfaces, open verbs, typos). */
   normalize?: NormalizeConfig;
+  /** Extra typo-lexicon tokens (also accepted via normalize.lexicon). */
+  lexicon?: string[];
+  /** Extra context-ask phrases (also via normalize.contextAskPhrases). */
+  contextAskPhrases?: string[];
+  /** Extra explain-last phrases (also via normalize.explainLastPhrases). */
+  explainLastPhrases?: string[];
+  /** Trusted-goto domain tokens (also via normalize.gotoDomainTokens). */
+  gotoDomainTokens?: string[];
+  /** FAQ/conceptual domain tokens (also via normalize.faqDomainTokens). */
+  faqDomainTokens?: string[];
   queries?: import('./capabilityCatalog.js').QueryDef[];
   mutations?: import('./capabilityCatalog.js').MutationDef[];
   tours?: import('./capabilityCatalog.js').TourDef[];
@@ -516,10 +556,14 @@ export type IntentParsePack = {
   steps: FlowStepDef[];
   aliases: Record<StepId, string[]>;
   meta?: string[];
+  metaPatterns?: MetaPatternDef[];
   /** Optional FAQ catalog for first-class FAQ parse hits. */
   faq?: FaqEntry[];
   /** Optional pack normalize config for synonym / surface handling. */
   normalize?: NormalizeConfig;
+  /** Extra typo-lexicon tokens. */
+  lexicon?: string[];
+  faqDomainTokens?: string[];
 };
 
 export type PackedUtteranceResult = {

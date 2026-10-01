@@ -38,6 +38,9 @@ describe('discourse repair', () => {
     expect(resolveDiscourse('hey nevermind', {}).kind).toBe('undo');
     expect(resolveDiscourse('cancel this', {}).kind).toBe('undo');
     expect(resolveDiscourse('never mind that', {}).kind).toBe('undo');
+    expect(resolveDiscourse('cancel that choice', {}).kind).toBe('undo');
+    expect(resolveDiscourse('nevermind that pick', {}).kind).toBe('undo');
+    expect(resolveDiscourse('never mind that selection', {}).kind).toBe('undo');
     expect(resolveDiscourse('go back', {}).kind).toBe('none');
   });
 

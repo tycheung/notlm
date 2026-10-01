@@ -21,10 +21,16 @@ describe('normalizeUtterance', () => {
     );
   });
 
-  it('maps create-verb paraphrases before catalog match', () => {
+  it('maps create-verb paraphrases after open verbs', () => {
     expect(normalizeUtterance('spin up a tournament named midnight', cfg)).toBe(
       'create a tournament named midnight'
     );
+    // open first, then create — "launch event" can become create via pack create aliases
+    const launchCfg: NormalizeConfig = {
+      openVerbAliases: [{ from: 'launch', to: 'open' }],
+      createVerbAliases: [{ from: 'open event', to: 'create event' }],
+    };
+    expect(normalizeUtterance('launch event', launchCfg)).toBe('create event');
   });
   it('keeps wizard so next-wizard-step is not collapsed to next-step', () => {
     expect(normalizeUtterance('next wizard step', cfg)).toBe('next wizard step');

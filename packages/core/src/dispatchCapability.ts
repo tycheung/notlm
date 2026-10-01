@@ -118,19 +118,23 @@ export function tryHandlePendingMutationConfirm(
 }
 
 export function tryHandleExplainLast(deps: DispatchDeps, trimmed: string): boolean {
-  if (!looksLikeExplainLast(trimmed)) return false;
+  const phrases =
+    deps.pack.explainLastPhrases ?? deps.pack.normalize?.explainLastPhrases;
+  if (!looksLikeExplainLast(trimmed, phrases)) return false;
   const last = (deps.session.discourse as { lastCoachAction?: { summary?: string } } | undefined)
     ?.lastCoachAction;
   if (last?.summary) {
     deps.pushAssistant(`Last action: ${last.summary}`);
     return true;
   }
-  deps.pushAssistant('I haven’t taken a coach action in this chat yet.');
+  deps.pushAssistant('I haven’t taken an assistant action in this chat yet.');
   return true;
 }
 
 export function tryHandleContextAsk(deps: DispatchDeps, trimmed: string): boolean {
-  if (!looksLikeContextAsk(trimmed)) return false;
+  const phrases =
+    deps.pack.contextAskPhrases ?? deps.pack.normalize?.contextAskPhrases;
+  if (!looksLikeContextAsk(trimmed, phrases)) return false;
   if (deps.resolveContextAsk) {
     const text = deps.resolveContextAsk({ text: trimmed, ctx: deps.ctx, session: deps.session });
     if (text) {
@@ -169,7 +173,7 @@ export function tryDispatchCapabilityCatalog(
   const deskForce =
     !opts?.queryId &&
     looksLikeDeskHandoff(trimmed) &&
-    queries.find((q) => q.id === 'td.desk_summary' || /desk|handoff|standup/i.test(q.id));
+    queries.find((q) => /desk|handoff|standup/i.test(q.id));
 
   const queryHit =
     (opts?.queryId && queries.find((q) => q.id === opts.queryId)) ||

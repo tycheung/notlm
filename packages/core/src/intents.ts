@@ -68,26 +68,30 @@ const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
       /^\s*submit\b/i,
     ],
   },
-  {
-    intent: 'skip_side_actions',
-    patterns: [
-      /\bskip side actions?\b/i,
-      /\bno side actions?\b/i,
-      /\bwithout side actions?\b/i,
-      /\bskip (?:the )?pots\b/i,
-    ],
-  },
-  {
-    intent: 'lookup_participant',
-    patterns: [
-      // Avoid matching schedule asks ("where is my next tournament").
-      /\bwhere is\b.+\b(bowler|participant|player|they|he|she|their)\b/i,
-      /\bshow (?:me )?(?:their|his|her) scores\b/i,
-      /\bwhat average\b/i,
-      /\btheir average\b/i,
-    ],
-  },
 ];
+
+function compilePackMetaPatterns(
+  defs?: Array<{ intent: string; patterns: string[] }> | null
+): Array<{ intent: string; patterns: RegExp[] }> {
+  if (!defs?.length) return [];
+  const out: Array<{ intent: string; patterns: RegExp[] }> = [];
+  for (const def of defs) {
+    const intent = def.intent?.trim();
+    if (!intent || !def.patterns?.length) continue;
+    const patterns: RegExp[] = [];
+    for (const src of def.patterns) {
+      const s = String(src ?? '').trim();
+      if (!s) continue;
+      try {
+        patterns.push(new RegExp(s, 'i'));
+      } catch {
+        // Ignore invalid host regex rather than crashing parse.
+      }
+    }
+    if (patterns.length) out.push({ intent, patterns });
+  }
+  return out;
+}
 
 const CORRECTION_RE =
   /\b(actually|instead|change(?:\s+it)?|wait|correction|should(?:\s+have)?\s+been|make it|rename(?:\s+it)?|i meant)\b/i;
@@ -135,8 +139,13 @@ function phraseScore(haystack: string, phrase: string): number {
   return 0;
 }
 
-function matchMetaIntent(text: string, enabledMeta?: string[]): string | null {
-  for (const meta of META_PATTERNS) {
+function matchMetaIntent(
+  text: string,
+  enabledMeta?: string[],
+  packPatterns?: Array<{ intent: string; patterns: string[] }> | null
+): string | null {
+  const all = [...META_PATTERNS, ...compilePackMetaPatterns(packPatterns)];
+  for (const meta of all) {
     if (enabledMeta && !enabledMeta.includes(meta.intent)) continue;
     if (meta.patterns.some((re) => re.test(text))) return meta.intent;
   }
@@ -231,7 +240,7 @@ export function parseUtterance(
     }
   }
 
-  const meta = matchMetaIntent(normalized, pack.meta);
+  const meta = matchMetaIntent(normalized, pack.meta, pack.metaPatterns);
   const goBack = meta === 'go_back';
   const isCorrection = !goBack && CORRECTION_RE.test(normalized);
   const metaBlocksStep =
@@ -241,8 +250,8 @@ export function parseUtterance(
     meta === 'help' ||
     meta === 'cancel_all' ||
     meta === 'do_it' ||
-    meta === 'skip_side_actions' ||
-    meta === 'lookup_participant';
+    // Pack-supplied metas also block step scoring when they match.
+    Boolean(meta && pack.metaPatterns?.some((p) => p.intent === meta));
 
   const stepHits = metaBlocksStep ? [] : matchStepCandidates(normalized, pack);
   let stepId: StepId | null = stepHits.length === 1 ? (stepHits[0]?.id ?? null) : null;

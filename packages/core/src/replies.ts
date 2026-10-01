@@ -23,7 +23,7 @@ const DEFAULTS: ReplyBank = {
   ],
   'repair.ood_capability': [
     'No — I am {{product_role}}, and I do not have the ability to help with {{entities}} (or {{capability}}).',
-    'I can’t help with {{entities}}. I am {{product_role}} and only cover tournament workflow steps.',
+    'I can’t help with {{entities}}. I am {{product_role}} and only cover this product’s workflow steps.',
   ],
   'repair.partial_ood': [
     'Okay — {{handled}}. I am {{product_role}} and do not have the ability to help with {{entities}}.',

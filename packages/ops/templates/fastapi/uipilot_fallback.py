@@ -43,7 +43,7 @@ ProposedType = Literal[
 ]
 FallbackProvider = Literal["laya", "llm"]
 
-_DEFAULT_PRODUCT_ROLE = "a product coach"
+_DEFAULT_PRODUCT_ROLE = "a product assistant"
 _RATE_WINDOW_SEC = 60.0
 # Load-test friendly: Laya→LLM is two POSTs per miss; keep ≥120 so paced stress
 # (~1 turn / 2s) stays under the ceiling.
@@ -464,9 +464,13 @@ def _endpoint_hint(base: str) -> str:
 
 def _system_prompt() -> str:
     role = _product_role()
+    scope = (
+        os.getenv("UIPILOT_LLM_SCOPE_HINT")
+        or "the host product's UI workflow and catalogued steps"
+    ).strip()
     return (
-        f"You are a backup coach for {role} — a Victory Bowling tournament-director "
-        "UI workflow assistant. Reply in 1-3 short sentences. "
+        f"You are a backup assistant for {role} — covering {scope}. "
+        "Reply in 1-3 short sentences. "
         "Return a single JSON object: "
         '{"reply":"string","proposed":{"type":"faq|goto|meta|refuse|query|mutation|tour|search",'
         '"stepId":"optional","faqId":"optional","queryId":"optional",'
@@ -480,7 +484,7 @@ def _system_prompt() -> str:
         "Use proposed.type=tour or search with catalog ids when matching. "
         "Use proposed.type=refuse for anything off-domain or not mappable to the catalog — "
         "including cooking, recipes (e.g. apple pie), general trivia, medical/legal advice, "
-        "and any non-tournament-director request. "
+        "and any request outside the host product scope. "
         "If an image is attached but you cannot view images, refuse and ask for a text description. "
         "Never invent API calls, step ids, or claim you mutated host data."
     )

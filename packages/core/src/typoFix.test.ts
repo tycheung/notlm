@@ -25,6 +25,15 @@ const pack: IntentParsePack = {
     create_tournament: ['start a tourney', 'sweepers tournament'],
     enter_scores: ['game scoring'],
   },
+  lexicon: [
+    'bowling',
+    'center',
+    'squad',
+    'squads',
+    'assign',
+    'lane',
+    'lanes',
+  ],
 };
 
 describe('buildTypoLexicon', () => {
@@ -33,12 +42,16 @@ describe('buildTypoLexicon', () => {
     expect(lex.has('tournament')).toBe(true);
     expect(lex.has('scoring')).toBe(true);
     expect(lex.has('sweepers')).toBe(true);
+    expect(lex.has('bowling')).toBe(true);
     expect(lex.has('the')).toBe(false);
   });
 
-  it('works without a pack', () => {
+  it('works without a pack (generic builtins only)', () => {
     const lex = buildTypoLexicon(null);
-    expect(lex.has('squad')).toBe(true);
+    expect(lex.has('create')).toBe(true);
+    expect(lex.has('help')).toBe(true);
+    expect(lex.has('squad')).toBe(false);
+    expect(lex.has('bowling')).toBe(false);
   });
 });
 

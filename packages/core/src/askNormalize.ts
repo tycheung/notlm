@@ -123,7 +123,7 @@ export function bestAliasContentCoverage(needle: string, label: string): number 
 
 /**
  * Clear out-of-domain asks that System One should refuse locally (never Laya goto).
- * Keep this conservative — bowling product questions must stay false.
+ * Keep this conservative — in-domain product questions must stay false.
  */
 export function looksLikeClearOod(utterance: string): boolean {
   const n = normalizeAsk(utterance);
@@ -133,6 +133,9 @@ export function looksLikeClearOod(utterance: string): boolean {
       n
     )
   ) {
+    return true;
+  }
+  if (/\bforget (this|the) product\b/.test(n) || /\bignore (this|the) product\b/.test(n)) {
     return true;
   }
   if (/\bforget bowling\b/.test(n) || /\bignore bowling\b/.test(n)) return true;

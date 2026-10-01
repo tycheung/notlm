@@ -64,6 +64,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     },
     aliases: intents.aliases,
     meta: intents.meta,
+    metaPatterns: intents.metaPatterns?.length ? intents.metaPatterns : undefined,
     slots: intents.slots,
     confirm: intents.confirm,
     glossary: glossary?.length ? glossary : undefined,
@@ -71,11 +72,30 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     lookups: lookups?.length ? lookups : undefined,
     replies: replies && Object.keys(replies).length ? replies : undefined,
     normalize: normalize && Object.keys(normalize).length ? normalize : undefined,
+    lexicon: mergeStrLists(input.lexicon, normalize?.lexicon),
+    gotoDomainTokens: mergeStrLists(input.gotoDomainTokens, normalize?.gotoDomainTokens),
+    faqDomainTokens: mergeStrLists(input.faqDomainTokens, normalize?.faqDomainTokens),
+    contextAskPhrases: mergeStrLists(
+      input.contextAskPhrases,
+      normalize?.contextAskPhrases
+    ),
+    explainLastPhrases: mergeStrLists(
+      input.explainLastPhrases,
+      normalize?.explainLastPhrases
+    ),
     queries: queries?.length ? queries : undefined,
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,
     search: search?.length ? search : undefined,
   };
+}
+
+function mergeStrLists(
+  a?: string[] | null,
+  b?: string[] | null
+): string[] | undefined {
+  const out = [...(a ?? []), ...(b ?? [])].map((s) => s.trim()).filter(Boolean);
+  return out.length ? [...new Set(out)] : undefined;
 }
 
 export type PackOverlays = {

@@ -486,13 +486,16 @@ export function UiPilotProvider({
             void (cap as Promise<boolean>);
           }
         } else {
+          const domainTokens =
+            pack.gotoDomainTokens ?? pack.normalize?.gotoDomainTokens;
           const trusted =
             autoNav &&
             isAutoExecutableTrustedGoto(
               result.proposed,
               knownStepIds,
               result.reply,
-              text
+              text,
+              domainTokens
             )
               ? result.proposed!.stepId
               : undefined;
@@ -518,7 +521,8 @@ export function UiPilotProvider({
               result.proposed,
               knownStepIds,
               result.reply,
-              text
+              text,
+              domainTokens
             )
           ) {
             const stepId = result.proposed!.stepId!;
@@ -530,7 +534,7 @@ export function UiPilotProvider({
             (/i can take you to/i.test(result.reply) &&
               !/\b(go|open|take|navigate|show|find)\b/i.test(text))
           ) {
-            replaceThinking(defaultOodRefuseReply(text));
+            replaceThinking(defaultOodRefuseReply(text, pack.productRole));
           } else if (
             isTrustedGoto(result.proposed, knownStepIds) &&
             /i can take you to/i.test(result.reply)

@@ -134,7 +134,7 @@ export function assembleOodReply(
   const entityStr = entities.length ? entities.join(', ') : 'that';
   const productRole =
     opts.productRole?.trim() ||
-    'a bowling tournament guide';
+    'a product assistant';
   const capability = opts.capability?.trim() || entityStr;
   const key = opts.partial ? 'repair.partial_ood' : 'repair.ood_capability';
   const picked = pickReply(opts.session, opts.bank, key, {

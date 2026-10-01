@@ -86,53 +86,36 @@ const GLUE_PARTS = new Set([
 ]);
 
 /**
- * Domain + coach vocabulary always available even before pack aliases load.
- * Keep small — pack lexicon covers host-specific phrasing.
+ * Generic assistant vocabulary always available even before pack aliases load.
+ * Keep small — pack lexicon / aliases cover host-specific phrasing.
  */
 const BUILTIN_LEXICON = [
-  'tournament',
-  'event',
-  'squad',
-  'squads',
-  'lane',
-  'lanes',
-  'score',
-  'scores',
-  'scoring',
-  'participant',
-  'participants',
-  'register',
-  'registration',
-  'billing',
-  'subscription',
-  'format',
-  'prize',
-  'payout',
-  'report',
-  'reports',
-  'standings',
-  'bowling',
-  'center',
-  'centre',
-  'house',
-  'alley',
-  'bracket',
-  'qualifying',
-  'advancement',
-  'stepladder',
-  'assign',
-  'assignment',
-  'lock',
-  'locked',
   'create',
-  'checklist',
+  'open',
+  'show',
+  'help',
   'undo',
   'back',
   'next',
-  'help',
   'skip',
   'cancel',
   'submit',
+  'save',
+  'edit',
+  'delete',
+  'search',
+  'find',
+  'list',
+  'form',
+  'page',
+  'screen',
+  'wizard',
+  'step',
+  'checklist',
+  'confirm',
+  'settings',
+  'profile',
+  'dashboard',
 ];
 
 function maxDistance(word: string): number {
@@ -162,6 +145,12 @@ export function buildTypoLexicon(pack?: IntentParsePack | null): Set<string> {
     addTokens(lexicon, step.title);
     for (const kw of step.keywords) addTokens(lexicon, kw);
     for (const alias of pack.aliases[step.id] ?? []) addTokens(lexicon, alias);
+  }
+  const extra =
+    (pack as { lexicon?: string[] }).lexicon ??
+    (pack as { normalize?: { lexicon?: string[] } }).normalize?.lexicon;
+  if (extra?.length) {
+    for (const phrase of extra) addTokens(lexicon, phrase);
   }
   return lexicon;
 }
