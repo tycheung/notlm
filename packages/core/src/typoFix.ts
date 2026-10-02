@@ -144,12 +144,24 @@ function maxDistance(word: string): number {
   return 0;
 }
 
+const BUILTINS_BY_LEN = (() => {
+  const m = new Map<number, string[]>();
+  for (const builtin of BUILTIN_LEXICON) {
+    const row = m.get(builtin.length) ?? [];
+    row.push(builtin);
+    m.set(builtin.length, row);
+  }
+  return m;
+})();
+
 /** Alias typos like "hellp" must not enter the lexicon and steal "hello"→"help". */
 function isNearBuiltinTypo(token: string): boolean {
-  for (const builtin of BUILTIN_LEXICON) {
-    if (token === builtin) return false;
-    if (Math.abs(token.length - builtin.length) > 1) continue;
-    if (editDistance(token, builtin) === 1) return true;
+  for (const len of [token.length - 1, token.length, token.length + 1]) {
+    if (len < 3) continue;
+    for (const builtin of BUILTINS_BY_LEN.get(len) ?? []) {
+      if (token === builtin) return false;
+      if (editDistance(token, builtin) === 1) return true;
+    }
   }
   return false;
 }
