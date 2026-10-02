@@ -118,11 +118,40 @@ const BUILTIN_LEXICON = [
   'dashboard',
 ];
 
+/** Never rewrite these into lexicon hits (greetings / chat cores). */
+const PROTECTED_WORDS = new Set([
+  ...STOPWORDS,
+  'hello',
+  'hey',
+  'hi',
+  'yo',
+  'sup',
+  'thanks',
+  'thank',
+  'thx',
+  'please',
+  'sorry',
+  'yes',
+  'no',
+  'ok',
+  'okay',
+]);
+
 function maxDistance(word: string): number {
   if (word.length >= 8) return 2;
   if (word.length >= 5) return 1;
   // Length ≤4: never rewrite (late≠lane, pass≠past).
   return 0;
+}
+
+/** Alias typos like "hellp" must not enter the lexicon and steal "hello"→"help". */
+function isNearBuiltinTypo(token: string): boolean {
+  for (const builtin of BUILTIN_LEXICON) {
+    if (token === builtin) return false;
+    if (Math.abs(token.length - builtin.length) > 1) continue;
+    if (editDistance(token, builtin) === 1) return true;
+  }
+  return false;
 }
 
 function addTokens(lexicon: Set<string>, phrase: string): void {
@@ -133,7 +162,9 @@ function addTokens(lexicon: Set<string>, phrase: string): void {
     .trim();
   if (!cleaned) return;
   for (const token of cleaned.split(' ')) {
-    if (token.length >= 3 && !STOPWORDS.has(token)) lexicon.add(token);
+    if (token.length < 3 || STOPWORDS.has(token) || PROTECTED_WORDS.has(token)) continue;
+    if (isNearBuiltinTypo(token)) continue;
+    lexicon.add(token);
   }
 }
 
@@ -206,7 +237,12 @@ export function correctTypos(text: string, lexicon: Set<string>): string {
       continue;
     }
     const token = expanded[0]!;
-    if (STOPWORDS.has(token) || lexicon.has(token) || GLUE_PARTS.has(token)) {
+    if (
+      PROTECTED_WORDS.has(token) ||
+      STOPWORDS.has(token) ||
+      lexicon.has(token) ||
+      GLUE_PARTS.has(token)
+    ) {
       out.push(token);
       continue;
     }
@@ -219,6 +255,7 @@ export function correctTypos(text: string, lexicon: Set<string>): string {
     let best: string | null = null;
     let bestDist = max + 1;
     let bestLenDelta = Infinity;
+    let bestBuiltin = false;
     let tied = false;
     for (const candidate of lexicon) {
       // Cheap length gate before edit distance.
@@ -226,12 +263,23 @@ export function correctTypos(text: string, lexicon: Set<string>): string {
       if (lenDelta > max) continue;
       const dist = editDistance(token, candidate);
       if (dist > max || dist === 0) continue;
-      if (dist < bestDist || (dist === bestDist && lenDelta < bestLenDelta)) {
+      const isBuiltin = BUILTIN_LEXICON.includes(candidate);
+      const better =
+        dist < bestDist ||
+        (dist === bestDist && isBuiltin && !bestBuiltin) ||
+        (dist === bestDist && isBuiltin === bestBuiltin && lenDelta < bestLenDelta);
+      if (better) {
         best = candidate;
         bestDist = dist;
         bestLenDelta = lenDelta;
+        bestBuiltin = isBuiltin;
         tied = false;
-      } else if (dist === bestDist && lenDelta === bestLenDelta && candidate !== best) {
+      } else if (
+        dist === bestDist &&
+        isBuiltin === bestBuiltin &&
+        lenDelta === bestLenDelta &&
+        candidate !== best
+      ) {
         tied = true;
       }
     }

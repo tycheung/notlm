@@ -68,6 +68,19 @@ describe('correctTypos', () => {
     expect(correctTypos('create the tournament', lex)).toBe('create the tournament');
   });
 
+  it('does not rewrite greetings into alias typos like hellp', () => {
+    const dirty = buildTypoLexicon({
+      ...pack,
+      aliases: {
+        ...pack.aliases,
+        enter_scores: ['hellp me open house lane map do thing', 'help me start lanes'],
+      },
+    });
+    expect(dirty.has('hellp')).toBe(false);
+    expect(correctTypos('hello', dirty)).toBe('hello');
+    expect(correctTypos('hellp', dirty)).toBe('help');
+  });
+
   it('does not rewrite when two lexicon words tie', () => {
     const tiny = new Set(['score', 'scare']);
     expect(correctTypos('scure', tiny)).toBe('scure');
