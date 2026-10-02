@@ -1,57 +1,23 @@
 /**
  * Shared utterance normalization for FAQ / catalog / discourse matching.
  * Strips disfluency + polite frames, then exposes content-token helpers so
- * "fix the temporary usbc please" can hit "fix temporary usbc".
+ * "assign the temporary badge please" can hit "assign temporary badge".
+ * Filler / stopword lists come from compiled pack heuristics.
  */
+import {
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
 
-const DISFLUENCY_LEAD =
-  /^(uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please|can you|could you|would you|will you)\s+/;
+function resolveH(h?: CompiledHeuristics | null): CompiledHeuristics {
+  return h ?? DEFAULT_HEURISTICS;
+}
 
-const POLITE_TRAIL =
-  /\s+(please|pls|thanks|thank you|thx|briefly|roughly|in one sentence|for me|right now)$/;
-
-/** Light stopwords ignored when scoring alias content coverage. */
-const CONTENT_STOP = new Set([
-  'a',
-  'an',
-  'the',
-  'and',
-  'or',
-  'for',
-  'to',
-  'of',
-  'me',
-  'my',
-  'you',
-  'i',
-  'please',
-  'pls',
-  'can',
-  'could',
-  'would',
-  'should',
-  'will',
-  'with',
-  'about',
-  'from',
-  'this',
-  'that',
-  'in',
-  'on',
-  'at',
-  'be',
-  'is',
-  'are',
-  'do',
-  'does',
-  'did',
-  'a',
-  'vs',
-  'versus',
-  'compared',
-]);
-
-export function normalizeAsk(utterance: string): string {
+export function normalizeAsk(
+  utterance: string,
+  heuristics?: CompiledHeuristics | null
+): string {
+  const h = resolveH(heuristics);
   let n = utterance
     .trim()
     .toLowerCase()
@@ -62,7 +28,10 @@ export function normalizeAsk(utterance: string): string {
     .replace(/\s+/g, ' ')
     .trim();
   for (let i = 0; i < 4; i++) {
-    const next = n.replace(DISFLUENCY_LEAD, '').replace(POLITE_TRAIL, '').trim();
+    let next = n;
+    if (h.askDisfluencyLead) next = next.replace(h.askDisfluencyLead, '');
+    if (h.askPoliteTrail) next = next.replace(h.askPoliteTrail, '');
+    next = next.trim();
     if (next === n) break;
     n = next;
   }
@@ -70,19 +39,27 @@ export function normalizeAsk(utterance: string): string {
 }
 
 /** Content tokens for coverage scoring (stopwords removed). */
-export function contentTokens(text: string): string[] {
-  return normalizeAsk(text)
+export function contentTokens(
+  text: string,
+  heuristics?: CompiledHeuristics | null
+): string[] {
+  const stop = resolveH(heuristics).contentStopwords;
+  return normalizeAsk(text, heuristics)
     .split(/\s+/)
-    .filter((t) => t.length > 1 && !CONTENT_STOP.has(t));
+    .filter((t) => t.length > 1 && !stop.has(t));
 }
 
 /**
  * Fraction of `label` content tokens that appear as an ordered subsequence
  * in `needle` content tokens. 1 = full coverage.
  */
-export function aliasContentCoverage(needle: string, label: string): number {
-  const hay = contentTokens(needle);
-  const need = contentTokens(label);
+export function aliasContentCoverage(
+  needle: string,
+  label: string,
+  heuristics?: CompiledHeuristics | null
+): number {
+  const hay = contentTokens(needle, heuristics);
+  const need = contentTokens(label, heuristics);
   if (!need.length || !hay.length) return 0;
   let from = 0;
   let hit = 0;
@@ -102,9 +79,13 @@ export function aliasContentCoverage(needle: string, label: string): number {
 }
 
 /** Bag-of-words coverage (order-insensitive) for paraphrase FAQ/compare asks. */
-export function aliasContentCoverageBagable(needle: string, label: string): number {
-  const hay = new Set(contentTokens(needle));
-  const need = contentTokens(label);
+export function aliasContentCoverageBagable(
+  needle: string,
+  label: string,
+  heuristics?: CompiledHeuristics | null
+): number {
+  const hay = new Set(contentTokens(needle, heuristics));
+  const need = contentTokens(label, heuristics);
   if (!need.length || !hay.size) return 0;
   let hit = 0;
   for (const tok of need) {
@@ -114,83 +95,35 @@ export function aliasContentCoverageBagable(needle: string, label: string): numb
 }
 
 /** Best of ordered + bag-of-words when the label is multi-token. */
-export function bestAliasContentCoverage(needle: string, label: string): number {
-  const ordered = aliasContentCoverage(needle, label);
-  const labelToks = contentTokens(label);
+export function bestAliasContentCoverage(
+  needle: string,
+  label: string,
+  heuristics?: CompiledHeuristics | null
+): number {
+  const ordered = aliasContentCoverage(needle, label, heuristics);
+  const labelToks = contentTokens(label, heuristics);
   if (labelToks.length < 3) return ordered;
-  return Math.max(ordered, aliasContentCoverageBagable(needle, label));
+  return Math.max(
+    ordered,
+    aliasContentCoverageBagable(needle, label, heuristics)
+  );
 }
 
 /**
  * Clear out-of-domain asks that System One should refuse locally (never Laya goto).
  * Keep this conservative — in-domain product questions must stay false.
+ * Topic bag + phrase patterns from pack heuristics.
  */
-export function looksLikeClearOod(utterance: string): boolean {
-  const n = normalizeAsk(utterance);
+export function looksLikeClearOod(
+  utterance: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const h = resolveH(heuristics);
+  const n = normalizeAsk(utterance, heuristics);
   if (!n) return false;
-  if (
-    /\b(bake|baking|recipe|roast|chicken|apple pie|pie|joke|poem|cats?|capital of|world series|politics|movie|film|tonight|2\s*\+\s*2|math problem|xyzzy|plugh|plover|nonsense|gibberish|sonnet|limerick|haiku|villanelle|sestina|sourdough|paperclip|tungsten|ethanol|parallel park|podcast|mocktail|smoothie|klingon|merge sort|quicksort|crypto|tariffs?|iphone|tire roadside|temper chocolate|ballpoint|bond yields)\b/.test(
-      n
-    )
-  ) {
-    return true;
+  if (h.oodTopicRe?.test(n)) return true;
+  for (const re of h.oodPhraseRes) {
+    if (re.test(n)) return true;
   }
-  if (/\bforget (this|the) product\b/.test(n) || /\bignore (this|the) product\b/.test(n)) {
-    return true;
-  }
-  if (/\bforget bowling\b/.test(n) || /\bignore bowling\b/.test(n)) return true;
-  if (/\brecommend a (movie|film|show|documentary|podcast|magazine)\b/.test(n)) return true;
-  if (/\bsuggest a (documentary|mocktail|cocktail|smoothie)\b/.test(n)) return true;
-  if (/\bsolve\b.+\b(in depth|for me)\b/.test(n)) return true;
-  if (/\bwrite me a poem\b/.test(n) || /\binvent a limerick\b/.test(n) || /\bwrite a limerick\b/.test(n)) {
-    return true;
-  }
-  if (/\bdraft a haiku\b/.test(n) || /\bcompose a haiku\b/.test(n) || /\btell me a joke\b/.test(n)) {
-    return true;
-  }
-  if (/\bcompose a (sonnet|limerick|villanelle|sestina)\b/.test(n)) return true;
-  if (/\bwrite a villanelle\b/.test(n)) return true;
-  if (/\bfitted sheet\b/.test(n) || /\bcaramelize\b/.test(n) || /\bonions\b/.test(n)) {
-    return true;
-  }
-  if (
-    /\bboiling point\b/.test(n) ||
-    /\bmelting point\b/.test(n) ||
-    /\bfreezing point\b/.test(n) ||
-    /\bfactorial\b/.test(n)
-  ) {
-    return true;
-  }
-  if (
-    /\binvented the (zipper|paperclip|ballpoint)\b/.test(n) ||
-    /\bmoon landing\b/.test(n) ||
-    /\bfirst email\b/.test(n)
-  ) {
-    return true;
-  }
-  if (
-    /\bdebate taxes\b/.test(n) ||
-    /\bargue tariffs\b/.test(n) ||
-    /\bdiscuss rents\b/.test(n) ||
-    /\bstock market\b/.test(n)
-  ) {
-    return true;
-  }
-  if (
-    /\bforecast tomorrow\b/.test(n) ||
-    /\bbubble sort\b/.test(n) ||
-    /\bmerge sort\b/.test(n) ||
-    /\bquicksort\b/.test(n)
-  ) {
-    return true;
-  }
-  if (/\bklingon\b/.test(n) || /\bcocktail recipe\b/.test(n) || /\bmocktail\b/.test(n)) {
-    return true;
-  }
-  if (/\bcompute\s+\d+\b/.test(n) || /\bpredict next (week|month)\b/.test(n)) return true;
-  if (/\bproof sourdough\b/.test(n) || /\bparallel park\b/.test(n) || /\bchange a tire\b/.test(n)) {
-    return true;
-  }
-  if (/\btemper chocolate\b/.test(n)) return true;
   return false;
 }

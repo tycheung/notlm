@@ -3,13 +3,21 @@
  * tours, and search surfaces. Hosts execute; core only matches + dispatches.
  */
 import {
-  aliasContentCoverage,
   bestAliasContentCoverage,
   contentTokens,
   normalizeAsk,
 } from './askNormalize.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
+import {
+  anyReTest,
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
 import type { ChatChoice, ChatMessageLink, StepId } from './types.js';
+
+function resolveH(h?: CompiledHeuristics | null): CompiledHeuristics {
+  return h ?? DEFAULT_HEURISTICS;
+}
 
 export type QueryDef = {
   id: string;
@@ -180,87 +188,71 @@ export function matchSearchEntry(
 }
 
 /** Confirm / yes utterances for pending high-risk mutations. */
-export function looksLikeConfirmYes(text: string): boolean {
-  return /^(yes|yep|yeah|y|ok|okay|sure|confirm|do it|go ahead|proceed)\b/i.test(
-    text.trim()
-  );
+export function looksLikeConfirmYes(
+  text: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const re = resolveH(heuristics).confirmYes;
+  return Boolean(re?.test(text.trim()));
 }
 
-export function looksLikeConfirmNo(text: string): boolean {
-  return /^(no|nope|nah|cancel|stop|never ?mind|don't)\b/i.test(text.trim());
+export function looksLikeConfirmNo(
+  text: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const re = resolveH(heuristics).confirmNo;
+  return Boolean(re?.test(text.trim()));
 }
 
 /** Heuristic: user wants an explanation of the last assistant action. */
 export function looksLikeExplainLast(
   text: string,
-  extraPhrases?: readonly string[] | null
+  extraPhrases?: readonly string[] | null,
+  heuristics?: CompiledHeuristics | null
 ): boolean {
-  const n = normalizeAsk(text);
-  if (
-    /\b(what did you (just )?(do|open|change|take|alter|modify)|what you (just )?(modified|changed|altered|opened|did)|what (you )?modified most recently|what action did you|which (coach|assistant) move|why did you|explain (that|what you did|last|the prior|the prior navigation)|what would that change|how would that change|how (does|did) that (alter|change)|how (does|did|that) alters?|how that (alters?|changes?)|reason (you opened|for opening))\b/.test(
-      n
-    ) ||
-    /\b(audit( that)?|audit your previous|audit the last|(coach|assistant) audit|review your previous (coach|assistant)|previous (coach|assistant) action|explain your last|explain last|recount (your )?last|recount prior|narrate (the )?prior|say what you opened|what was that action|recap (that|the last|the screen)|restate (the screen|where you)|summarize last (coach|assistant)|capsule of (the )?last|name the last thing|identify (the )?last|replay your last|playback (your )?last|(coach|assistant) action audit|last action in plain|plain[-\s]?language last|what did the last goto|effect (of|from) the last goto|remind me what that|jog (my )?memory|prior ((coach|assistant)|navigation)|audit trail|clarify (the )?prior)\b/.test(
-      n
-    ) ||
-    n === 'what was that' ||
-    n === 'why' ||
-    n === 'explain' ||
-    n === 'explain last'
-  ) {
-    return true;
-  }
-  return phrasesHit(n, extraPhrases);
+  const h = resolveH(heuristics);
+  const n = normalizeAsk(text, heuristics);
+  if (h.explainLastExact.has(n) || anyReTest(h.explainLast, n)) return true;
+  return phrasesHit(n, extraPhrases, heuristics);
 }
 
 /** Heuristic: page/form context help. */
 export function looksLikeContextAsk(
   text: string,
-  extraPhrases?: readonly string[] | null
+  extraPhrases?: readonly string[] | null,
+  heuristics?: CompiledHeuristics | null
 ): boolean {
-  const n = normalizeAsk(text);
-  if (
-    /\b(why can'?t i (save|submit|continue|finish|complete)|why can i not (save|submit|continue|finish|complete|proceed)|why i cannot (finish|complete|save|submit)|what'?s missing|what do i need|why is (this|the|continue|next|the cta|the primary cta|the continue control|the primary button) (blocked|disabled|greyed|grayed|inactive|muted|dead|unavailable)|where am i|what (is|are) (on )?this (page|screen|form))\b/.test(
-      n
-    ) ||
-    /\b(what'?s blocking|what is blocking|what'?s incomplete|what is incomplete|what remains incomplete|blank fields still|save disabled|why (is|are) .{0,24}(blocked|disabled|incomplete|greyed|grayed|muted|unavailable)|why (won'?t|does) (it|this|save|submit|the form|submit refuse|submit stay)|why next (stays|remains) (grey|gray|blocked|dead)|why (the )?primary (button|cta) (is |looks )?(dead|blocked|grey|gray|disabled)|why (the )?cta is (dead|blocked|grey|gray))\b/.test(
-      n
-    ) ||
-    /\b(why is my step blocked|what'?s blocking me|incomplete (fields?|form|step|items?|wizard items?|step assistance)|list blockers|blockers on this|which inputs remain|required blanks|remaining page obligations|page obligations remaining|fields i must complete|fields required before)\b/.test(
-      n
-    ) ||
-    /\b(form validation( help| messages)?|validation messages on form|what am i missing|what'?s required on this (page|form|screen)|blocked step help|what fields are still empty|show me blockers|validation errors|what stops me from saving|what prevents a successful save|what blocks a save|page requirements|what must i fill|help me unblock|help unblock|unblock this checklist|what required inputs|what still needs filling|needs filling on this)\b/.test(
-      n
-    )
-  ) {
-    return true;
-  }
-  return phrasesHit(n, extraPhrases);
+  const h = resolveH(heuristics);
+  const n = normalizeAsk(text, heuristics);
+  if (anyReTest(h.contextAsk, n)) return true;
+  return phrasesHit(n, extraPhrases, heuristics);
 }
 
 function phrasesHit(
   normalized: string,
-  phrases?: readonly string[] | null
+  phrases?: readonly string[] | null,
+  heuristics?: CompiledHeuristics | null
 ): boolean {
   if (!phrases?.length) return false;
   for (const raw of phrases) {
-    const p = normalizeAsk(raw);
+    const p = normalizeAsk(raw, heuristics);
     if (p && normalized.includes(p)) return true;
   }
   return false;
 }
 
-/** Desk / standup handoff phrasing (routes to query catalog when present). */
-export function looksLikeDeskHandoff(text: string): boolean {
-  const n = normalizeAsk(text);
-  return (
-    /\b(desk (handoff|summary|briefing)|standup|counter (handoff|staff|standup|crew|shift)|front desk|shift (summary|change)|brief (the )?desk|brief (the )?counter|handoff (note|paragraph|summary)|notes the desk|tell the desk|tell staff)\b/.test(
-      n
-    ) ||
-    /\b(write a (short )?desk|compose a counter|compact desk summary|tight desk summary|copy-?ready front desk|pasteable front desk|standup (bullets|blurb|draft|note)|pending (chores|plus today|and today)|aloud-ready desk|shift-change)\b/.test(
-      n
-    )
-  );
+/**
+ * Desk / standup handoff phrasing (routes to query catalog when present).
+ * Empty pack patterns → always false (no host desk jargon in core).
+ */
+export function looksLikeDeskHandoff(
+  text: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const h = resolveH(heuristics);
+  if (!h.deskHandoff.length) return false;
+  const n = normalizeAsk(text, heuristics);
+  return anyReTest(h.deskHandoff, n);
 }
 
 /**
@@ -277,6 +269,7 @@ export function utteranceMatchesTypedCatalog(
     faq?: { id: string; aliases: string[] }[];
     contextAskPhrases?: string[];
     explainLastPhrases?: string[];
+    compiledHeuristics?: CompiledHeuristics;
     normalize?: {
       contextAskPhrases?: string[];
       explainLastPhrases?: string[];
@@ -290,9 +283,10 @@ export function utteranceMatchesTypedCatalog(
     pack.contextAskPhrases ?? pack.normalize?.contextAskPhrases;
   const explainPhrases =
     pack.explainLastPhrases ?? pack.normalize?.explainLastPhrases;
+  const h = pack.compiledHeuristics;
   if (
-    looksLikeContextAsk(trimmed, contextPhrases) ||
-    looksLikeExplainLast(trimmed, explainPhrases)
+    looksLikeContextAsk(trimmed, contextPhrases, h) ||
+    looksLikeExplainLast(trimmed, explainPhrases, h)
   ) {
     return true;
   }

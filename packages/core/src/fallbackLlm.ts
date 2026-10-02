@@ -11,11 +11,33 @@ import {
   looksLikeExplainLast,
 } from './capabilityCatalog.js';
 import { looksLikeFaqQuestion } from './glossary.js';
+import {
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
 import type { AssistantFeatures } from './types.js';
 
-const GOTO_NAV_RE =
-  /\b(go|open|take|navigate|show|find|locate|search|bring|jump|route|head|pull|switch|land|drop|get|launch|move|hop)\b/i;
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Loose nav-verb sniff from pack heuristics (first token of each nav verb). */
+function looksLikeNavSniff(
+  userText: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const h = heuristics ?? DEFAULT_HEURISTICS;
+  const roots = [
+    ...new Set(
+      (h.source.navCommandVerbs ?? [])
+        .map((v) => v.trim().split(/\s+/)[0]?.toLowerCase())
+        .filter((w): w is string => Boolean(w))
+    ),
+  ];
+  if (!roots.length) return false;
+  return new RegExp(`\\b(${roots.map(escapeRe).join('|')})\\b`, 'i').test(userText);
+}
 
 export type LlmFallbackRequest = {
   text: string;
@@ -172,7 +194,7 @@ function gotoAgreesWithUtterance(
   const userDomain = contentTokens(needle).filter((t) => domain.has(t));
   // No domain words: only allow when the user clearly asked to navigate.
   // Prevents context/FAQ/OOD from default-allowing a Laya goto chip.
-  if (!userDomain.length) return GOTO_NAV_RE.test(userText);
+  if (!userDomain.length) return looksLikeNavSniff(userText);
   const stepToks = contentTokens(proposed.stepId.replace(/_/g, ' '));
   if (userDomain.some((t) => stepToks.includes(t) || proposed.stepId.includes(t))) {
     return true;
@@ -240,7 +262,7 @@ export function shouldSurfaceTrustedGoto(
     return true;
   }
   // Medium-confidence goto chip only when the user clearly asked to navigate.
-  return GOTO_NAV_RE.test(userText);
+  return looksLikeNavSniff(userText);
 }
 
 /** Default System One refuse when Laya would otherwise offer a spurious goto. */
@@ -254,7 +276,7 @@ export function defaultOodRefuseReply(
 }
 
 /** Clarify when Laya proposes a goto that disagrees with the user's domain words. */
-export function mismatchedGotoClarifyReply(userText?: string): string {
+export function mismatchedGotoClarifyReply(_userText?: string): string {
   return 'Which screen did you mean? Name the step or surface you want to open.';
 }
 

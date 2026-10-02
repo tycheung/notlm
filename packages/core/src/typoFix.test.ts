@@ -26,8 +26,8 @@ const pack: IntentParsePack = {
     enter_scores: ['game scoring'],
   },
   lexicon: [
-    'bowling',
-    'center',
+    'widget',
+    'catalog',
     'squad',
     'squads',
     'assign',
@@ -42,7 +42,7 @@ describe('buildTypoLexicon', () => {
     expect(lex.has('tournament')).toBe(true);
     expect(lex.has('scoring')).toBe(true);
     expect(lex.has('sweepers')).toBe(true);
-    expect(lex.has('bowling')).toBe(true);
+    expect(lex.has('widget')).toBe(true);
     expect(lex.has('the')).toBe(false);
   });
 
@@ -51,7 +51,7 @@ describe('buildTypoLexicon', () => {
     expect(lex.has('create')).toBe(true);
     expect(lex.has('help')).toBe(true);
     expect(lex.has('squad')).toBe(false);
-    expect(lex.has('bowling')).toBe(false);
+    expect(lex.has('widget')).toBe(false);
   });
 });
 
@@ -60,7 +60,7 @@ describe('correctTypos', () => {
 
   it('fixes single-character typos against the lexicon', () => {
     expect(correctTypos('create tornament', lex)).toBe('create tournament');
-    expect(correctTypos('bowlng center', lex)).toBe('bowling center');
+    expect(correctTypos('wdget catalog', lex)).toBe('widget catalog');
     expect(correctTypos('assgn squads', lex)).toBe('assign squads');
   });
 
@@ -81,7 +81,7 @@ describe('correctTypos', () => {
   it('splits missing-space glues into known tokens', () => {
     expect(correctTypos('what can youdo', lex)).toBe('what can you do');
     expect(correctTypos('what canyou do', lex)).toBe('what can you do');
-    expect(correctTypos('bowlingcenter', lex)).toBe('bowling center');
+    expect(correctTypos('widgetcatalog', lex)).toBe('widget catalog');
     expect(correctTypos('createsquad', lex)).toBe('create squad');
   });
 

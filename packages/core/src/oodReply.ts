@@ -1,66 +1,24 @@
 /**
  * Entity-aware OOD / partial-OOD canned replies (no generation).
+ * Stopwords / disfluency / question frames come from pack heuristics.
  */
+import {
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
 import { pickReply, renderTemplate } from './replies.js';
 import type { ReplyBank, SessionSlots } from './types.js';
 
-const STOP = new Set([
-  'a',
-  'an',
-  'the',
-  'and',
-  'or',
-  'for',
-  'to',
-  'of',
-  'me',
-  'my',
-  'you',
-  'i',
-  'please',
-  'can',
-  'could',
-  'would',
-  'should',
-  'will',
-  'make',
-  'create',
-  'open',
-  'show',
-  'get',
-  'help',
-  'with',
-  'about',
-  'uhh',
-  'uh',
-  'um',
-  'umm',
-  'like',
-  'what',
-  'whats',
-  "what's",
-  'how',
-  'why',
-  'when',
-  'where',
-  'who',
-  'which',
-  'is',
-  'are',
-  'do',
-  'does',
-  'did',
-  'tell',
-]);
-
-const DISFLUENCY_RE =
-  /^(?:uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please)(?:\s+|$)/i;
-
-const QUESTION_FRAME_RE =
-  /^(?:what(?:'s|s| are| is)|how(?: do| does| can| to)?|where(?: do| can)?|why(?: do| is)?|tell me(?: about)?|help(?: me)?(?: with| understand)?|explain)\s+/i;
+function resolveH(h?: CompiledHeuristics | null): CompiledHeuristics {
+  return h ?? DEFAULT_HEURISTICS;
+}
 
 /** Lightweight noun-ish spans for personalizing refuse templates. */
-export function extractEntitySpans(text: string): string[] {
+export function extractEntitySpans(
+  text: string,
+  heuristics?: CompiledHeuristics | null
+): string[] {
+  const h = resolveH(heuristics);
   let cleaned = text
     .replace(/[?!.,;:]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -69,12 +27,16 @@ export function extractEntitySpans(text: string): string[] {
 
   // Strip leading disfluencies repeatedly, then question frames.
   for (let i = 0; i < 3; i++) {
-    const next = cleaned.replace(DISFLUENCY_RE, '').trim();
+    let next = cleaned;
+    if (h.askDisfluencyLead) next = next.replace(h.askDisfluencyLead, '').trim();
     if (next === cleaned) break;
     cleaned = next;
   }
-  cleaned = cleaned.replace(QUESTION_FRAME_RE, '').trim();
+  for (const frame of h.oodQuestionFrames) {
+    cleaned = cleaned.replace(frame, '').trim();
+  }
 
+  const stop = h.oodStopwords;
   const lower = cleaned.toLowerCase();
   const spans: string[] = [];
 
@@ -91,7 +53,7 @@ export function extractEntitySpans(text: string): string[] {
     .split(/\s+/)
     .filter((t) => {
       const w = t.toLowerCase();
-      return w.length > 1 && !STOP.has(w);
+      return w.length > 1 && !stop.has(w);
     })
     .join(' ')
     .trim();
@@ -105,7 +67,7 @@ export function extractEntitySpans(text: string): string[] {
   if (spans.length === 0) {
     const tokens = cleaned.split(/\s+/).filter((t) => {
       const w = t.toLowerCase();
-      return w.length > 2 && !STOP.has(w);
+      return w.length > 2 && !stop.has(w);
     });
     if (tokens.length) {
       const phrase = tokens.slice(-Math.min(3, tokens.length)).join(' ');
@@ -124,17 +86,16 @@ export type OodReplyOpts = {
   partial?: boolean;
   /** Titles of in-DAG actions that will run. */
   handledTitles?: string[];
+  heuristics?: CompiledHeuristics | null;
 };
 
 export function assembleOodReply(
   utterance: string,
   opts: OodReplyOpts
 ): { text: string; session: SessionSlots; entities: string[] } {
-  const entities = extractEntitySpans(utterance);
+  const entities = extractEntitySpans(utterance, opts.heuristics);
   const entityStr = entities.length ? entities.join(', ') : 'that';
-  const productRole =
-    opts.productRole?.trim() ||
-    'a product assistant';
+  const productRole = opts.productRole?.trim() || 'a product assistant';
   const capability = opts.capability?.trim() || entityStr;
   const key = opts.partial ? 'repair.partial_ood' : 'repair.ood_capability';
   const picked = pickReply(opts.session, opts.bank, key, {

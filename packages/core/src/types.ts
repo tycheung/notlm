@@ -1,6 +1,6 @@
 /**
  * Portable uipilot core types.
- * Domain step ids are opaque strings defined by packs — not VB GuideStepId unions.
+ * Domain step ids are opaque strings defined by packs — not host GuideStepId unions.
  */
 
 export type StepId = string;
@@ -403,6 +403,10 @@ export type PackRuntime = {
   explainLastPhrases?: string[];
   /** Pack-supplied meta intent patterns (regex source strings). */
   metaPatterns?: MetaPatternDef[];
+  /** Pack heuristic overlay (merged with platform defaults at load). */
+  heuristics?: HeuristicsConfig;
+  /** Compiled heuristics (platform + pack + normalize fillers). */
+  compiledHeuristics?: import('./heuristics.js').CompiledHeuristics;
   /** Typed user/data read catalog (host `resolveQuery`). */
   queries?: import('./capabilityCatalog.js').QueryDef[];
   /** Confirm-gated write catalog (host preview/executeMutation). */
@@ -491,6 +495,60 @@ export type NormalizeConfig = {
   lexicon?: string[];
 };
 
+/** Pack-driven slot salvage regex (compiled at load). */
+export type SlotExtractorDef = {
+  id: string;
+  /** Regex source; capture group 1 used when `value` is omitted. */
+  pattern: string;
+  slotKey: string;
+  /** Literal value when the pattern is a flag (e.g. teams → event_format). */
+  value?: string;
+  /** Alternate knownKeys that also accept this extractor. */
+  altKeys?: string[];
+  /**
+   * When knownKeys is empty, still apply (default true).
+   * Set false for keys that only apply when the step asks for them.
+   */
+  allowWithoutKeys?: boolean;
+};
+
+/** Trainable NLU heuristics — words / phrases / regex source strings only. */
+export type HeuristicsConfig = {
+  ood?: { topicTokens?: string[]; phrasePatterns?: string[] };
+  discourse?: {
+    leadFillers?: string[];
+    trailFillers?: string[];
+    otherPatterns?: string[];
+    meantOtherPatterns?: string[];
+    undoPatterns?: string[];
+    againPatterns?: string[];
+    thatStepPatterns?: string[];
+    entityPatterns?: string[];
+    choiceIndexPattern?: string;
+    indexWords?: Record<string, number>;
+    repairNamePatterns?: string[];
+    repairNameValuePattern?: string;
+    renameToPattern?: string;
+    slotExtractors?: SlotExtractorDef[];
+  };
+  contextAskPatterns?: string[];
+  explainLastPatterns?: string[];
+  explainLastExact?: string[];
+  deskHandoffPatterns?: string[];
+  confirmYes?: string[];
+  confirmNo?: string[];
+  navCommandVerbs?: string[];
+  faqQuestionPatterns?: string[];
+  comparePatterns?: string[];
+  correctionPatterns?: string[];
+  conceptualQuestionPatterns?: string[];
+  askDisfluencyLead?: string[];
+  askPoliteTrail?: string[];
+  contentStopwords?: string[];
+  oodQuestionFrames?: string[];
+  oodStopwords?: string[];
+};
+
 export type ScenarioCase = {
   utterance: string;
   expect: {
@@ -532,6 +590,8 @@ export type PackJsonInput = {
   gotoDomainTokens?: string[];
   /** FAQ/conceptual domain tokens (also via normalize.faqDomainTokens). */
   faqDomainTokens?: string[];
+  /** Trainable heuristics overlay (`heuristics.json`). */
+  heuristics?: HeuristicsConfig;
   queries?: import('./capabilityCatalog.js').QueryDef[];
   mutations?: import('./capabilityCatalog.js').MutationDef[];
   tours?: import('./capabilityCatalog.js').TourDef[];
@@ -564,6 +624,9 @@ export type IntentParsePack = {
   /** Extra typo-lexicon tokens. */
   lexicon?: string[];
   faqDomainTokens?: string[];
+  /** Compiled heuristics (or raw overlay compiled inside parse). */
+  heuristics?: HeuristicsConfig;
+  compiledHeuristics?: import('./heuristics.js').CompiledHeuristics;
 };
 
 export type PackedUtteranceResult = {

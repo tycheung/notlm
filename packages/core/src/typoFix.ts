@@ -160,7 +160,7 @@ function isGluePart(token: string, lexicon: Set<string>): boolean {
 }
 
 /**
- * Split a missing-space glue token ("youdo", "bowlingcenter") into known parts.
+ * Split a missing-space glue token ("youdo", "todolist") into known parts.
  * Only when exactly one bipartition yields two known tokens (lexicon or glue words).
  */
 function bestGlueSplit(word: string, lexicon: Set<string>): [string, string] | null {

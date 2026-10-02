@@ -1,5 +1,10 @@
 import { looksLikeFaqQuestion } from './glossary.js';
 import { normalizeAsk } from './askNormalize.js';
+import {
+  anyReTest,
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
 
 /**
  * Heuristic: user is asking for explanation / relationship, not requesting navigation.
@@ -8,24 +13,18 @@ import { normalizeAsk } from './askNormalize.js';
  */
 export function isConceptualQuestion(
   text: string,
-  faqDomainTokens?: readonly string[] | null
+  faqDomainTokens?: readonly string[] | null,
+  heuristics?: CompiledHeuristics | null
 ): boolean {
+  const h = heuristics ?? DEFAULT_HEURISTICS;
   const t = text.trim();
   if (!t) return false;
   if (/\?\s*$/.test(t) || /\?/.test(t)) return true;
-  if (
-    /^(can you )?(explain|tell me|describe|clarify)\b/i.test(t) ||
-    /\bhow (do|does|are|is|to|can)\b/i.test(t) ||
-    /\bwhat('s| is| are) (the )?(difference|relationship)\b/i.test(t) ||
-    /\b(relate(d)? (to|each)|relationship between)\b/i.test(t) ||
-    /\bdifference between\b/i.test(t)
-  ) {
-    return true;
-  }
-  if (!looksLikeFaqQuestion(t) || !faqDomainTokens?.length) return false;
-  const n = normalizeAsk(t);
+  if (anyReTest(h.conceptual, t)) return true;
+  if (!looksLikeFaqQuestion(t, heuristics) || !faqDomainTokens?.length) return false;
+  const n = normalizeAsk(t, heuristics);
   return faqDomainTokens.some((tok) => {
-    const w = normalizeAsk(tok);
+    const w = normalizeAsk(tok, heuristics);
     return Boolean(w) && new RegExp(`\\b${escapeRe(w)}\\b`, 'i').test(n);
   });
 }

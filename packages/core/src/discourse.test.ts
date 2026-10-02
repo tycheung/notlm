@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveDiscourse } from './discourse.js';
+import { compileHeuristics } from './heuristics.js';
 import { parseUtterance } from './intents.js';
 import { loadPackFromJson } from './loadPack.js';
 import type { FlowStepDef } from './types.js';
@@ -20,6 +21,14 @@ const flow: FlowStepDef[] = [
     requires: ['create_list'],
   },
 ];
+
+/** Host-product fillers from pack heuristics / normalize, not core defaults. */
+const hostH = compileHeuristics({
+  discourse: {
+    leadFillers: ['desk', 'crew', 'staff', 'floor'],
+    trailFillers: ['in app', 'on the desk', 'on desk', 'for crew'],
+  },
+});
 
 describe('discourse repair', () => {
   it('detects change-the-name repair', () => {
@@ -44,10 +53,40 @@ describe('discourse repair', () => {
     expect(resolveDiscourse('go back', {}).kind).toBe('none');
   });
 
+  it('detects meant-the-other as clarify or alternate choice', () => {
+    expect(resolveDiscourse('I meant the other project', {}).kind).toBe('clarify_choice');
+    expect(
+      resolveDiscourse('meant the alternate shell', { lastChoiceIds: ['a', 'b'] }).kind
+    ).toBe('step');
+    expect(
+      resolveDiscourse('meant the alternate project shell', {
+        lastChoiceIds: ['a', 'b'],
+      }).kind
+    ).toBe('step');
+    expect(
+      resolveDiscourse(
+        'please meant the alternate project shell in app',
+        { lastChoiceIds: ['a', 'b'] },
+        hostH
+      ).kind
+    ).toBe('step');
+  });
+
   it('clarifies other-one / number without prior choices', () => {
     expect(resolveDiscourse('the other one', {}).kind).toBe('clarify_choice');
     expect(resolveDiscourse('the other option', {}).kind).toBe('clarify_choice');
+    expect(resolveDiscourse('the other one on the desk', {}, hostH).kind).toBe(
+      'clarify_choice'
+    );
+    expect(resolveDiscourse('nevermind in app', {}, hostH).kind).toBe('undo');
+    expect(resolveDiscourse('quick nevermind', {}).kind).toBe('undo');
+    expect(resolveDiscourse('desk nevermind', {}, hostH).kind).toBe('undo');
+    expect(resolveDiscourse('the other one if possible', {}).kind).toBe('clarify_choice');
     expect(resolveDiscourse('number 2', {}).kind).toBe('choice_index');
+    expect(resolveDiscourse('pick the second one', {}).kind).toBe('choice_index');
+    expect(resolveDiscourse('pick the second one briefly', { lastChoiceIds: ['a', 'b'] }).kind).toBe(
+      'step'
+    );
     expect(resolveDiscourse('pick number 2', { lastChoiceIds: ['a', 'b'] }).kind).toBe(
       'step'
     );

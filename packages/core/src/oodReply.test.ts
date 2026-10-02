@@ -43,9 +43,9 @@ describe('ood + mixed intent', () => {
       pack.steps,
       emptySession(),
       undefined,
-      'a bowling tournament guide'
+      'a product workflow guide'
     );
-    expect(reply?.text.toLowerCase()).toMatch(/bowling tournament guide/);
+    expect(reply?.text.toLowerCase()).toMatch(/product workflow guide/);
     expect(reply?.text.toLowerCase()).toMatch(/muffin/);
   });
 
@@ -61,7 +61,7 @@ describe('ood + mixed intent', () => {
       pack.steps,
       emptySession(),
       undefined,
-      'a bowling tournament guide'
+      'a product workflow guide'
     );
     expect(reply?.text.toLowerCase()).toMatch(/create event|opening/);
     expect(reply?.text.toLowerCase()).toMatch(/muffin|recipe/);
@@ -70,9 +70,9 @@ describe('ood + mixed intent', () => {
   it('assembleOodReply personalizes entities', () => {
     const { text } = assembleOodReply('make blueberry muffins', {
       session: emptySession(),
-      productRole: 'a bowling tournament guide',
+      productRole: 'a product workflow guide',
     });
-    expect(text).toMatch(/bowling tournament guide/);
+    expect(text).toMatch(/product workflow guide/);
   });
 
   it('defaults productRole to a generic product assistant', () => {
@@ -80,6 +80,6 @@ describe('ood + mixed intent', () => {
       session: emptySession(),
     });
     expect(text.toLowerCase()).toMatch(/product assistant/);
-    expect(text.toLowerCase()).not.toMatch(/bowling/);
+    expect(text.toLowerCase()).not.toMatch(/acme widget/);
   });
 });

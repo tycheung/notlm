@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isStrongFaqAliasMatch,
   looksLikeFaqQuestion,
   matchFaqEntry,
   matchGlossaryEntry,
@@ -43,12 +44,31 @@ describe('matchFaqEntry', () => {
     ];
     expect(matchFaqEntry(faq, 'is this app free to use')?.id).toBe('local_only');
   });
+
+  it('does not prefix-steal shorter help utterances from long FAQ aliases', () => {
+    const faq = [
+      {
+        id: 'hello_capabilities',
+        aliases: [
+          'hello what can you do for me today',
+          'what can you do for me today',
+        ],
+        text: 'Long greeting FAQ.',
+      },
+    ];
+    const entry = faq[0]!;
+    expect(isStrongFaqAliasMatch('what can you do', entry)).toBe(false);
+    expect(isStrongFaqAliasMatch('what can you do for me today', entry)).toBe(true);
+    expect(matchFaqEntry(faq, 'what can you do for me today')?.id).toBe(
+      'hello_capabilities'
+    );
+  });
 });
 
 describe('looksLikeFaqQuestion', () => {
   it('detects question leads and rejects direct commands', () => {
     expect(looksLikeFaqQuestion('how do I create a tournament')).toBe(true);
-    expect(looksLikeFaqQuestion('what is a side action')).toBe(true);
+    expect(looksLikeFaqQuestion('what is a contact card')).toBe(true);
     expect(looksLikeFaqQuestion('why cant i score')).toBe(true);
     expect(looksLikeFaqQuestion('tournament vs event')).toBe(true);
     expect(looksLikeFaqQuestion('SA vs full')).toBe(true);

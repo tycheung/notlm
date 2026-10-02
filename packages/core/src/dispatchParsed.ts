@@ -146,7 +146,11 @@ export function dispatchParsed(
   });
 
   if (
-    isConceptualQuestion(trimmed, pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens) &&
+    isConceptualQuestion(
+      trimmed,
+      pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens,
+      pack.compiledHeuristics
+    ) &&
     (packed.actions.length > 0 || packed.oodSegments.length > 0)
   ) {
     emitCoachEvent(deps, {
@@ -166,7 +170,8 @@ export function dispatchParsed(
     if (
       isConceptualQuestion(
         trimmed,
-        pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens
+        pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens,
+        pack.compiledHeuristics
       ) &&
       packed.actions.length > 0
     ) {
@@ -185,13 +190,15 @@ export function dispatchParsed(
       pack.steps,
       session,
       pack.replies,
-      pack.productRole
+      pack.productRole,
+      pack.compiledHeuristics
     );
     if (mixed) {
       if (
         isConceptualQuestion(
           trimmed,
-          pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens
+          pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens,
+          pack.compiledHeuristics
         )
       ) {
         emitCoachEvent(deps, {
@@ -255,8 +262,10 @@ export function dispatchParsed(
   const earlyStep =
     packed.actions[0]?.stepId ??
     (parsed.stepId && parsed.confidence !== 'low' ? parsed.stepId : null);
+  const lookupResult = matchEntityLookup(trimmed, pack.lookups, ctx, pack.normalize);
   const preferStepOverLookup =
     Boolean(earlyStep) &&
+    lookupResult.kind !== 'hit' &&
     (parsed.confidence === 'high' ||
       parsed.confidence === 'mid' ||
       (typeof parsed.rawIntent === 'string' && parsed.rawIntent.startsWith('goto:')));
@@ -356,9 +365,7 @@ export function dispatchParsed(
     return;
   }
 
-  const lookup = preferStepOverLookup
-    ? ({ kind: 'none' } as const)
-    : matchEntityLookup(trimmed, pack.lookups, ctx, pack.normalize);
+  const lookup = preferStepOverLookup ? ({ kind: 'none' } as const) : lookupResult;
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
     const def = pack.lookups?.find((l) => l.id === lookup.lookupId);
@@ -416,7 +423,7 @@ export function dispatchParsed(
   // (compare asks like "tournament vs event" must not fall through to Laya OOD).
   {
     const faqHitEarly = matchFaqEntry(pack.faq ?? [], trimmed);
-    if (faqHitEarly && !looksLikeNavCommand(trimmed)) {
+    if (faqHitEarly && !looksLikeNavCommand(trimmed, pack.compiledHeuristics)) {
       const offer = faqHitEarly.stepId
         ? ` If you want, I can take you to “${stepTitle(pack, faqHitEarly.stepId)}”.`
         : '';
@@ -447,7 +454,11 @@ export function dispatchParsed(
       session.actionQueue[0]?.stepId ?? session.activeStep ?? undefined;
     if (fillStep && pack.slots?.[fillStep]) {
       const keys = pack.slots[fillStep]!.map((d) => d.key);
-      const multi = extractMultiSlotPatches(trimmed, keys);
+      const multi = extractMultiSlotPatches(
+        trimmed,
+        keys,
+        pack.compiledHeuristics
+      );
       if (Object.keys(multi).length > 0) {
         let next = patchStepSlots(session, fillStep, multi);
         next = patchQueuedStepSlots(next, fillStep, multi);

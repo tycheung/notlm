@@ -5,6 +5,15 @@ import {
   normalizeAsk,
 } from './askNormalize.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
+import {
+  anyReTest,
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
+
+function resolveH(h?: CompiledHeuristics | null): CompiledHeuristics {
+  return h ?? DEFAULT_HEURISTICS;
+}
 
 function stripExplainLead(utterance: string): string {
   return utterance
@@ -22,6 +31,17 @@ type AliasCatalog = { id: string; aliases: string[] };
 
 const ALIAS_COVERAGE_MIN = 0.84;
 
+/** Longer FAQ aliases must not prefix-steal shorter meta/help utterances. */
+function looseMultiWordAliasMatch(needle: string, label: string): boolean {
+  if (!label.includes(' ')) return false;
+  if (needle.includes(label)) return true;
+  if (!label.includes(needle)) return false;
+  const needleTokens = contentTokens(needle).length;
+  const labelTokens = contentTokens(label).length;
+  if (needleTokens < 2 || labelTokens < 2) return false;
+  return needleTokens >= labelTokens - 1 || needle.length >= label.length * 0.85;
+}
+
 function matchAliasCatalog<T extends AliasCatalog>(
   catalog: T[],
   needle: string
@@ -34,14 +54,21 @@ function matchAliasCatalog<T extends AliasCatalog>(
     for (const label of labels) {
       if (!label) continue;
       if (needle === label) return entry;
+      const labelTokens = contentTokens(label);
+      // Single-token aliases (hi/hey/hello) must be exact — never prefix-steal.
+      if (!label.includes(' ') && labelTokens.length <= 1) continue;
+      const boundaryForward = hasTokenBoundaryMatch(needle, label);
+      const boundaryReverse = hasTokenBoundaryMatch(label, needle);
       const boundary =
-        hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
-      const looseMulti =
-        label.includes(' ') && (needle.includes(label) || label.includes(needle));
+        boundaryForward ||
+        (boundaryReverse &&
+          (needle === label ||
+            needle.length >= label.length * 0.85 ||
+            contentTokens(needle).length >= contentTokens(label).length - 1));
+      const looseMulti = looseMultiWordAliasMatch(needle, label);
       const coverage = label.includes(' ')
         ? bestAliasContentCoverage(needle, label)
         : 0;
-      const labelTokens = contentTokens(label);
       const covered =
         coverage >= ALIAS_COVERAGE_MIN &&
         labelTokens.length >= 2 &&
@@ -74,46 +101,55 @@ export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | nu
   return matchAliasCatalog(faq, normalizeAsk(utterance));
 }
 
+/** True when the utterance fully matches a FAQ alias (not a short prefix steal). */
+export function isStrongFaqAliasMatch(utterance: string, entry: FaqEntry): boolean {
+  const needle = normalizeAsk(utterance);
+  if (!needle) return false;
+  const labels = [entry.id, ...entry.aliases].map((a) => a.toLowerCase().trim());
+  for (const label of labels) {
+    if (!label) continue;
+    if (needle === label) return true;
+    if (!label.includes(' ')) continue;
+    const coverage = bestAliasContentCoverage(needle, label);
+    const labelTokens = contentTokens(label).length;
+    const needleTokens = contentTokens(needle).length;
+    if (
+      coverage >= ALIAS_COVERAGE_MIN &&
+      needleTokens >= labelTokens - 1 &&
+      needle.length >= label.length * 0.85
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * True when the utterance reads like a product question (not a direct “do X” command).
  * Used so FAQ answers can win over step aliases that appear as substrings
  * (e.g. “how do I create a tournament” vs alias “create tournament”).
  */
 /** True when the utterance is a direct navigation/create command (not FAQ). */
-export function looksLikeNavCommand(utterance: string): boolean {
-  const n = normalizeAsk(utterance);
+export function looksLikeNavCommand(
+  utterance: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const h = resolveH(heuristics);
+  const n = normalizeAsk(utterance, heuristics);
   if (!n) return false;
-  return /^(please\s+)?(take me|go to|open|start|create|make|add|assign|lock|enter|run|show me|do it|navigate(\s+to)?|find|search|locate|bring up|pull up|jump to|route me|head over|head toward|land me|drop me|get me|launch|move to|switch to|spin up|kick off|scaffold|build|begin|mint|initiate|forge|establish|craft|assemble|steer|warp|surface|reveal|boot|expose|provision|teleport|send me|point me)\b/.test(
-    n
-  );
+  return Boolean(h.navCommand?.test(n));
 }
 
-export function looksLikeFaqQuestion(utterance: string): boolean {
-  const n = normalizeAsk(utterance);
+export function looksLikeFaqQuestion(
+  utterance: string,
+  heuristics?: CompiledHeuristics | null
+): boolean {
+  const h = resolveH(heuristics);
+  const n = normalizeAsk(utterance, heuristics);
   if (!n) return false;
-  if (looksLikeNavCommand(n)) return false;
-  if (
-    /^(how|what|why|when|where|who|which|is|are|am|can|could|should|do|does|did|will|would|explain|tell me|help me understand|compare|difference|contrast|break down|pick)\b/.test(
-      n
-    )
-  ) {
-    return true;
-  }
-  // Compare / product-fact asks ("tournament vs event", "SA vs full").
-  return (
-    /\b(vs|versus)\b/.test(n) ||
-    /\bdifference between\b/.test(n) ||
-    /\bcompared (to|with)\b/.test(n) ||
-    /\bcompare\b/.test(n) ||
-    /\bcontrast\b/.test(n) ||
-    /\btradeoffs?\b/.test(n) ||
-    /\bwhat is better\b/.test(n) ||
-    /\bbetter fit\b/.test(n) ||
-    /\bshould i (run|use|create)\b/.test(n) ||
-    /\b(how are|how do)\b.+\b(relate|different|differ)\b/.test(n) ||
-    /\bor\b.+\bwhich\b/.test(n) ||
-    /\bwhich fits\b/.test(n)
-  );
+  if (looksLikeNavCommand(n, heuristics)) return false;
+  if (anyReTest(h.faqQuestion, n)) return true;
+  return anyReTest(h.compare, n);
 }
 
 /**

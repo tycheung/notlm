@@ -12,21 +12,21 @@ import { matchFaqEntry, looksLikeFaqQuestion } from './glossary.js';
 describe('capabilityCatalog', () => {
   const queries = [
     {
-      id: 'td.next_tournament',
-      title: 'Next tournament',
+      id: 'crm.next_event',
+      title: 'Next event',
       aliases: [
-        'when is my next tournament',
-        'can you let me know when the next tournament I\'m hosting is and where',
+        'when is my Next event',
+        'can you let me know when the Next event I\'m hosting is and where',
       ],
     },
   ];
 
-  it('matches next tournament schedule ask', () => {
+  it('matches Next event schedule ask', () => {
     const hit = matchQueryEntry(
       queries,
-      'can you let me know when the next tournament I\'m hosting is and where at'
+      'can you let me know when the Next event I\'m hosting is and where at'
     );
-    expect(hit?.id).toBe('td.next_tournament');
+    expect(hit?.id).toBe('crm.next_event');
   });
 
   it('detects context and explain-last heuristics', () => {
@@ -61,22 +61,22 @@ describe('capabilityCatalog', () => {
   it('matches mutations with filler words via content coverage', () => {
     const mutations = [
       {
-        id: 'td.assign_usbc_confirm',
-        title: 'Assign USBC',
-        aliases: ['fix temporary usbc'],
+        id: 'crm.assign_badge_confirm',
+        title: 'Assign badge',
+        aliases: ['fix temporary badge'],
         risk: 'high' as const,
       },
     ];
-    expect(matchMutationEntry(mutations, 'fix the temporary usbc please')?.id).toBe(
-      'td.assign_usbc_confirm'
+    expect(matchMutationEntry(mutations, 'fix the temporary badge please')?.id).toBe(
+      'crm.assign_badge_confirm'
     );
   });
 
   it('utteranceMatchesTypedCatalog prefers queries over free text', () => {
     expect(
-      utteranceMatchesTypedCatalog({ queries }, 'when is my next tournament')
+      utteranceMatchesTypedCatalog({ queries }, 'when is my Next event')
     ).toBe(true);
-    expect(utteranceMatchesTypedCatalog({ queries }, 'open tournament Alpha')).toBe(
+    expect(utteranceMatchesTypedCatalog({ queries }, 'open event Alpha')).toBe(
       false
     );
   });
@@ -85,7 +85,7 @@ describe('capabilityCatalog', () => {
 describe('askNormalize / FAQ compare', () => {
   it('flags clear OOD', () => {
     expect(looksLikeClearOod('tell me a joke')).toBe(true);
-    expect(looksLikeClearOod('when is my next tournament')).toBe(false);
+    expect(looksLikeClearOod('when is my Next event')).toBe(false);
   });
 
   it('does not map trivia OOD onto meta FAQ entries', () => {

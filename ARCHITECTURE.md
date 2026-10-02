@@ -1,5 +1,17 @@
 # Architecture
 
+## Ownership (sealed runtime)
+
+| Lives here | Examples |
+|------------|----------|
+| **This repo (`uipilot`)** | `@uipilot/core` / `react` / `ranker` / `schema`; demo packs only |
+| **Host app** | `.uipilot/pack/*.json` (product words, aliases, `productRole`, heuristics) |
+| **Offline training** (separate repo) | Miss→draft→accept; product-pack workshop writing into a host `.uipilot/` |
+
+This repo must contain **zero** host-brand product packs or sandboxes. Demo packs
+(`demo-todo`, `demo-crm`, `demo-hello`, `_base-en`, `_template`) are the only
+first-class pack trees.
+
 ## Layers
 
 ```text
@@ -140,7 +152,8 @@ back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
   Sidecar **source of truth:** `packages/ops/templates/laya/` (install with
   `uipilotCLI laya install <backend-dir> [--product-role "…"]`).
   FastAPI fallback route template: `packages/ops/templates/fastapi/`.
-  Local Ollama/tunnel helpers: `packages/ops/templates/dev/`.
+  Local Ollama/tunnel helpers live outside this package:
+  `../scripts/ollama-tunnel/` (workspace root).
   Default on (`features.layaDecisionFallback` unset = on). Chat shows **Thinking…** while waiting.
   Optional **secondary LLM** after Laya refuse: wire `secondaryFallbackLlm` and set
   `features.llmFallbackOnLayaMiss: true` (default off). Chain lives in `@uipilot/core`

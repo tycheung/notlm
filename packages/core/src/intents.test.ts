@@ -33,9 +33,11 @@ describe('parseUtterance', () => {
   it('matches steps by alias, keyword, and title', () => {
     expect(parseUtterance('create list', pack).stepId).toBe('create_list');
     expect(parseUtterance('make a list', pack).stepId).toBe('create_list');
+    expect(parseUtterance('create a list', pack).stepId).toBe('create_list');
     expect(parseUtterance('add todo', pack).stepId).toBe('add_item');
     expect(parseUtterance('create list', pack).confidence).toBe('high');
     expect(parseUtterance('create list', pack).probability).toBe(1);
+    expect(parseUtterance('create a list', pack).confidence).toBe('high');
   });
 
   it('prefers token-boundary matches over mid-word substrings', () => {
@@ -72,6 +74,26 @@ describe('parseUtterance', () => {
     expect(parsed.rawIntent).toBe('faq');
     expect(parsed.faqId).toBe('faq-create');
     expect(parsed.stepId).toBeNull();
+  });
+
+  it('prefers help meta over weak FAQ prefix on “what can you do”', () => {
+    const withBaseGreeting: IntentParsePack = {
+      ...pack,
+      faq: [
+        {
+          id: 'hello_capabilities',
+          aliases: [
+            'hello what can you do for me today',
+            'what can you do for me today',
+          ],
+          text: 'Long greeting FAQ.',
+        },
+      ],
+    };
+    expect(parseUtterance('what can you do', withBaseGreeting).rawIntent).toBe('help');
+    expect(parseUtterance('what can you do for me today', withBaseGreeting).rawIntent).toBe(
+      'faq'
+    );
   });
 
   it('detects meta intents', () => {

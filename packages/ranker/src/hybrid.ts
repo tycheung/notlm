@@ -84,6 +84,7 @@ function resultFromRanker(
   if (
     label === 'whats_next' ||
     label === 'explain_field' ||
+    label === 'help' ||
     label === 'skip_side_actions' ||
     label === 'lookup_participant' ||
     label === 'ambiguous' ||
@@ -199,7 +200,8 @@ export function createHybridUtteranceParser(
     if (
       rules.goBack ||
       rules.rawIntent === 'whats_next' ||
-      rules.rawIntent === 'explain_field'
+      rules.rawIntent === 'explain_field' ||
+      rules.rawIntent === 'help'
     ) {
       if (normalizeUtterance(raw).length < 40) {
         return {

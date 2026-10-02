@@ -108,7 +108,11 @@ export function handlePendingUtterance(
 
   if (pending.kind === 'ask_slot') {
     const knownKeys = (pack.slots?.[pending.stepId] ?? []).map((d) => d.key);
-    const multi = extractMultiSlotPatches(text, knownKeys);
+    const multi = extractMultiSlotPatches(
+      text,
+      knownKeys,
+      pack.compiledHeuristics
+    );
     const singleVal = extractSlotAnswer(text);
     let slots = { ...pending.slots };
     if (Object.keys(multi).length > 0) {

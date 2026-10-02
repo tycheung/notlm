@@ -19,7 +19,7 @@ Then set host-specific pieces:
 2. Admin setting key via `UIPILOT_LLM_FALLBACK_SETTING_KEY` (default `uipilot_llm_fallback`)
 3. `UIPILOT_LAYA_PRODUCT_ROLE` for refuse copy
 
-Victory Bowling keeps `director_assistant_llm_fallback` as the setting key
+Hosts may keep a product-named setting key (example: `director_assistant_llm_fallback`)
 (`UIPILOT_LLM_FALLBACK_SETTING_KEY=director_assistant_llm_fallback` in BE `.env`).
 
 **Do not** invent a second chaining layer here — FE uses `invokeChainedDecisionFallback`.

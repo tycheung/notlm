@@ -13,16 +13,29 @@ Coaching / guide-id tours are optional pack patterns — not core product defaul
 
 ## Split
 
-- **Core / ranker / react**: generic mechanisms (normalize *engine*, dispatch, lookup scoring, bands, miss→Laya→LLM).
-- **Pack JSON** (`normalize`, `intents`, `faq`, `lookups`, `replies`, `flow`, phrase lists, `manifest.productRole`): product words, synonyms, copy, step graph.
+- **Core / ranker / react**: generic mechanisms (compile pack regex, normalize *engine*,
+  fuzzy alias score, dispatch order, miss→Laya→LLM).
+- **Pack JSON** (`normalize`, `heuristics`, `intents`, `faq`, `lookups`, `replies`,
+  `flow`, phrase lists, `manifest.productRole`): product words, phrases, regex *source*
+  strings, synonyms, copy, step graph.
 
 ## Rules
 
-1. Do **not** hardcode product synonyms, UI surface words, open-verb aliases, domain goto tokens, or politeness fillers in TypeScript. Read pack config.
-2. New behavior → **generic + config-shaped**. Prefer extending `NormalizeConfig` / pack schemas over `if (pack.id === 'vb-…')`.
-3. Hosts must be able to add synonyms / role / refuse copy by editing JSON alone.
-4. Demos and regression tests that need synonyms supply them via `loadPackFromJson({ normalize: … })`, not hidden core defaults.
-5. Default `productRole` / OOD refuse voice = generic assistant (e.g. `a product assistant`), never a host brand.
+1. Do **not** hardcode product synonyms, UI surface words, open-verb aliases, domain
+   goto tokens, politeness fillers, OOD topic bags, discourse fillers, desk handoff
+   phrases, or slot salvage regex in TypeScript. Put them in `normalize.json` /
+   `heuristics.json` (or related pack fields).
+2. New trainable language → **pack JSON**. New matching *mechanism* → core (must justify
+   why it cannot be a heuristics pattern list). Prefer extending `HeuristicsConfig` /
+   `NormalizeConfig` over `if (pack.id === 'vb-…')`.
+3. Hosts must be able to add synonyms / role / refuse copy / OOD / discourse paraphrases
+   by editing JSON + vendor sync alone.
+4. Demos and regression tests that need product fillers supply them via
+   `compileHeuristics(overlay)` / `loadPackFromJson({ normalize, heuristics })`,
+   not hidden core defaults.
+5. Default `productRole` / OOD refuse voice = generic assistant (e.g. `a product assistant`),
+   never a host brand. Empty pack compiled heuristics must contain **zero** host brand
+   tokens (no host brand jargon).
 
 ## Example
 
@@ -30,10 +43,12 @@ Coaching / guide-id tours are optional pack patterns — not core product defaul
 // ❌ BAD
 const SURFACES = ['form', 'page'];
 if (text.includes('pull up')) …
+if (/\bforget acme\b/.test(n)) …
 
 // ✅ GOOD
 normalizeUtterance(text, pack.normalize);
 stripOpenVerbPrefix(haystack, pack.normalize);
-looksLikeSurfaceAsk(text, pack.normalize);
+looksLikeClearOod(text, pack.compiledHeuristics);
+looksLikeDeskHandoff(text, pack.compiledHeuristics);
 ```
 ---

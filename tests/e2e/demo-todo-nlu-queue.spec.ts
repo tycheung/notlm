@@ -46,7 +46,11 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     await openChat(page);
     await sendUtterance(page, 'Hello, what can you do for me today?');
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
-    await expect(dialog.getByText(/UI coach|annotated workflows|what can you do/i)).toBeVisible();
+    await expect(
+      dialog.locator('.uipilot-chat-bubble-assistant').filter({
+        hasText: /UI coach|annotated workflows|what can you do/i,
+      })
+    ).toBeVisible();
   });
 
   test('help lists available steps', async ({ page }) => {

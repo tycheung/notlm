@@ -22,7 +22,7 @@ Deterministic pack NLU is a **smart cache** in front of optional neural backups.
 ## Defaults
 
 - User-facing voice defaults to a **generic product assistant**, never a host brand
-  (no bowling / Victory Bowling / “product coach” defaults in packages).
+  (no host-brand / “product coach” defaults in packages).
 - Hosts set `manifest.productRole` and reply copy in pack JSON.
 - Internal names like `CoachEvent` / `coachMessage` are guide-pattern telemetry;
   do not treat them as the product identity in docs or new APIs.

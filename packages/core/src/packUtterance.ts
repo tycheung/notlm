@@ -154,7 +154,8 @@ export function composeMixedIntentReply(
   steps: IntentParsePack['steps'],
   session: SessionSlots,
   bank: ReplyBank | undefined,
-  productRole?: string
+  productRole?: string,
+  heuristics?: import('./heuristics.js').CompiledHeuristics | null
 ): { text: string; session: SessionSlots } | null {
   if (packed.oodSegments.length === 0) return null;
   const titles = packed.actions.map((a) => titleFor(steps, a.stepId));
@@ -165,6 +166,7 @@ export function composeMixedIntentReply(
     productRole,
     partial: packed.actions.length > 0,
     handledTitles: titles,
+    heuristics,
   });
   if (packed.actions.length === 0) {
     return { text: assembled.text, session: assembled.session };

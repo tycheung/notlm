@@ -1,7 +1,7 @@
 import { emitCoachEvent } from './coachEvents.js';
 import { filterCandidatesByContext, shortlistStepIds } from './candidateTree.js';
 import { resolveDiscourse } from './discourse.js';
-import { parseUtterance } from './intents.js';
+import { matchMetaIntent, parseUtterance } from './intents.js';
 import { biasStepByPageContext } from './pageContext.js';
 import { applyQueueRewrite, detectQueueRewrite } from './queueRewrite.js';
 import { handlePendingUtterance } from './dispatchTalk.js';
@@ -19,7 +19,12 @@ import {
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
 import { looksLikeClearOod } from './askNormalize.js';
-import { looksLikeNavCommand, matchFaqEntry } from './glossary.js';
+import {
+  isStrongFaqAliasMatch,
+  looksLikeNavCommand,
+  matchFaqEntry,
+} from './glossary.js';
+import { normalizeUtterance } from './normalizeConfig.js';
 import { assembleOodReply } from './oodReply.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
 import { activeFlowSteps } from './subgraph.js';
@@ -115,7 +120,8 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     })();
   }
   if (tryHandleExplainLast(live, trimmed)) return;
-  if (tryHandleContextAsk(live, trimmed)) return;
+  // Catalog before context so pack aliases (e.g. billing "why is create greyed out")
+  // are not stolen by the context-ask heuristic.
   const capEarly = tryDispatchCapabilityCatalog(live, trimmed);
   if (capEarly === true) return;
   if (capEarly && typeof (capEarly as Promise<unknown>).then === 'function') {
@@ -123,23 +129,42 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
       await (capEarly as Promise<boolean>);
     })();
   }
+  if (tryHandleContextAsk(live, trimmed)) return;
 
   // Clear OOD before FAQ — meta FAQ aliases must never swallow trivia / jokes.
-  if (looksLikeClearOod(trimmed)) {
+  if (looksLikeClearOod(trimmed, live.pack.compiledHeuristics)) {
     const assembled = assembleOodReply(trimmed, {
       session: live.session,
       bank: live.pack.replies,
       productRole: live.pack.productRole,
+      heuristics: live.pack.compiledHeuristics,
     });
     live.setSession(() => assembled.session);
     live.pushAssistant(assembled.text);
+    emitCoachEvent(live, {
+      type: 'repair',
+      kind: 'unknown',
+      text: trimmed,
+      rawIntent: 'ood',
+    });
     return;
   }
 
   // FAQ before parse/ranker/Laya so compare + product facts never OOD-refuse.
   {
     const faqHit = matchFaqEntry(live.pack.faq ?? [], trimmed);
-    if (faqHit && !looksLikeNavCommand(trimmed)) {
+    const metaEarly = matchMetaIntent(
+      normalizeUtterance(trimmed, live.pack.normalize),
+      live.pack.meta,
+      live.pack.metaPatterns
+    );
+    const helpOverridesWeakFaq =
+      metaEarly === 'help' && faqHit && !isStrongFaqAliasMatch(trimmed, faqHit);
+    if (
+      faqHit &&
+      !helpOverridesWeakFaq &&
+      !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)
+    ) {
       const offer = faqHit.stepId
         ? ` If you want, I can take you to “${stepTitle(live.pack, faqHit.stepId)}”.`
         : '';
@@ -168,8 +193,13 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     steps: activeFlowSteps(live.pack, live.session),
     aliases: live.pack.aliases,
     meta: live.pack.meta,
+    metaPatterns: live.pack.metaPatterns,
     faq: live.pack.faq,
     normalize: live.pack.normalize,
+    lexicon: live.pack.lexicon,
+    faqDomainTokens: live.pack.faqDomainTokens,
+    heuristics: live.pack.heuristics,
+    compiledHeuristics: live.pack.compiledHeuristics,
   };
   const rewrite = detectQueueRewrite(trimmed, intentPackEarly, live.session);
   if (rewrite) {
@@ -187,7 +217,11 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
 
   if (tryDraftCompilers(live)) return;
 
-  const discourse = resolveDiscourse(trimmed, live.session.discourse);
+  const discourse = resolveDiscourse(
+    trimmed,
+    live.session.discourse,
+    live.pack.compiledHeuristics
+  );
   if (discourse.kind === 'undo') {
     const prev = resolveGoBackStep(live.session);
     if (!prev) {
@@ -252,8 +286,13 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     steps: flowSteps,
     aliases: live.pack.aliases,
     meta: live.pack.meta,
+    metaPatterns: live.pack.metaPatterns,
     faq: live.pack.faq,
     normalize: live.pack.normalize,
+    lexicon: live.pack.lexicon,
+    faqDomainTokens: live.pack.faqDomainTokens,
+    heuristics: live.pack.heuristics,
+    compiledHeuristics: live.pack.compiledHeuristics,
   };
   const lruKey = phraseLruKey(parseText, live.ctx.pathname);
   if (live.phraseLru) {

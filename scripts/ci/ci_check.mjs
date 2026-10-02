@@ -39,6 +39,7 @@ run(pm, ['run', 'build']);
 run(pm, ['run', 'lint']);
 run(pm, ['run', 'typecheck']);
 run(pm, ['run', 'test:coverage']);
+run(pm, ['run', 'check:host-bleed']);
 
 // Pack schema gate (ci-004) + demo intent regression (no live LLM).
 run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-todo']);

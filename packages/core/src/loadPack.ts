@@ -1,4 +1,5 @@
 import { bindersToCompleteness } from './binders.js';
+import { compileHeuristics } from './heuristics.js';
 import type {
   CompletenessFn,
   LoadedPack,
@@ -25,11 +26,14 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     mutations,
     tours,
     search,
+    heuristics,
   } = input;
   const controlByStep = new Map<StepId, (typeof controls)[number]>();
   for (const control of controls) {
     controlByStep.set(control.stepId, control);
   }
+
+  const compiledHeuristics = compileHeuristics(heuristics, normalize);
 
   return {
     id: manifest.id,
@@ -83,6 +87,8 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
       input.explainLastPhrases,
       normalize?.explainLastPhrases
     ),
+    heuristics: heuristics && Object.keys(heuristics).length ? heuristics : undefined,
+    compiledHeuristics,
     queries: queries?.length ? queries : undefined,
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,

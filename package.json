@@ -25,10 +25,9 @@
     "lint": "eslint packages apps --max-warnings=0",
     "ci": "node scripts/ci/ci_check.mjs",
     "ci:dx": "node scripts/ci/ci_check.mjs --with-dx",
+    "check:host-bleed": "node scripts/ci/host_bleed_check.mjs",
     "uipilotCLI": "node packages/cli/dist/cli.js",
-    "extract:vb": "node scripts/extract-vb-pack.mjs",
-    "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo",
-    "check:vb": "node packages/cli/dist/cli.js intents check packs/vb-director"
+    "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0",

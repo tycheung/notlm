@@ -75,7 +75,7 @@ export function tryHandlePendingMutationConfirm(
     | undefined;
   if (!pending?.mutationId) return false;
 
-  if (looksLikeConfirmNo(trimmed)) {
+  if (looksLikeConfirmNo(trimmed, deps.pack.compiledHeuristics)) {
     deps.setSession((s) => {
       const flags = { ...s.flags };
       delete flags.pendingMutation;
@@ -84,7 +84,7 @@ export function tryHandlePendingMutationConfirm(
     deps.pushAssistant('Canceled — nothing was changed.');
     return true;
   }
-  if (!looksLikeConfirmYes(trimmed)) return false;
+  if (!looksLikeConfirmYes(trimmed, deps.pack.compiledHeuristics)) return false;
   if (!deps.executeMutation) {
     deps.pushAssistant('I can’t complete that write from here.');
     return true;
@@ -120,7 +120,7 @@ export function tryHandlePendingMutationConfirm(
 export function tryHandleExplainLast(deps: DispatchDeps, trimmed: string): boolean {
   const phrases =
     deps.pack.explainLastPhrases ?? deps.pack.normalize?.explainLastPhrases;
-  if (!looksLikeExplainLast(trimmed, phrases)) return false;
+  if (!looksLikeExplainLast(trimmed, phrases, deps.pack.compiledHeuristics)) return false;
   const last = (deps.session.discourse as { lastCoachAction?: { summary?: string } } | undefined)
     ?.lastCoachAction;
   if (last?.summary) {
@@ -134,7 +134,7 @@ export function tryHandleExplainLast(deps: DispatchDeps, trimmed: string): boole
 export function tryHandleContextAsk(deps: DispatchDeps, trimmed: string): boolean {
   const phrases =
     deps.pack.contextAskPhrases ?? deps.pack.normalize?.contextAskPhrases;
-  if (!looksLikeContextAsk(trimmed, phrases)) return false;
+  if (!looksLikeContextAsk(trimmed, phrases, deps.pack.compiledHeuristics)) return false;
   if (deps.resolveContextAsk) {
     const text = deps.resolveContextAsk({ text: trimmed, ctx: deps.ctx, session: deps.session });
     if (text) {
@@ -172,7 +172,7 @@ export function tryDispatchCapabilityCatalog(
 
   const deskForce =
     !opts?.queryId &&
-    looksLikeDeskHandoff(trimmed) &&
+    looksLikeDeskHandoff(trimmed, deps.pack.compiledHeuristics) &&
     queries.find((q) => /desk|handoff|standup/i.test(q.id));
 
   const queryHit =

@@ -31,17 +31,50 @@ const pack = loadPackFromJson({
       title: 'Next tournament',
       aliases: ['when is my next tournament'],
     },
+    {
+      id: 'desk_handoff',
+      title: 'Desk handoff',
+      aliases: ['desk handoff summary'],
+    },
   ],
   mutations: [
     {
-      id: 'td.assign_usbc_confirm',
-      title: 'Assign USBC',
-      aliases: ['assign usbc'],
+      id: 'crm.assign_badge_confirm',
+      title: 'Assign badge',
+      aliases: ['Assign badge'],
       risk: 'high',
       confirmPrompt: 'Confirm assign?',
       stepId: 'create_tournament',
     },
+    {
+      id: 'crm.prefill_low',
+      title: 'Prefill create',
+      aliases: ['prefill create form'],
+      risk: 'low',
+      stepId: 'create_tournament',
+    },
   ],
+  tours: [
+    {
+      id: 'tour_onboard',
+      title: 'Onboarding',
+      aliases: ['show me around'],
+      steps: ['create_tournament'],
+      lines: ['Starting onboarding walkthrough.'],
+    },
+  ],
+  search: [
+    {
+      id: 'search_centers',
+      title: 'Centers',
+      aliases: ['find centers'],
+      path: '/centers',
+      stepId: 'create_tournament',
+    },
+  ],
+  heuristics: {
+    deskHandoffPatterns: ['\\bdesk handoff\\b', '\\bstandup\\b'],
+  },
 });
 
 function makeDeps(overrides: Partial<DispatchDeps> = {}): DispatchDeps & {
@@ -106,11 +139,11 @@ describe('capability dispatch', () => {
       }),
       executeMutation,
     });
-    await tryDispatchCapabilityCatalog(deps, 'assign usbc');
+    await tryDispatchCapabilityCatalog(deps, 'Assign badge');
     expect(executeMutation).not.toHaveBeenCalled();
     expect(deps.assistant[0]).toMatch(/Confirm/i);
     expect(deps.session.flags.pendingMutation).toMatchObject({
-      mutationId: 'td.assign_usbc_confirm',
+      mutationId: 'crm.assign_badge_confirm',
     });
 
     const confirmed = await tryHandlePendingMutationConfirm(deps, 'yes');
@@ -126,9 +159,9 @@ describe('capability dispatch', () => {
       flags: {
         ...s.flags,
         pendingMutation: {
-          mutationId: 'td.assign_usbc_confirm',
+          mutationId: 'crm.assign_badge_confirm',
           slots: {},
-          text: 'assign usbc',
+          text: 'Assign badge',
         },
       },
     }));
@@ -158,6 +191,103 @@ describe('capability dispatch', () => {
     await tryDispatchCapabilityCatalog(deps, 'when is my next tournament');
     expect(tryHandleExplainLast(deps, 'what did you just open')).toBe(true);
     expect(deps.assistant.at(-1)).toMatch(/Last action/);
+  });
+
+  it('explains empty history when no prior coach action', () => {
+    const deps = makeDeps();
+    expect(tryHandleExplainLast(deps, 'what did you just do')).toBe(true);
+    expect(deps.assistant[0]).toMatch(/haven’t taken an assistant action/i);
+  });
+
+  it('handles query match when resolveQuery is missing', async () => {
+    const deps = makeDeps();
+    const handled = await tryDispatchCapabilityCatalog(
+      deps,
+      'when is my next tournament'
+    );
+    expect(handled).toBe(true);
+  });
+
+  it('opens mutation step when previewMutation is not wired', async () => {
+    const deps = makeDeps();
+    const handled = await tryDispatchCapabilityCatalog(deps, 'Assign badge');
+    expect(handled).toBe(true);
+    expect(deps.executed).toContain('create_tournament');
+  });
+
+  it('executes low-risk mutation preview without confirm', async () => {
+    const deps = makeDeps({
+      previewMutation: async () => ({
+        text: 'Prefill ready.',
+        needsConfirm: false,
+        navigatePath: '/create',
+        stepId: 'create_tournament',
+      }),
+      navigate: vi.fn(),
+    });
+    const handled = await tryDispatchCapabilityCatalog(deps, 'prefill create form');
+    expect(handled).toBe(true);
+    expect(deps.assistant.at(-1)).toBe('Prefill ready.');
+  });
+
+  it('runs tour and search catalog hits', async () => {
+    const tourDeps = makeDeps({
+      runTour: async () => ({ text: 'Tour started.' }),
+    });
+    expect(await tryDispatchCapabilityCatalog(tourDeps, 'show me around')).toBe(
+      true
+    );
+    expect(tourDeps.assistant[0]).toMatch(/Tour started/);
+
+    const searchDeps = makeDeps({
+      openSearchHit: async () => ({ text: 'Search open.' }),
+      navigate: vi.fn(),
+    });
+    expect(await tryDispatchCapabilityCatalog(searchDeps, 'find centers')).toBe(
+      true
+    );
+    expect(searchDeps.assistant[0]).toMatch(/Search open/);
+
+    const searchFallback = makeDeps({ navigate: vi.fn() });
+    expect(await tryDispatchCapabilityCatalog(searchFallback, 'find centers')).toBe(
+      true
+    );
+    expect(searchFallback.assistant[0]).toMatch(/Opening/);
+  });
+
+  it('forces desk handoff query when handoff phrasing matches', async () => {
+    const deps = makeDeps({
+      resolveQuery: async ({ queryId }) => ({
+        text: `Handoff via ${queryId}`,
+      }),
+    });
+    expect(await tryDispatchCapabilityCatalog(deps, 'desk handoff please')).toBe(
+      true
+    );
+    expect(deps.assistant[0]).toMatch(/desk_handoff/);
+  });
+
+  it('accepts explicit catalog ids via opts', async () => {
+    const deps = makeDeps({
+      resolveQuery: async () => ({ text: 'Forced query.' }),
+      runTour: async () => ({ text: 'Forced tour.' }),
+      openSearchHit: async () => ({ text: 'Forced search.' }),
+    });
+    expect(
+      await tryDispatchCapabilityCatalog(deps, 'anything', {
+        queryId: 'td.next_tournament',
+      })
+    ).toBe(true);
+    expect(
+      await tryDispatchCapabilityCatalog(deps, 'anything', {
+        tourId: 'tour_onboard',
+      })
+    ).toBe(true);
+    expect(
+      await tryDispatchCapabilityCatalog(deps, 'anything', {
+        searchId: 'search_centers',
+      })
+    ).toBe(true);
   });
 });
 

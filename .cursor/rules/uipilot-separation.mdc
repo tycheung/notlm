@@ -22,7 +22,7 @@ optional pattern — not the product identity.
 
 ## Hard rules
 
-1. Never put VB / bowling synonyms or role defaults in `@uipilot/core`.
+1. Never put host-brand synonyms or role defaults in `@uipilot/core`.
 2. Never hand-edit `react-frontend/vendor/uipilot` — change `uipilot/`, build, sync vendor.
 3. Never `if (pack.id === 'vb-…')` in core.
 4. Laya **weights** ≠ FE green/blue ≠ BE CodePipeline app deploy (see `laya-cicd.mdc`).

@@ -1,3 +1,5 @@
+export * from './heuristics.js';
+export * from './heuristicsDefaults.js';
 export * from './askNormalize.js';
 export * from './capabilityCatalog.js';
 export * from './dispatchCapability.js';

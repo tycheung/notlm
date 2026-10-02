@@ -12,7 +12,6 @@ Reference packs in this repo:
 |------|------|
 | `packs/demo-todo/.uipilot/` | Smallest end-to-end example (start here) |
 | `packs/demo-crm/.uipilot/` | Second host; same folder pack shapes |
-| `packs/vb-director/.uipilot/` | Larger real-world DAG / corpus |
 | `packs/_template/` | Empty schema fixture |
 | `packs/_base-en/faq.json` | Shared English greetings / soft conversational FAQ (merged under product FAQ) |
 
@@ -59,10 +58,30 @@ User says “add a todo” / picks a palette row
     faq.json                  # product Q&A (merged with packs/_base-en)
     glossary.json             # explain_field copy
     lookups.json              # name-match entity lists from getContext().data
+    normalize.json            # synonyms, fillers, open/create verbs, phrase lists
+    heuristics.json           # OOD / discourse / context / nav / correction patterns
   drafts/                     # CLI/LLM proposals before --accept
 ```
 
 Minimal mental model: **`manifest` + five pack files**. Everything else is tooling output.
+
+### Training = edit pack JSON
+
+Prefer fixing stress misses by editing JSON (then `npm run build:uipilot` / vendor sync), not `@uipilot/core`:
+
+| Change | Edit |
+|--------|------|
+| Synonym / typo | `normalize.replacements` |
+| Goto / FAQ / mutation wording | catalog aliases |
+| Filler prefix/suffix | `normalize.leadingPoliteness` / `trailingFillers` (also merged into discourse) |
+| OOD topic / phrase | `heuristics.ood` |
+| Meant-the-other / undo / slot salvage | `heuristics.discourse` |
+| Context / blockers / explain-last | `heuristics.contextAskPatterns` / `explainLastPatterns` + phrase lists |
+| Desk handoff | `heuristics.deskHandoffPatterns` (empty = disabled) |
+| Meta intent | `intents.metaPatterns` (platform builtins in core defaults JSON-shape) |
+| Dispatch / scoring bug | still core TS |
+
+Platform defaults ship generic English only. Host brand tokens (product jargon) must live in the product pack overlay.
 
 Init:
 
@@ -210,7 +229,7 @@ Deterministic aliases → step ids. `meta` lists built-in meta intents (e.g. `wh
 }
 ```
 
-Start with **clean** phrases. Add typos / STT fragments when hardening (see `vb-director`). Prefer offline tooling or hand edits for large alias growth; keep surgical fixes in pack JSON.
+Start with **clean** phrases. Add typos / STT fragments when hardening (see a large host pack). Prefer offline tooling or hand edits for large alias growth; keep surgical fixes in pack JSON.
 
 ### `pack/binders.json`
 
@@ -432,7 +451,7 @@ step** (same buttons/forms a human would use). No silent product APIs.
 
 ### Coach pack vs self-serve pack
 
-| | Coach (e.g. VB director) | Self-serve resolution |
+| | Host coach pack | Self-serve resolution |
 |--|--------------------------|------------------------|
 | Goal | Teach / navigate complex setup | Finish a known request |
 | Typical intents | `goto:create_event`, `whats_next` | FAQ answers, short `goto` + confirm |

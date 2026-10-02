@@ -9,6 +9,7 @@ import { loadPackFromJson } from './loadPack.js';
 import type {
   BinderPredicate,
   FaqEntry,
+  HeuristicsConfig,
   LoadedPack,
   LookupDef,
   NormalizeConfig,
@@ -106,6 +107,8 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
   const replies = existsSync(repliesPath) ? readJsonFile(repliesPath) : undefined;
   const normalizePath = join(pack, 'normalize.json');
   const normalize = existsSync(normalizePath) ? readJsonFile(normalizePath) : undefined;
+  const heuristicsPath = join(pack, 'heuristics.json');
+  const heuristics = existsSync(heuristicsPath) ? readJsonFile(heuristicsPath) : undefined;
   const subgraphsPath = join(pack, 'subgraphs.json');
   const subgraphsRaw = existsSync(subgraphsPath) ? readJsonFile(subgraphsPath) : undefined;
 
@@ -133,6 +136,10 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
     normalize:
       normalize != null && typeof normalize === 'object' && !Array.isArray(normalize)
         ? (normalize as NormalizeConfig)
+        : undefined,
+    heuristics:
+      heuristics != null && typeof heuristics === 'object' && !Array.isArray(heuristics)
+        ? (heuristics as HeuristicsConfig)
         : undefined,
     subgraphs:
       subgraphsRaw != null &&

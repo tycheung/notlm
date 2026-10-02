@@ -1,4 +1,9 @@
 import { normalizeAsk } from './askNormalize.js';
+import {
+  anyReTest,
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
 import type { DiscourseState, StepId } from './types.js';
 
 export type DiscourseResolution =
@@ -10,79 +15,77 @@ export type DiscourseResolution =
   | { kind: 'choice_index'; text: string; index: number }
   | { kind: 'clarify_choice'; text: string };
 
-const AGAIN =
-  /^(do\s+)?(that|it|the same)(\s+again)?[.!?]*$/i;
-const THAT_STEP =
-  /^(that(\s+one)?|the (last|previous) (one|step)|again)[.!?]*$/i;
-const OTHER =
-  /^(the )?other(\s+(one|option))?[.!?]*$/i;
-const THAT_ENTITY =
-  /^(that|the same)\s+(list|contact|item|one|record|entry)[.!?]*$/i;
-const UNDO =
-  /^(undo( that)?|never ?mind( that| this| the (choice|pick|selection))?|scratch that|cancel (that|this|the (choice|pick|selection))|never mind that (choice|pick|selection)|cancel that (choice|pick)|nevermind that (pick|choice))[.!?]*$/i;
-const CHOICE_INDEX =
-  /^(?:(?:pick\s+)?(?:number|option|choice)\s+|pick\s+)?([1-9]|one|two|three|first|second|third)\b/i;
-const CHANGE_NAME =
-  /^(change|rename|update|fix)\s+(the\s+)?(name|title|list name|contact name)\b/i;
-const CHANGE_NAME_VALUE =
-  /^(?:change|rename|update|fix)\s+(?:the\s+)?(?:name|title)\s+(?:to\s+)?(.+)$/i;
-const RENAME_TO = /^(?:rename|change)\s+to\s+(.+)$/i;
-
-const INDEX_WORDS: Record<string, number> = {
-  '1': 0,
-  one: 0,
-  first: 0,
-  '2': 1,
-  two: 1,
-  second: 1,
-  '3': 2,
-  three: 2,
-  third: 2,
-};
+function resolveH(h?: CompiledHeuristics | null): CompiledHeuristics {
+  return h ?? DEFAULT_HEURISTICS;
+}
 
 /**
  * Resolve light anaphora / repair against discourse before NLU.
+ * Pattern lists come from compiled pack heuristics (platform + overlay).
  */
 export function resolveDiscourse(
   utterance: string,
-  discourse: DiscourseState | undefined
+  discourse: DiscourseState | undefined,
+  heuristics?: CompiledHeuristics | null
 ): DiscourseResolution {
+  const h = resolveH(heuristics).discourse;
   const raw = utterance.trim();
   if (!raw) return { kind: 'none', text: raw };
-  const text = normalizeAsk(raw) || raw;
+  // Strip leading/trailing fillers so "kindly the other one in app" still resolves.
+  let text = normalizeAsk(raw, heuristics) || raw;
+  for (let i = 0; i < 4; i++) {
+    let next = text;
+    if (h.lead) next = next.replace(h.lead, '');
+    if (h.trail) next = next.replace(h.trail, '');
+    next = next.trim();
+    if (next === text) break;
+    text = next;
+  }
+  if (!text) text = normalizeAsk(raw, heuristics) || raw;
 
-  if (UNDO.test(text) || UNDO.test(raw)) {
+  if (anyReTest(h.undo, text) || anyReTest(h.undo, raw)) {
     return { kind: 'undo', text: raw };
   }
 
-  const renameTo = raw.match(RENAME_TO);
-  if (renameTo?.[1]) {
-    return { kind: 'repair_slot', text: raw, slotHint: renameTo[1].trim() };
+  if (h.renameTo) {
+    const renameTo = raw.match(h.renameTo);
+    if (renameTo?.[1]) {
+      return { kind: 'repair_slot', text: raw, slotHint: renameTo[1].trim() };
+    }
   }
-  const rename = raw.match(CHANGE_NAME_VALUE);
-  if (rename?.[1]) {
-    return { kind: 'repair_slot', text: raw, slotHint: rename[1].trim() };
+  if (h.repairNameValue) {
+    const rename = raw.match(h.repairNameValue);
+    if (rename?.[1]) {
+      return { kind: 'repair_slot', text: raw, slotHint: rename[1].trim() };
+    }
   }
-  if (CHANGE_NAME.test(text) || CHANGE_NAME.test(raw)) {
+  if (anyReTest(h.repairName, text) || anyReTest(h.repairName, raw)) {
     return { kind: 'repair_slot', text: raw };
   }
 
-  const choiceMatch = text.match(CHOICE_INDEX) ?? raw.match(CHOICE_INDEX);
-  if (choiceMatch?.[1]) {
-    const idx = INDEX_WORDS[choiceMatch[1].toLowerCase()];
-    if (idx != null) {
-      if (discourse?.lastChoiceIds && discourse.lastChoiceIds.length > idx) {
-        return {
-          kind: 'step',
-          text: raw,
-          stepId: discourse.lastChoiceIds[idx]!,
-        };
+  if (h.choiceIndex) {
+    const choiceMatch = text.match(h.choiceIndex) ?? raw.match(h.choiceIndex);
+    if (choiceMatch?.[1]) {
+      const idx = h.indexWords[choiceMatch[1].toLowerCase()];
+      if (idx != null) {
+        if (discourse?.lastChoiceIds && discourse.lastChoiceIds.length > idx) {
+          return {
+            kind: 'step',
+            text: raw,
+            stepId: discourse.lastChoiceIds[idx]!,
+          };
+        }
+        return { kind: 'choice_index', text: raw, index: idx };
       }
-      return { kind: 'choice_index', text: raw, index: idx };
     }
   }
 
-  if (OTHER.test(text) || OTHER.test(raw)) {
+  if (
+    anyReTest(h.other, text) ||
+    anyReTest(h.other, raw) ||
+    anyReTest(h.meantOther, text) ||
+    anyReTest(h.meantOther, raw)
+  ) {
     if (discourse?.lastChoiceIds && discourse.lastChoiceIds.length >= 2) {
       return { kind: 'step', text: raw, stepId: discourse.lastChoiceIds[1]! };
     }
@@ -91,11 +94,14 @@ export function resolveDiscourse(
 
   if (!discourse) return { kind: 'none', text: raw };
 
-  if ((AGAIN.test(text) || THAT_STEP.test(text)) && discourse.lastStepId) {
+  if (
+    (anyReTest(h.again, text) || anyReTest(h.thatStep, text)) &&
+    discourse.lastStepId
+  ) {
     return { kind: 'step', text: raw, stepId: discourse.lastStepId };
   }
 
-  if (THAT_ENTITY.test(text) && discourse.lastEntityName) {
+  if (anyReTest(h.entity, text) && discourse.lastEntityName) {
     return {
       kind: 'entity',
       text: `show ${discourse.lastEntityName}`,
@@ -118,11 +124,12 @@ export function extractSlotAnswer(utterance: string): string {
 
 /**
  * Salvage multiple slot-like values from one utterance (key=value, “quoted”,
- * “called X”, “with N lanes”). Keys are pack slot keys when provided.
+ * “called X”, pack slotExtractors). Domain keys / patterns come from heuristics.
  */
 export function extractMultiSlotPatches(
   utterance: string,
-  knownKeys: string[] = []
+  knownKeys: string[] = [],
+  heuristics?: CompiledHeuristics | null
 ): Record<string, string> {
   const slots: Record<string, string> = {};
   const text = utterance.trim();
@@ -143,21 +150,25 @@ export function extractMultiSlotPatches(
     slots[nameKey] = called[1].trim();
   }
 
-  const lanes = text.match(/\b(\d+)\s+lanes?\b/i);
-  if (lanes?.[1] && (knownKeys.includes('lanes') || knownKeys.length === 0)) {
-    slots.lanes = lanes[1];
-  }
-
-  const atPlace = text.match(/\bat\s+([A-Za-z][\w\s'-]{0,40})(?=$|,|;|\s+with\b)/);
-  if (atPlace?.[1] && (knownKeys.includes('center_hint') || knownKeys.includes('center'))) {
-    const key = knownKeys.includes('center_hint') ? 'center_hint' : 'center';
-    slots[key] = atPlace[1].trim();
-  }
-
-  if (/\bteams?\b/i.test(text) && knownKeys.includes('event_format')) {
-    slots.event_format = 'teams';
-  } else if (/\bsingles?\b/i.test(text) && knownKeys.includes('event_format')) {
-    slots.event_format = 'singles';
+  const extractors = resolveH(heuristics).discourse.slotExtractors;
+  for (const ex of extractors) {
+    const allowed =
+      knownKeys.length === 0
+        ? ex.allowWithoutKeys
+        : knownKeys.includes(ex.slotKey) ||
+          (ex.altKeys?.some((k) => knownKeys.includes(k)) ?? false);
+    if (!allowed) continue;
+    const m = text.match(ex.pattern);
+    if (!m) continue;
+    const val = (ex.value ?? m[1]?.trim())?.trim();
+    if (!val) continue;
+    let key = ex.slotKey;
+    if (knownKeys.length && !knownKeys.includes(key) && ex.altKeys?.length) {
+      const alt = ex.altKeys.find((k) => knownKeys.includes(k));
+      if (alt) key = alt;
+      else continue;
+    }
+    slots[key] = val;
   }
 
   // Bare answer with a single known required key left → map whole utterance.

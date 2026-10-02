@@ -2,6 +2,6 @@
 
 Off by default for Celery install. Use when the host has no existing worker.
 
-VB / hosts with Celery already: attach `tasks_promote` to the existing app instead.
+Hosts with Celery already: attach `tasks_promote` to the existing app instead.
 
 This path never fine-tunes Laya weights (CPU pack + ranker only).

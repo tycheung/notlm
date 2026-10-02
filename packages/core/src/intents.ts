@@ -4,7 +4,16 @@ import {
   probabilityToConfidence,
   ruleScoreToProbability,
 } from './confidenceBands.js';
-import { looksLikeNavCommand, matchFaqEntry } from './glossary.js';
+import {
+  isStrongFaqAliasMatch,
+  looksLikeNavCommand,
+  matchFaqEntry,
+} from './glossary.js';
+import {
+  DEFAULT_HEURISTICS,
+  type CompiledHeuristics,
+} from './heuristics.js';
+import { PLATFORM_META_PATTERNS } from './heuristicsDefaults.js';
 import {
   normalizeUtterance,
   stripOpenVerbPrefix,
@@ -17,58 +26,9 @@ import type {
   StepId,
 } from './types.js';
 
-const META_PATTERNS: Array<{ intent: string; patterns: RegExp[] }> = [
-  {
-    intent: 'go_back',
-    patterns: [
-      /\bgo back\b/i,
-      /\bprevious step\b/i,
-      /\bearlier step\b/i,
-      /\bback up\b/i,
-      /\bundo that\b/i,
-      /\bwait go back\b/i,
-    ],
-  },
-  {
-    intent: 'whats_next',
-    patterns: [/\bwhat(?:'s| is) next\b/i, /\bnext step\b/i, /\bwhat should i do\b/i],
-  },
-  {
-    intent: 'explain_field',
-    patterns: [/\bexplain\b/i, /\bwhat (?:is|does)\b.+\bmean\b/i, /\bhelp with this field\b/i],
-  },
-  {
-    intent: 'help',
-    patterns: [
-      /\bwhat can you ?do\b/i,
-      /\bwhat do you support\b/i,
-      /\bwhat are you able to do\b/i,
-      /\bshow me what you can do\b/i,
-      /\bcapabilities\b/i,
-      /^\s*help\s*[?.!]?\s*$/i,
-      /\bhelp me (?:out|please)?\b/i,
-    ],
-  },
-  {
-    intent: 'cancel_all',
-    patterns: [
-      /\bcancel all\b/i,
-      /\bclear (?:the )?(?:queue|plan)\b/i,
-      /\breset (?:the )?(?:queue|plan)\b/i,
-      /\bstart over\b/i,
-    ],
-  },
-  {
-    intent: 'do_it',
-    patterns: [
-      /^\s*do it\b/i,
-      /^\s*go ahead\b/i,
-      /^\s*click (?:it|that|the button)\b/i,
-      /^\s*press (?:it|that|the button)\b/i,
-      /^\s*submit\b/i,
-    ],
-  },
-];
+function resolveHeuristics(pack: IntentParsePack): CompiledHeuristics {
+  return pack.compiledHeuristics ?? DEFAULT_HEURISTICS;
+}
 
 function compilePackMetaPatterns(
   defs?: Array<{ intent: string; patterns: string[] }> | null
@@ -93,8 +53,32 @@ function compilePackMetaPatterns(
   return out;
 }
 
-const CORRECTION_RE =
-  /\b(actually|instead|change(?:\s+it)?|wait|correction|should(?:\s+have)?\s+been|make it|rename(?:\s+it)?|i meant)\b/i;
+export function matchMetaIntent(
+  text: string,
+  enabledMeta?: string[],
+  packPatterns?: Array<{ intent: string; patterns: string[] }> | null
+): string | null {
+  const all = [
+    ...compilePackMetaPatterns(PLATFORM_META_PATTERNS),
+    ...compilePackMetaPatterns(packPatterns),
+  ];
+  for (const meta of all) {
+    if (enabledMeta && !enabledMeta.includes(meta.intent)) continue;
+    if (meta.patterns.some((re) => re.test(text))) return meta.intent;
+  }
+  return null;
+}
+
+function stripLeadingArticles(text: string): string {
+  return text.replace(/^(?:a|an|the)\s+/i, '').trim();
+}
+
+function stripInlineArticles(text: string): string {
+  return text
+    .replace(/\s+(?:a|an|the)\s+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function fuzzyIncludes(haystack: string, needle: string): boolean {
   if (!needle) return false;
@@ -139,21 +123,30 @@ function phraseScore(haystack: string, phrase: string): number {
   return 0;
 }
 
-function matchMetaIntent(
-  text: string,
-  enabledMeta?: string[],
-  packPatterns?: Array<{ intent: string; patterns: string[] }> | null
-): string | null {
-  const all = [...META_PATTERNS, ...compilePackMetaPatterns(packPatterns)];
-  for (const meta of all) {
-    if (enabledMeta && !enabledMeta.includes(meta.intent)) continue;
-    if (meta.patterns.some((re) => re.test(text))) return meta.intent;
-  }
-  return null;
-}
-
 /** Treat scores within this fraction of the best as a keyword collision. */
 const COLLISION_SCORE_RATIO = 0.92;
+
+/** Pack-scoped exact index of normalized aliases → stepId. */
+const exactAliasCache = new WeakMap<object, Map<string, StepId>>();
+
+function exactAliasIndex(pack: IntentParsePack): Map<string, StepId> {
+  const key = pack.aliases ?? pack.steps;
+  let exact = exactAliasCache.get(key as object);
+  if (exact) return exact;
+  exact = new Map();
+  for (const step of pack.steps) {
+    const phrases = [step.title, ...step.keywords, ...(pack.aliases[step.id] || [])];
+    for (const phrase of phrases) {
+      const phraseNorm = normalizeUtterance(phrase, pack.normalize);
+      const phraseBare = stripOpenVerbPrefix(phraseNorm, pack.normalize);
+      // Multi-word only — short tokens stay in fuzzy scoring for collision detection.
+      if (phraseNorm.includes(' ') && !exact.has(phraseNorm)) exact.set(phraseNorm, step.id);
+      if (phraseBare.includes(' ') && !exact.has(phraseBare)) exact.set(phraseBare, step.id);
+    }
+  }
+  exactAliasCache.set(key as object, exact);
+  return exact;
+}
 
 function matchStepCandidates(
   text: string,
@@ -166,11 +159,26 @@ function matchStepCandidates(
   const haystackBareNoSurface = stripSurfaceNoise(haystackBare, pack.normalize);
   const haystacks = [
     ...new Set(
-      [haystack, haystackBare, haystackNoSurface, haystackBareNoSurface].filter(Boolean)
+      [haystack, haystackBare, haystackNoSurface, haystackBareNoSurface]
+        .filter(Boolean)
+        .flatMap((h) => {
+          const variants = [h];
+          const lead = stripLeadingArticles(h);
+          if (lead && lead !== h) variants.push(lead);
+          const inline = stripInlineArticles(h);
+          if (inline && inline !== h && !variants.includes(inline)) variants.push(inline);
+          return variants;
+        })
     ),
   ];
-  const bestByStep = new Map<StepId, number>();
 
+  const exact = exactAliasIndex(pack);
+  for (const h of haystacks) {
+    const hit = exact.get(h);
+    if (hit) return [{ id: hit, score: 1000 + h.length }];
+  }
+
+  const bestByStep = new Map<StepId, number>();
   for (const step of pack.steps) {
     const phrases = [step.title, ...step.keywords, ...(pack.aliases[step.id] || [])];
     for (const phrase of phrases) {
@@ -218,15 +226,20 @@ export function parseUtterance(
     buildTypoLexicon(pack)
   );
 
+  const heuristics = resolveHeuristics(pack);
+  const meta = matchMetaIntent(normalized, pack.meta, pack.metaPatterns);
+
   // First-class FAQ: catalog hits win at parse time (including compare asks),
   // unless the utterance is an explicit nav/create command or clear OOD.
   if (
     pack.faq?.length &&
-    !looksLikeNavCommand(text) &&
-    !looksLikeClearOod(text)
+    !looksLikeNavCommand(text, heuristics) &&
+    !looksLikeClearOod(text, heuristics)
   ) {
     const faqHit = matchFaqEntry(pack.faq, text);
-    if (faqHit) {
+    const helpOverridesWeakFaq =
+      meta === 'help' && faqHit && !isStrongFaqAliasMatch(text, faqHit);
+    if (faqHit && !helpOverridesWeakFaq) {
       return {
         stepId: null,
         slotPatches: {},
@@ -239,10 +252,8 @@ export function parseUtterance(
       };
     }
   }
-
-  const meta = matchMetaIntent(normalized, pack.meta, pack.metaPatterns);
   const goBack = meta === 'go_back';
-  const isCorrection = !goBack && CORRECTION_RE.test(normalized);
+  const isCorrection = !goBack && Boolean(heuristics.correction?.test(normalized));
   const metaBlocksStep =
     goBack ||
     meta === 'whats_next' ||
@@ -263,9 +274,13 @@ export function parseUtterance(
       ...(pack.steps.find((s) => s.id === stepId)?.keywords ?? []),
       ...(pack.aliases[stepId] || []),
     ];
-    const strong = phrases.some(
-      (phrase) => phrase.includes(' ') && normalized.includes(phrase.toLowerCase())
-    );
+    const strong = phrases.some((phrase) => {
+      if (!phrase.includes(' ')) return false;
+      const p = phrase.toLowerCase();
+      if (normalized.includes(p)) return true;
+      const pNorm = normalizeUtterance(phrase, pack.normalize);
+      return Boolean(pNorm && pNorm.includes(' ') && normalized.includes(pNorm));
+    });
     if (!strong && !/\bi meant\b/i.test(normalized)) stepId = null;
   }
 
@@ -278,6 +293,7 @@ export function parseUtterance(
   else if (meta === 'do_it') rawIntent = 'do_it';
   else if (meta === 'skip_side_actions') rawIntent = 'skip_side_actions';
   else if (meta === 'lookup_participant') rawIntent = 'lookup_participant';
+  else if (meta) rawIntent = meta;
   else if (candidates && candidates.length >= 2) rawIntent = 'ambiguous';
   else if (isCorrection) rawIntent = 'correction';
   else if (stepId) rawIntent = `goto:${stepId}`;
