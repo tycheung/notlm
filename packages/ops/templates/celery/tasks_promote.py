@@ -11,9 +11,9 @@ from __future__ import annotations
 # Hosts wire this into Celery beat only when APP_DIR + Node exist on the worker.
 # Example:
 # @app.task
-# def uipilot_nightly_promote():
-#     subprocess.check_call(["npx", "uipilot-training", "feedback", "pull", ...])
-#     subprocess.check_call(["npx", "uipilot-training", "auto", "ranker", APP_DIR])
+# def notlm_nightly_promote():
+#     subprocess.check_call(["npx", "notlm-training", "feedback", "pull", ...])
+#     subprocess.check_call(["npx", "notlm-training", "auto", "ranker", APP_DIR])
 
 PROMOTE_STEPS = (
     "feedback pull exchanges",

@@ -4,16 +4,16 @@ import type {
   GlossaryEntry,
   IntentConfig,
   ReplyBank,
-} from '@uipilot/core';
-import { loadPackFromJson } from '@uipilot/core';
+} from '@notlm/core';
+import { loadPackFromJson } from '@notlm/core';
 
-import bindersJson from '../../../packs/demo-crm/.uipilot/pack/binders.json';
-import controlsJson from '../../../packs/demo-crm/.uipilot/pack/controls.json';
-import flowJson from '../../../packs/demo-crm/.uipilot/pack/flow.json';
-import glossaryJson from '../../../packs/demo-crm/.uipilot/pack/glossary.json';
-import intentsJson from '../../../packs/demo-crm/.uipilot/pack/intents.json';
-import manifestJson from '../../../packs/demo-crm/.uipilot/pack/manifest.json';
-import repliesJson from '../../../packs/demo-crm/.uipilot/pack/replies.json';
+import bindersJson from '../../../packs/demo-crm/.notlm/pack/binders.json';
+import controlsJson from '../../../packs/demo-crm/.notlm/pack/controls.json';
+import flowJson from '../../../packs/demo-crm/.notlm/pack/flow.json';
+import glossaryJson from '../../../packs/demo-crm/.notlm/pack/glossary.json';
+import intentsJson from '../../../packs/demo-crm/.notlm/pack/intents.json';
+import manifestJson from '../../../packs/demo-crm/.notlm/pack/manifest.json';
+import repliesJson from '../../../packs/demo-crm/.notlm/pack/replies.json';
 
 type BinderRow = BinderPredicate & { stepId: string };
 

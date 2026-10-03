@@ -1,9 +1,9 @@
 {
-  "name": "uipilot",
+  "name": "notlm",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "UiPilot — plug-and-play UI coach (runtime: core + react + schema + ranker infer)",
+  "description": "NotLM — plug-and-play UI coach (runtime: core + react + schema + ranker infer)",
   "engines": {
     "node": ">=20"
   },
@@ -26,7 +26,7 @@
     "ci": "node scripts/ci/ci_check.mjs",
     "ci:dx": "node scripts/ci/ci_check.mjs --with-dx",
     "check:host-bleed": "node scripts/ci/host_bleed_check.mjs",
-    "uipilotCLI": "node packages/cli/dist/cli.js",
+    "notlmCLI": "node packages/cli/dist/cli.js",
     "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo"
   },
   "devDependencies": {

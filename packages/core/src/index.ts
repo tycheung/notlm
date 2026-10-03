@@ -39,5 +39,5 @@ export * from './intentsCheck.js';
 export * from './visibility.js';
 export * from './subgraph.js';
 export * from './draftCompiler.js';
-// Node-only FS loader lives at `@uipilot/core/loadFolder` (not in the
+// Node-only FS loader lives at `@notlm/core/loadFolder` (not in the
 // browser barrel — importing it here pulls `node:fs` into Vite client bundles).

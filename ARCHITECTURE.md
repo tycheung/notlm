@@ -4,9 +4,9 @@
 
 | Lives here | Examples |
 |------------|----------|
-| **This repo (`uipilot`)** | `@uipilot/core` / `react` / `ranker` / `schema`; demo packs only |
-| **Host app** | `.uipilot/pack/*.json` (product words, aliases, `productRole`, heuristics) |
-| **Offline training** (separate repo) | Miss→draft→accept; product-pack workshop writing into a host `.uipilot/` |
+| **This repo (`notlm`)** | `@notlm/core` / `react` / `ranker` / `schema`; demo packs only |
+| **Host app** | `.notlm/pack/*.json` (product words, aliases, `productRole`, heuristics) |
+| **Offline training** (separate repo) | Miss→draft→accept; product-pack workshop writing into a host `.notlm/` |
 
 This repo must contain **zero** host-brand product packs or sandboxes. Demo packs
 (`demo-todo`, `demo-crm`, `demo-hello`, `_base-en`, `_template`) are the only
@@ -16,22 +16,22 @@ first-class pack trees.
 
 ```text
 host-app/
-  .uipilot/     → ALL config + scan/author learnings (JSON only)
+  .notlm/     → ALL config + scan/author learnings (JSON only)
   src/…                    → getContext, data-guide-id, notifyStepCompleted
 
-npm: @uipilot/react  → UI Host (depends on core)
-npm: @uipilot/core   → pure TS runtime; loads/evaluates pack JSON
-npm: @uipilot/schema → JSON Schema for the folder format + miss/exchange wire
-npm: @uipilot/ranker → optional ONNX/hybrid infer (prebuilt artifacts only)
+npm: @notlm/react  → UI Host (depends on core)
+npm: @notlm/core   → pure TS runtime; loads/evaluates pack JSON
+npm: @notlm/schema → JSON Schema for the folder format + miss/exchange wire
+npm: @notlm/ranker → optional ONNX/hybrid infer (prebuilt artifacts only)
 CLI: init / validate / intents check / ranker check (thin gates only)
 ```
 
 
 ### Import rules
 
-- `core` must not import `react`, `mapper`, `author`, `@uipilot/llm`, or host app code.
-- `react` may import `core` only — **never** `author`, `mapper`, or `@uipilot/llm`.
-- Offline tooling may write **files** under `.uipilot/`, not TS into host `src/` — that tooling is out of scope for this repo.
+- `core` must not import `react`, `mapper`, `author`, `@notlm/llm`, or host app code.
+- `react` may import `core` only — **never** `author`, `mapper`, or `@notlm/llm`.
+- Offline tooling may write **files** under `.notlm/`, not TS into host `src/` — that tooling is out of scope for this repo.
 - Host BYO `fallbackLlm` is a host-owned HTTP proxy — **not** a provider SDK in the browser (or in the operating runtime packages).
 - Default unit CI must not require a live LLM.
 
@@ -55,14 +55,14 @@ User utterance / palette pick
   → host save → notifyStepCompleted → queue advance
 ```
 
-UiPilot is a **generic SPA chatbot frontline**, not a “product coach” product.
+NotLM is a **generic SPA chatbot frontline**, not a “product coach” product.
 Coaching (`data-guide-id`, spotlight, `coachMessage`) is one optional pack pattern.
 Domain words and `productRole` live in host pack JSON only.
 
 ## Host folder
 
 ```text
-.uipilot/
+.notlm/
   config.json
   scenarios.json           # labeled utterances for intent tuning
   saturation/              # candidates, novelty reports, batches
@@ -115,7 +115,7 @@ domain HTTP. Playwright demos stub those host deps.
 **click** annotated controls.
 
 **Chrome personalization:** Hosts brand FAB/chat/palette via CSS variables
-(`appearance` prop), stable `uipilot-*` classes, and optional `components` slots.
+(`appearance` prop), stable `notlm-*` classes, and optional `components` slots.
 Pack JSON does not store brand colors. Dispatch and guide-id coaching stay unchanged.
 
 Assistant chat may attach **choice chips** (`ChatMessage.choices`) for ambiguous
@@ -131,7 +131,7 @@ fields the coach cannot type (e.g. the user’s name).
 
 **User-ask / saturation growth** of scenarios and FAQ is done offline (out of scope
 for this repo). Ship updated `scenarios.json` / pack pieces, then run
-`uipilotCLI intents check`.
+`notlmCLI intents check`.
 
 ### Optional ONNX intent+slot ranker
 
@@ -139,8 +139,8 @@ Default NLU remains rule-based (`parseUtterance`). Hosts may opt into a
 corpus-trained tiny hashed-ngram ranker:
 
 1. Ship `pack/ranker.json` (+ optional `pack/ranker.onnx`) as host artifacts
-2. Enable with `features.onnxRanker: true` or `UIPILOT_ONNX_RANKER=1`
-3. Pass `parseUtteranceFn` from `@uipilot/ranker` (`createJsonHybridParser` /
+2. Enable with `features.onnxRanker: true` or `NOTLM_ONNX_RANKER=1`
+3. Pass `parseUtteranceFn` from `@notlm/ranker` (`createJsonHybridParser` /
    `createHybridUtteranceParser` with prebuilt ONNX bytes — never synthesized here)
 
 `onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
@@ -150,13 +150,13 @@ back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
 
 - **Cold path:** host `fallbackLlm` → BE proxy → **one** Laya sidecar.
   Sidecar **source of truth:** `packages/ops/templates/laya/` (install with
-  `uipilotCLI laya install <backend-dir> [--product-role "…"]`).
+  `notlmCLI laya install <backend-dir> [--product-role "…"]`).
   FastAPI fallback route template: `packages/ops/templates/fastapi/`.
   Local Ollama/tunnel helpers live outside this package:
   `../scripts/ollama-tunnel/` (workspace root).
   Default on (`features.layaDecisionFallback` unset = on). Chat shows **Thinking…** while waiting.
   Optional **secondary LLM** after Laya refuse: wire `secondaryFallbackLlm` and set
-  `features.llmFallbackOnLayaMiss: true` (default off). Chain lives in `@uipilot/core`
+  `features.llmFallbackOnLayaMiss: true` (default off). Chain lives in `@notlm/core`
   (`invokeChainedDecisionFallback`) — not in the host proxy.
 - **Hot path:** rules + pack `ranker.json` + **session phrase LRU** (not durable learning).
 - **Durable learning:** Celery/nightly promotes MissExchanges → aliases/scenarios → `auto ranker`
@@ -172,17 +172,17 @@ When the coach cannot understand an utterance (`unknown` / `ambiguous` /
 corpus / typo-lexicon tuning:
 
 ```tsx
-import { createLocalStorageMissLogTransport } from '@uipilot/core';
+import { createLocalStorageMissLogTransport } from '@notlm/core';
 
 missLog={{
-  transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }),
+  transport: createLocalStorageMissLogTransport({ key: 'notlm:misses' }),
   packId: 'demo-todo',
 }}
 ```
 
 Built-in transports: memory, `localStorage`, `createHttpMissLogTransport({ url })`.
 Offline recalibration of misses / exchanges is **out of scope** for this repo.
-UiPilot never phones home unless the host supplies an HTTP transport.
+NotLM never phones home unless the host supplies an HTTP transport.
 
 #### HTTP Miss Sink Contract
 
@@ -211,20 +211,20 @@ Host-only admin fields (`id`, `userId`, `consumedAt`, `createdAt`, …) may appe
 as **additional camelCase properties**. Snake_case aliases (`utterance`,
 `pack_id`, `client_at`, …) are **rejected** by `parseMissRecords`
 so corpus tuning stays on-contract.
-Schemas: `@uipilot/schema` `missRecordSchema` / `missRecordListSchema`.
+Schemas: `@notlm/schema` `missRecordSchema` / `missRecordListSchema`.
 
 #### Conversation logging (hits + misses)
 
 Hosts may also wire a **conversation** transcript sink. One `conversationId` is
-minted per `UiPilotProvider` mount; append-only `ConversationTurn`s cover user and
+minted per `NotLMProvider` mount; append-only `ConversationTurn`s cover user and
 assistant chat plus structured outcomes (`hit` / `miss` / `blocked` / `confirm` /
 `slot_ask` / `adapter`). Kill switch: `features.conversationLog === false`.
 
 ```tsx
-import { createHttpConversationTransport } from '@uipilot/core';
+import { createHttpConversationTransport } from '@notlm/core';
 
 conversationLog={{
-  transport: createHttpConversationTransport({ url: '/api/uipilot/conversations' }),
+  transport: createHttpConversationTransport({ url: '/api/notlm/conversations' }),
   packId: 'demo-todo',
 }}
 ```
@@ -266,10 +266,10 @@ Invalid `proposed.goto.stepId` values are forced to `refuse` (no fake step chips
 
 Offline promotion of exchanges into pack drafts is **out of scope** for this repo
 (host / external pack tooling). After pack pieces and `scenarios.json` update,
-run `uipilotCLI intents check`, then freeze Learning Mode when coverage is high
+run `notlmCLI intents check`, then freeze Learning Mode when coverage is high
 enough.
 
-Host coverage API (e.g. VB): `GET …/uipilot/misses/metrics` → `fallbackShare`,
+Host coverage API (e.g. VB): `GET …/notlm/misses/metrics` → `fallbackShare`,
 optional `localHitRate`, `recommendFreeze`.
 
 Drafts only → human / `intents check` accept (ADR-009). Then **freeze**: turn
@@ -290,7 +290,7 @@ Runtime stays deterministic. LLM-*feel* comes from:
 - **Queue algebra** — head-stable merge, rewrite (clear / skip / cancel X / jump Y), packed prereq expansion
 - **Coach-create** — `controls[].coachCreate` (+ `openModal`) re-opens forms on re-ask; slot elicit + multi-slot salvage
 - **Context-tree NLU** — authoring auto-detects muddy alias clashes and splits saturation
-  batches into reduced focus sets (`.uipilot/saturation/context-tree.json`); runtime
+  batches into reduced focus sets (`.notlm/saturation/context-tree.json`); runtime
   shortlists via pathname + availability (`shortlistStepIds` / `filterCandidatesByContext`)
 
 ## SPA interactables (coach target taxonomy)

@@ -8,7 +8,7 @@ import {
   type ParseUtteranceResult,
   type SlotBag,
   type StepId,
-} from '@uipilot/core';
+} from '@notlm/core';
 import { inferDecisionFromRanked } from './decision.js';
 import { labelsForStepShortlist } from './infer.js';
 import { createRankerSession, type RankerSession } from './onnxLazy.js';

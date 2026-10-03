@@ -1,5 +1,5 @@
 {
-  "name": "@uipilot/ranker",
+  "name": "@notlm/ranker",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -12,7 +12,7 @@
   },
   "files": ["dist"],
   "dependencies": {
-    "@uipilot/core": "*"
+    "@notlm/core": "*"
   },
   "peerDependencies": {
     "onnxruntime-node": ">=1.17.0",

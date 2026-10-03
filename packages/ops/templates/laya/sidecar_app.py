@@ -1,10 +1,10 @@
 """
-UiPilot Laya decision sidecar — one process per host.
+NotLM Laya decision sidecar — one process per host.
 CPU inference is enough for modest concurrency; GPU optional for latency.
 Does NOT fine-tune weights. Nightly learning updates pack/ranker only.
 
-Source of truth: uipilot/packages/ops/templates/laya/sidecar_app.py
-Hosts scaffold with: uipilotCLI laya install <backend-dir>
+Source of truth: notlm/packages/ops/templates/laya/sidecar_app.py
+Hosts scaffold with: notlmCLI laya install <backend-dir>
 """
 from __future__ import annotations
 
@@ -21,12 +21,12 @@ ProposedType = Literal[
     "faq", "goto", "meta", "refuse", "query", "mutation", "tour", "search"
 ]
 
-app = FastAPI(title="uipilot-laya", version="0.1.0")
+app = FastAPI(title="notlm-laya", version="0.1.0")
 
 _AGENT = None
-_CHECKPOINT = os.getenv("UIPILOT_LAYA_CHECKPOINT", "").strip()
-_PRODUCT_ROLE = os.getenv("UIPILOT_LAYA_PRODUCT_ROLE", "a product assistant").strip()
-_ENABLED = os.getenv("UIPILOT_LAYA_ENABLED", "1").strip() not in ("0", "false", "False")
+_CHECKPOINT = os.getenv("NOTLM_LAYA_CHECKPOINT", "").strip()
+_PRODUCT_ROLE = os.getenv("NOTLM_LAYA_PRODUCT_ROLE", "a product assistant").strip()
+_ENABLED = os.getenv("NOTLM_LAYA_ENABLED", "1").strip() not in ("0", "false", "False")
 
 _DISFLUENCY = re.compile(
     r"^(?:uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please)(?:\s+|$)",
@@ -186,7 +186,7 @@ def health() -> dict[str, Any]:
 @app.post("/decide", response_model=DecideResponse)
 def decide(body: DecideRequest) -> DecideResponse:
     if not _ENABLED:
-        raise HTTPException(status_code=503, detail="UIPILOT_LAYA_ENABLED=0")
+        raise HTTPException(status_code=503, detail="NOTLM_LAYA_ENABLED=0")
 
     exchange_id = str(uuid.uuid4())
     checkpoint_id = _CHECKPOINT or "stub"
@@ -318,6 +318,6 @@ def decide(body: DecideRequest) -> DecideResponse:
 if __name__ == "__main__":
     import uvicorn
 
-    host = os.getenv("UIPILOT_LAYA_HOST", "127.0.0.1")
-    port = int(os.getenv("UIPILOT_LAYA_PORT", "8765"))
+    host = os.getenv("NOTLM_LAYA_HOST", "127.0.0.1")
+    port = int(os.getenv("NOTLM_LAYA_PORT", "8765"))
     uvicorn.run(app, host=host, port=port)

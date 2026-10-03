@@ -32,15 +32,15 @@ Default local gate: build + lint + typecheck + unit + `validate` / `intents chec
 
 | Package | Role |
 |---------|------|
-| `@uipilot/core` | Flow, session, NLU dispatch |
-| `@uipilot/react` | FAB, palette, spotlight, voice |
-| `@uipilot/schema` | Pack JSON Schema |
-| `@uipilot/ranker` | Optional corpus-trained intent+slot **infer** (JSON / prebuilt ONNX bytes) |
-| `@uipilot/cli` | Thin gates: `init` / `validate` / `intents check` / `ranker check` |
+| `@notlm/core` | Flow, session, NLU dispatch |
+| `@notlm/react` | FAB, palette, spotlight, voice |
+| `@notlm/schema` | Pack JSON Schema |
+| `@notlm/ranker` | Optional corpus-trained intent+slot **infer** (JSON / prebuilt ONNX bytes) |
+| `@notlm/cli` | Thin gates: `init` / `validate` / `intents check` / `ranker check` |
 
 Offline pack authoring and model training are **out of scope** for this repo. Ship
 updated pack JSON / `ranker.json` (+ optional `ranker.onnx`) as host artifacts, then
-re-run `uipilotCLI intents check` / `ranker check`.
+re-run `notlmCLI intents check` / `ranker check`.
 
 ## Pack cookbook (start here for hosts)
 
@@ -53,7 +53,7 @@ Also see `ARCHITECTURE.md` and `SECURITY.md`.
 ## Host project layout
 
 ```text
-.uipilot/
+.notlm/
   config.json
   scenarios.json    # utterance → expected step/intent (intent check gate)
   pack/{manifest,flow,controls,intents,binders,corpus}.json
@@ -63,15 +63,15 @@ Also see `ARCHITECTURE.md` and `SECURITY.md`.
 ### Dev install → personalize
 
 ```bash
-npm i @uipilot/core @uipilot/react
-uipilotCLI init ./my-app
-uipilotCLI intents check ./my-app
+npm i @notlm/core @notlm/react
+notlmCLI init ./my-app
+notlmCLI intents check ./my-app
 ```
 
 Then mount the Host and brand the chrome:
 
 ```ts
-<UiPilotProvider
+<NotLMProvider
   pack={pack}
   getContext={getContext}
   navigate={navigate}
@@ -79,12 +79,12 @@ Then mount the Host and brand the chrome:
   className="my-coach"
 >
   <App />
-  <UiPilotHost />
-</UiPilotProvider>
+  <NotLMHost />
+</NotLMProvider>
 ```
 
-Layers: (1) override `uipilot-*` classes, (2) `appearance` → CSS variables, (3) `components` slots.
-Appearance is **host app** concern — not stored in `.uipilot/pack/*.json`.
+Layers: (1) override `notlm-*` classes, (2) `appearance` → CSS variables, (3) `components` slots.
+Appearance is **host app** concern — not stored in `.notlm/pack/*.json`.
 
 See `tests/README.md`. Corpus / scenario changes are required when intents change.
 

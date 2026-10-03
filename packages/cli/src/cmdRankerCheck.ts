@@ -1,5 +1,5 @@
 /**
- * `uipilotCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]`
+ * `notlmCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]`
  * Soft-score gate: JSON ranker hit-rate on labeled corpus/scenarios.
  */
 import { join } from 'node:path';
@@ -7,14 +7,14 @@ import { readFileSync } from 'node:fs';
 import {
   evaluateRankerSoftScore,
   type RankerModelJson,
-} from '@uipilot/ranker';
-import type { ScenarioCase } from '@uipilot/core';
+} from '@notlm/ranker';
+import type { ScenarioCase } from '@notlm/core';
 import {
   loadPackFolderJson,
   packDir,
   pathExists,
-  resolveUipilotHome,
-} from './uipilotHome.js';
+  resolveNotlmHome,
+} from './notlmHome.js';
 
 function parseFlag(args: string[], name: string): string | undefined {
   const eq = args.find((a) => a.startsWith(`${name}=`));
@@ -26,9 +26,9 @@ function parseFlag(args: string[], name: string): string | undefined {
 
 export async function cmdRankerCheck(args: string[]): Promise<void> {
   const dir = args.find((a) => !a.startsWith('-'));
-  const { home } = resolveUipilotHome(dir);
+  const { home } = resolveNotlmHome(dir);
   if (!pathExists(home)) {
-    console.error(`Missing UiPilot home: ${home}`);
+    console.error(`Missing NotLM home: ${home}`);
     process.exitCode = 1;
     return;
   }

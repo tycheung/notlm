@@ -1,6 +1,6 @@
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
-import type { ChatMessage } from '@uipilot/core';
-import type { UiPilotAppearance, UiPilotChromeSlot } from './uipilot.css.js';
+import type { ChatMessage } from '@notlm/core';
+import type { NotLMAppearance, NotLMChromeSlot } from './notlm.css.js';
 
 export type FabButtonSlotProps = {
   open: boolean;
@@ -22,15 +22,15 @@ export type ChatPanelSlotProps = {
   className?: string;
 };
 
-export type UiPilotChromeComponents = {
+export type NotLMChromeComponents = {
   FabButton?: ComponentType<FabButtonSlotProps>;
   ChatHeader?: ComponentType<ChatHeaderSlotProps>;
   ChatPanel?: ComponentType<ChatPanelSlotProps>;
 };
 
-export type UiPilotChromeClassNames = Partial<Record<UiPilotChromeSlot, string>>;
+export type NotLMChromeClassNames = Partial<Record<NotLMChromeSlot, string>>;
 
-export type UiPilotChromeLabels = {
+export type NotLMChromeLabels = {
   assistantTitle?: string;
   paletteAriaLabel?: string;
   palettePlaceholder?: string;
@@ -39,14 +39,14 @@ export type UiPilotChromeLabels = {
   thinking?: string;
 };
 
-export type UiPilotChromeConfig = {
-  appearance?: UiPilotAppearance;
-  /** Extra class on each `.uipilot-host-root` surface. */
+export type NotLMChromeConfig = {
+  appearance?: NotLMAppearance;
+  /** Extra class on each `.notlm-host-root` surface. */
   className?: string;
-  classNames?: UiPilotChromeClassNames;
-  components?: UiPilotChromeComponents;
+  classNames?: NotLMChromeClassNames;
+  components?: NotLMChromeComponents;
   /** Copy overrides for built-in chrome (palette / chat titles). */
-  labels?: UiPilotChromeLabels;
+  labels?: NotLMChromeLabels;
   /** Inline style merged after appearance CSS vars (advanced). */
   style?: CSSProperties;
 };

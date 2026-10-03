@@ -1,9 +1,9 @@
-import type { ScenarioCase } from '@uipilot/core';
+import type { ScenarioCase } from '@notlm/core';
 import {
   CONFIDENCE_HIGH_MIN,
   CONFIDENCE_MID_MIN,
   probabilityToConfidence,
-} from '@uipilot/core';
+} from '@notlm/core';
 import { inferRankerJson } from './infer.js';
 import type { RankerModelJson } from './types.js';
 

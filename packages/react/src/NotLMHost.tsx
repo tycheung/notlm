@@ -1,23 +1,23 @@
-import type { AssistantFeatures, PackRuntime, RuntimeContextBase } from '@uipilot/core';
+import type { AssistantFeatures, PackRuntime, RuntimeContextBase } from '@notlm/core';
 import { CommandPalette } from './CommandPalette.js';
-import { UiPilotFab } from './UiPilotFab.js';
+import { NotLMFab } from './NotLMFab.js';
 import { SpotlightOverlay } from './SpotlightOverlay.js';
 import { ChecklistPanel } from './ChecklistPanel.js';
 import {
-  UiPilotProvider,
-  useUiPilot,
-  type UiPilotProviderProps,
-} from './UiPilotContext.js';
+  NotLMProvider,
+  useNotLM,
+  type NotLMProviderProps,
+} from './NotLMContext.js';
 
-function UiPilotChrome() {
-  const { features, spotlight, clearSpotlight } = useUiPilot();
+function NotLMChrome() {
+  const { features, spotlight, clearSpotlight } = useNotLM();
   const showFabDock = features.chat !== false || features.checklist !== false;
 
   return (
     <>
       {features.palette !== false && <CommandPalette />}
       {/* Single dock: checklist above assistant; checklist alone when chat is off. */}
-      {showFabDock && <UiPilotFab />}
+      {showFabDock && <NotLMFab />}
       <ChecklistPanel />
       {features.spotlight !== false && (
         <SpotlightOverlay spotlight={spotlight} onDismiss={clearSpotlight} />
@@ -26,7 +26,7 @@ function UiPilotChrome() {
   );
 }
 
-export function UiPilotHost({
+export function NotLMHost({
   pack,
   getContext,
   navigate,
@@ -57,9 +57,9 @@ export function UiPilotHost({
   components,
   style,
   children,
-}: UiPilotProviderProps) {
+}: NotLMProviderProps) {
   return (
-    <UiPilotProvider
+    <NotLMProvider
       pack={pack}
       getContext={getContext}
       navigate={navigate}
@@ -91,8 +91,8 @@ export function UiPilotHost({
       style={style}
     >
       {children}
-      <UiPilotChrome />
-    </UiPilotProvider>
+      <NotLMChrome />
+    </NotLMProvider>
   );
 }
 

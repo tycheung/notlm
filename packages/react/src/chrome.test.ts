@@ -1,24 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
   appearanceToCssVars,
-  UIPILOT_CSS,
-  type UiPilotAppearance,
-} from './uipilot.css.js';
+  NOTLM_CSS,
+  type NotLMAppearance,
+} from './notlm.css.js';
 
-describe('UIPILOT_CSS tokens', () => {
+describe('NOTLM_CSS tokens', () => {
   it('defines CSS variables that inherit host theme tokens', () => {
-    expect(UIPILOT_CSS).toMatch(/--uipilot-accent:\s*var\(--color-primary/);
-    expect(UIPILOT_CSS).toMatch(/var\(--uipilot-accent\)/);
-    expect(UIPILOT_CSS).toMatch(/uipilot-chat-panel/);
-    expect(UIPILOT_CSS).toMatch(/uipilot-chat-choice/);
-    expect(UIPILOT_CSS).toMatch(/uipilot-fab-btn/);
-    expect(UIPILOT_CSS).toMatch(/uipilot-fab-btn-secondary/);
-    expect(UIPILOT_CSS).toMatch(/uipilot-fab-icon/);
-    expect(UIPILOT_CSS).toMatch(/uipilot-checklist-panel/);
+    expect(NOTLM_CSS).toMatch(/--notlm-accent:\s*var\(--color-primary/);
+    expect(NOTLM_CSS).toMatch(/var\(--notlm-accent\)/);
+    expect(NOTLM_CSS).toMatch(/notlm-chat-panel/);
+    expect(NOTLM_CSS).toMatch(/notlm-chat-choice/);
+    expect(NOTLM_CSS).toMatch(/notlm-fab-btn/);
+    expect(NOTLM_CSS).toMatch(/notlm-fab-btn-secondary/);
+    expect(NOTLM_CSS).toMatch(/notlm-fab-icon/);
+    expect(NOTLM_CSS).toMatch(/notlm-checklist-panel/);
   });
 
   it('maps appearance to CSS vars', () => {
-    const appearance: UiPilotAppearance = {
+    const appearance: NotLMAppearance = {
       accent: '#0f766e',
       radius: '12px',
       font: 'Georgia, serif',
@@ -26,11 +26,11 @@ describe('UIPILOT_CSS tokens', () => {
       surfaceHover: '#1e293b',
     };
     expect(appearanceToCssVars(appearance)).toEqual({
-      '--uipilot-accent': '#0f766e',
-      '--uipilot-radius': '12px',
-      '--uipilot-font': 'Georgia, serif',
-      '--uipilot-font-size': '15px',
-      '--uipilot-surface-hover': '#1e293b',
+      '--notlm-accent': '#0f766e',
+      '--notlm-radius': '12px',
+      '--notlm-font': 'Georgia, serif',
+      '--notlm-font-size': '15px',
+      '--notlm-surface-hover': '#1e293b',
     });
     expect(appearanceToCssVars(undefined)).toEqual({});
   });

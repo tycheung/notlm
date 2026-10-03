@@ -6,19 +6,19 @@ import type {
   IntentConfig,
   LookupDef,
   ReplyBank,
-} from '@uipilot/core';
-import { loadPackFromJson, mergeFaqEntries } from '@uipilot/core';
+} from '@notlm/core';
+import { loadPackFromJson, mergeFaqEntries } from '@notlm/core';
 
 import baseFaqJson from '../../../packs/_base-en/faq.json';
-import bindersJson from '../../../packs/demo-todo/.uipilot/pack/binders.json';
-import controlsJson from '../../../packs/demo-todo/.uipilot/pack/controls.json';
-import faqJson from '../../../packs/demo-todo/.uipilot/pack/faq.json';
-import flowJson from '../../../packs/demo-todo/.uipilot/pack/flow.json';
-import glossaryJson from '../../../packs/demo-todo/.uipilot/pack/glossary.json';
-import intentsJson from '../../../packs/demo-todo/.uipilot/pack/intents.json';
-import lookupsJson from '../../../packs/demo-todo/.uipilot/pack/lookups.json';
-import manifestJson from '../../../packs/demo-todo/.uipilot/pack/manifest.json';
-import repliesJson from '../../../packs/demo-todo/.uipilot/pack/replies.json';
+import bindersJson from '../../../packs/demo-todo/.notlm/pack/binders.json';
+import controlsJson from '../../../packs/demo-todo/.notlm/pack/controls.json';
+import faqJson from '../../../packs/demo-todo/.notlm/pack/faq.json';
+import flowJson from '../../../packs/demo-todo/.notlm/pack/flow.json';
+import glossaryJson from '../../../packs/demo-todo/.notlm/pack/glossary.json';
+import intentsJson from '../../../packs/demo-todo/.notlm/pack/intents.json';
+import lookupsJson from '../../../packs/demo-todo/.notlm/pack/lookups.json';
+import manifestJson from '../../../packs/demo-todo/.notlm/pack/manifest.json';
+import repliesJson from '../../../packs/demo-todo/.notlm/pack/replies.json';
 
 type BinderRow = BinderPredicate & { stepId: string };
 

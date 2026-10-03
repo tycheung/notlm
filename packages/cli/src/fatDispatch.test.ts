@@ -28,7 +28,7 @@ describe('fatDispatch (unsupported surface)', () => {
 
   it('messages without naming external tooling', () => {
     const msg = unsupportedCommandMessage('exchanges');
-    expect(msg).toBe('Not available in uipilotCLI: exchanges');
+    expect(msg).toBe('Not available in notlmCLI: exchanges');
     expect(msg.toLowerCase()).not.toContain('training');
     expect(msg.toLowerCase()).not.toContain('trainer');
   });

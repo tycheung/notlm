@@ -1,14 +1,14 @@
 [Unit]
-Description=UiPilot Laya decision sidecar
+Description=NotLM Laya decision sidecar
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/uipilot_laya
-EnvironmentFile=-/opt/uipilot_laya/.env
+WorkingDirectory=/opt/notlm_laya
+EnvironmentFile=-/opt/notlm_laya/.env
 # Host/port come from EnvironmentFile (default 0.0.0.0:8765 on dedicated host).
 # install_checkpoint.sh sed-rewrites these if needed; SG restricts callers.
-ExecStart=/opt/uipilot_laya/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8765
+ExecStart=/opt/notlm_laya/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8765
 Restart=on-failure
 # One process only — do not run under Gunicorn multi-worker.
 

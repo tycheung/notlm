@@ -26,7 +26,7 @@ test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
     await expect(page.getByRole('heading', { name: 'demo-crm' })).toBeVisible();
     await expect(page.getByText('No contacts yet')).toBeVisible();
 
-    const fab = page.getByTestId('uipilot-fab');
+    const fab = page.getByTestId('notlm-fab');
     await expect(fab).toBeVisible();
     await expect(fab).toHaveCSS('background-color', 'rgb(180, 83, 9)');
 
@@ -44,6 +44,6 @@ test.describe('@guide-nlu @ui-actions @chrome demo-crm coach', () => {
     await page.goto('/');
     await page.locator('body').click();
     await page.keyboard.press('Control+k');
-    await expect(page.getByTestId('uipilot-command-palette')).toBeVisible();
+    await expect(page.getByTestId('notlm-command-palette')).toBeVisible();
   });
 });

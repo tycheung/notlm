@@ -3,15 +3,15 @@ import type {
   FlowStepDef,
   IntentConfig,
   ReplyBank,
-} from '@uipilot/core';
-import { loadPackFromJson } from '@uipilot/core';
+} from '@notlm/core';
+import { loadPackFromJson } from '@notlm/core';
 
-import bindersJson from '../../../packs/demo-hello/.uipilot/pack/binders.json';
-import controlsJson from '../../../packs/demo-hello/.uipilot/pack/controls.json';
-import flowJson from '../../../packs/demo-hello/.uipilot/pack/flow.json';
-import intentsJson from '../../../packs/demo-hello/.uipilot/pack/intents.json';
-import manifestJson from '../../../packs/demo-hello/.uipilot/pack/manifest.json';
-import repliesJson from '../../../packs/demo-hello/.uipilot/pack/replies.json';
+import bindersJson from '../../../packs/demo-hello/.notlm/pack/binders.json';
+import controlsJson from '../../../packs/demo-hello/.notlm/pack/controls.json';
+import flowJson from '../../../packs/demo-hello/.notlm/pack/flow.json';
+import intentsJson from '../../../packs/demo-hello/.notlm/pack/intents.json';
+import manifestJson from '../../../packs/demo-hello/.notlm/pack/manifest.json';
+import repliesJson from '../../../packs/demo-hello/.notlm/pack/replies.json';
 
 type BinderRow = BinderPredicate & { stepId: string };
 

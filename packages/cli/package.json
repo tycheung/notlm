@@ -1,9 +1,9 @@
 {
-  "name": "@uipilot/cli",
+  "name": "@notlm/cli",
   "version": "0.0.0",
   "type": "module",
   "bin": {
-    "uipilotCLI": "./dist/cli.js"
+    "notlmCLI": "./dist/cli.js"
   },
   "main": "./dist/cli.js",
   "exports": {
@@ -13,10 +13,10 @@
     "dist"
   ],
   "dependencies": {
-    "@uipilot/core": "*",
-    "@uipilot/ops": "*",
-    "@uipilot/ranker": "*",
-    "@uipilot/schema": "*"
+    "@notlm/core": "*",
+    "@notlm/ops": "*",
+    "@notlm/ranker": "*",
+    "@notlm/schema": "*"
   },
   "scripts": {
     "build": "tsc -b"

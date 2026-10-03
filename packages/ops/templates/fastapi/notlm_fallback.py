@@ -1,9 +1,9 @@
-"""Host UiPilot decision fallback: Laya sidecar proxy (default) or optional LLM.
+"""Host NotLM decision fallback: Laya sidecar proxy (default) or optional LLM.
 
-**Source of truth:** ``uipilot/packages/ops/templates/fastapi/uipilot_fallback.py``
+**Source of truth:** ``notlm/packages/ops/templates/fastapi/notlm_fallback.py``
 Hosts copy this into their API routes and wire auth / settings (see README.md).
 
-Chaining (NLU miss → Laya → LLM on refuse) lives in sealed ``@uipilot/core``
+Chaining (NLU miss → Laya → LLM on refuse) lives in sealed ``@notlm/core``
 (``invokeChainedDecisionFallback``). This route is a single-shot provider:
 request ``provider`` may force ``laya`` or ``llm`` so the host can wire
 ``fallbackLlm`` + ``secondaryFallbackLlm`` separately.
@@ -51,7 +51,7 @@ _RATE_MAX_PER_USER = 120
 
 # HOST: admin setting key that enables secondary LLM after Laya refuse.
 _LLM_FALLBACK_SETTING_KEY = os.getenv(
-    "UIPILOT_LLM_FALLBACK_SETTING_KEY", "uipilot_llm_fallback"
+    "NOTLM_LLM_FALLBACK_SETTING_KEY", "notlm_llm_fallback"
 )
 
 # user_id -> list[timestamp]
@@ -73,7 +73,7 @@ class FallbackRequest(BaseModel):
     # Vision payload — only used when a vision-capable LLM is configured.
     imageBase64: Optional[str] = Field(default=None, max_length=2_000_000)
     imageMime: Optional[str] = Field(default=None, max_length=64)
-    # Per-call override so @uipilot can chain Laya then LLM as two host fns.
+    # Per-call override so @notlm can chain Laya then LLM as two host fns.
     provider: Optional[FallbackProvider] = None
 
 
@@ -96,7 +96,7 @@ class FallbackResponse(BaseModel):
 
 
 def _laya_enabled() -> bool:
-    return os.getenv("UIPILOT_LAYA_ENABLED", "1").strip().lower() not in (
+    return os.getenv("NOTLM_LAYA_ENABLED", "1").strip().lower() not in (
         "0",
         "false",
         "no",
@@ -108,12 +108,12 @@ def resolve_fallback_provider(
 ) -> FallbackProvider:
     """Default Laya; explicit ``llm`` keeps legacy BYO LLM path.
 
-    Per-request ``override`` wins so sealed uipilot can call this route twice
+    Per-request ``override`` wins so sealed notlm can call this route twice
     (primary Laya, secondary LLM) without server-side chaining.
     """
     if override in ("laya", "llm"):
         return override
-    raw = (os.getenv("UIPILOT_FALLBACK_PROVIDER") or "").strip().lower()
+    raw = (os.getenv("NOTLM_FALLBACK_PROVIDER") or "").strip().lower()
     if raw == "llm":
         return "llm"
     if raw == "laya":
@@ -124,13 +124,13 @@ def resolve_fallback_provider(
 
 
 def _laya_base_url() -> str:
-    return (os.getenv("UIPILOT_LAYA_URL") or "http://127.0.0.1:8765").strip().rstrip(
+    return (os.getenv("NOTLM_LAYA_URL") or "http://127.0.0.1:8765").strip().rstrip(
         "/"
     )
 
 
 def _product_role() -> str:
-    role = (os.getenv("UIPILOT_LAYA_PRODUCT_ROLE") or _DEFAULT_PRODUCT_ROLE).strip()
+    role = (os.getenv("NOTLM_LAYA_PRODUCT_ROLE") or _DEFAULT_PRODUCT_ROLE).strip()
     return role or _DEFAULT_PRODUCT_ROLE
 
 
@@ -297,7 +297,7 @@ def check_rate_limit(user_id: int, *, now: float | None = None) -> None:
     if len(_rate_buckets[user_id]) >= _RATE_MAX_PER_USER:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="UiPilot fallback rate limit exceeded",
+            detail="NotLM fallback rate limit exceeded",
         )
     _rate_buckets[user_id].append(ts)
 
@@ -387,15 +387,15 @@ async def _proxy_laya(body: FallbackRequest) -> FallbackResponse:
         return _degraded_laya_response(body)
 
 
-# --- Optional LLM provider (UIPILOT_FALLBACK_PROVIDER=llm) ---
+# --- Optional LLM provider (NOTLM_FALLBACK_PROVIDER=llm) ---
 
 
 def _provider_env_peek() -> dict[str, Any]:
-    """Soft read of UIPILOT_LLM_* for status probes (never raises)."""
-    raw = (os.getenv("UIPILOT_LLM_PROVIDER") or "").strip().lower()
-    model = (os.getenv("UIPILOT_LLM_MODEL") or "").strip()
-    base = (os.getenv("UIPILOT_LLM_BASE_URL") or "").strip().rstrip("/")
-    api_key = (os.getenv("UIPILOT_LLM_API_KEY") or "").strip() or None
+    """Soft read of NOTLM_LLM_* for status probes (never raises)."""
+    raw = (os.getenv("NOTLM_LLM_PROVIDER") or "").strip().lower()
+    model = (os.getenv("NOTLM_LLM_MODEL") or "").strip()
+    base = (os.getenv("NOTLM_LLM_BASE_URL") or "").strip().rstrip("/")
+    api_key = (os.getenv("NOTLM_LLM_API_KEY") or "").strip() or None
 
     aliases = {
         "openai_compatible": "openai-compat",
@@ -414,16 +414,16 @@ def _provider_env_peek() -> dict[str, Any]:
     if provider_id == "openai-compat" and not base:
         return {
             "configured": False,
-            "error": "UIPILOT_LLM_BASE_URL required for openai-compat",
+            "error": "NOTLM_LLM_BASE_URL required for openai-compat",
         }
     if not base and provider_id in defaults:
         base = defaults[provider_id]
     if not provider_id or not model or not base:
-        return {"configured": False, "error": "UIPILOT_LLM_* not configured on server"}
+        return {"configured": False, "error": "NOTLM_LLM_* not configured on server"}
     if provider_id != "ollama" and not api_key:
         return {
             "configured": False,
-            "error": f"UIPILOT_LLM_API_KEY required for {provider_id}",
+            "error": f"NOTLM_LLM_API_KEY required for {provider_id}",
         }
 
     if provider_id in ("openai", "openai-compat", "huggingface"):
@@ -435,7 +435,7 @@ def _provider_env_peek() -> dict[str, Any]:
     else:
         return {
             "configured": False,
-            "error": f"Unsupported UIPILOT_LLM_PROVIDER: {provider_id}",
+            "error": f"Unsupported NOTLM_LLM_PROVIDER: {provider_id}",
         }
     return {
         "configured": True,
@@ -465,7 +465,7 @@ def _endpoint_hint(base: str) -> str:
 def _system_prompt() -> str:
     role = _product_role()
     scope = (
-        os.getenv("UIPILOT_LLM_SCOPE_HINT")
+        os.getenv("NOTLM_LLM_SCOPE_HINT")
         or "the host product's UI workflow and catalogued steps"
     ).strip()
     return (
@@ -597,7 +597,7 @@ async def _fallback_llm(body: FallbackRequest) -> FallbackResponse:
         return _degraded_llm_response(body, model="unconfigured")
     # Vision requests require an explicit vision-capable model env flag.
     if (body.imageBase64 or "").strip():
-        vision_ok = (os.getenv("UIPILOT_LLM_VISION") or "").strip().lower() in (
+        vision_ok = (os.getenv("NOTLM_LLM_VISION") or "").strip().lower() in (
             "1",
             "true",
             "yes",
@@ -735,7 +735,7 @@ async def probe_llm_status(*, enabled_flag: bool) -> dict[str, Any]:
 
 
 @router.get("/health")
-async def uipilot_fallback_health() -> dict[str, Any]:
+async def notlm_fallback_health() -> dict[str, Any]:
     """Laya sidecar reachability (or degraded stub when down)."""
     provider = resolve_fallback_provider()
     if provider == "llm":
@@ -764,7 +764,7 @@ async def uipilot_fallback_health() -> dict[str, Any]:
 
 
 @router.get("/llm-status")
-async def uipilot_llm_status(
+async def notlm_llm_status(
     db: AsyncSession = Depends(get_session),
     _admin: User = Depends(get_admin_user),
 ) -> dict[str, Any]:
@@ -774,12 +774,12 @@ async def uipilot_llm_status(
 
 
 @router.post("", response_model=FallbackResponse)
-async def uipilot_fallback(
+async def notlm_fallback(
     body: FallbackRequest,
     user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_session),
 ) -> FallbackResponse:
-    """Single-shot provider. Chain Laya→LLM in sealed @uipilot, not here."""
+    """Single-shot provider. Chain Laya→LLM in sealed @notlm, not here."""
     check_rate_limit(user.id)
     if resolve_fallback_provider(body.provider) == "llm":
         if not await _llm_fallback_flag_enabled(db):

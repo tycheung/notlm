@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 /**
  * Host-side pending surface bridge for pack `openSurface` keys
  * (drawers, wizards, instruct-only uploads). Wire `openSurface` into
- * UiPilotProvider; pages react when `pendingSurface` matches.
+ * NotLMProvider; pages react when `pendingSurface` matches.
  */
 export function useGuideSurfaceBridge() {
   const [pendingSurface, setPendingSurface] = useState<string | null>(null);

@@ -36,7 +36,7 @@ describe('ranker infer (operating)', () => {
   it('feature-flag defaults off', () => {
     expect(isOnnxRankerEnabled({}, {})).toBe(false);
     expect(isOnnxRankerEnabled({ onnxRanker: true }, {})).toBe(true);
-    expect(isOnnxRankerEnabled({}, { UIPILOT_ONNX_RANKER: '1' })).toBe(true);
+    expect(isOnnxRankerEnabled({}, { NOTLM_ONNX_RANKER: '1' })).toBe(true);
   });
 
   it('featurize is deterministic and extracts heuristic slots', () => {

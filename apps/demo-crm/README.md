@@ -1,6 +1,6 @@
-# @uipilot/demo-crm
+# @notlm/demo-crm
 
-Minimal second host proving `@uipilot/core` + `@uipilot/react` portability.
+Minimal second host proving `@notlm/core` + `@notlm/react` portability.
 
 ## Invariant
 
@@ -13,9 +13,9 @@ The assistant **never POSTs** and never calls product APIs. Steps resolve to `.c
 From the workspace root:
 
 ```bash
-npm run build -w @uipilot/core
-npm run build -w @uipilot/react
-npm run dev -w @uipilot/demo-crm
+npm run build -w @notlm/core
+npm run build -w @notlm/react
+npm run dev -w @notlm/demo-crm
 ```
 
-Pack: `packs/demo-crm/.uipilot/` (validated in CI). Host uses `openModal` + `useGuideModal` for `contact_draft`.
+Pack: `packs/demo-crm/.notlm/` (validated in CI). Host uses `openModal` + `useGuideModal` for `contact_draft`.

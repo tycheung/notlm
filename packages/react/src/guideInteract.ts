@@ -1,4 +1,4 @@
-import type { NavResolve } from '@uipilot/core';
+import type { NavResolve } from '@notlm/core';
 import { clickGuide } from './clickGuide.js';
 
 /**

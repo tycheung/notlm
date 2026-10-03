@@ -182,7 +182,7 @@ describe('conversation transports', () => {
   it('http posts ConversationTurn JSON', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
     const transport = createHttpConversationTransport({
-      url: '/api/uipilot/conversations',
+      url: '/api/notlm/conversations',
       fetch: fetchMock as unknown as typeof fetch,
       getHeaders: () => ({ Authorization: 'Bearer x' }),
     });
@@ -206,7 +206,7 @@ describe('conversation transports', () => {
   it('localStorage persists and recovers from corrupt JSON', () => {
     const store = new Map<string, string>();
     const transport = createLocalStorageConversationTransport({
-      key: 'uipilot:conv',
+      key: 'notlm:conv',
       storage: {
         getItem: (k) => store.get(k) ?? null,
         setItem: (k, v) => {

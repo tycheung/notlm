@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { RuntimeContextBase } from '@uipilot/core';
-import { createLocalStorageMissLogTransport } from '@uipilot/core';
+import type { RuntimeContextBase } from '@notlm/core';
+import { createLocalStorageMissLogTransport } from '@notlm/core';
 import {
-  UiPilotHost,
+  NotLMHost,
   createGuideNavigate,
   readDraft,
   useDraftBridge,
   useGuideModal,
-  useUiPilot,
-} from '@uipilot/react';
+  useNotLM,
+} from '@notlm/react';
 import {
   createHybridUtteranceParser,
   createRankerSession,
   isOnnxRankerEnabled,
   type RankerModelJson,
-} from '@uipilot/ranker';
+} from '@notlm/ranker';
 import { loadDemoTodoPack } from './loadDemoPack';
-import rankerJson from '../../../packs/demo-todo/.uipilot/pack/ranker.json';
+import rankerJson from '../../../packs/demo-todo/.notlm/pack/ranker.json';
 
 type TodoList = { id: string; name: string };
 type TodoItem = { id: string; listId: string; text: string; done: boolean };
@@ -67,7 +67,7 @@ function InteractablesLab({
   pendingModal: string | null;
   clearModal: () => void;
 }) {
-  const { notifyStepCompleted } = useUiPilot();
+  const { notifyStepCompleted } = useNotLM();
   const [tab, setTab] = useState<'details' | 'files'>('details');
   const [menuOpen, setMenuOpen] = useState(false);
   const [priority, setPriority] = useState('');
@@ -284,7 +284,7 @@ function TodoWorkspace({
   pendingModal: string | null;
   clearModal: () => void;
 }) {
-  const { notifyStepCompleted } = useUiPilot();
+  const { notifyStepCompleted } = useNotLM();
   const [lists, setLists] = useState<TodoList[]>([]);
   const [items, setItems] = useState<TodoItem[]>([]);
   const listDraft = useDraftBridge('demo-todo', 'list_draft');
@@ -440,8 +440,8 @@ export function App() {
   const onnxRanker = isOnnxRankerEnabled({
     onnxRanker:
       typeof import.meta !== 'undefined' &&
-      (import.meta as { env?: { VITE_UIPILOT_ONNX_RANKER?: string } }).env
-        ?.VITE_UIPILOT_ONNX_RANKER === '1',
+      (import.meta as { env?: { VITE_NOTLM_ONNX_RANKER?: string } }).env
+        ?.VITE_NOTLM_ONNX_RANKER === '1',
   });
   const parseUtteranceFn = useMemo(() => {
     if (!onnxRanker) return undefined;
@@ -466,7 +466,7 @@ export function App() {
   const missLog = useMemo(
     () => ({
       transport: createLocalStorageMissLogTransport({
-        key: 'uipilot:demo-todo:misses',
+        key: 'notlm:demo-todo:misses',
         limit: 100,
       }),
       packId: 'demo-todo',
@@ -475,7 +475,7 @@ export function App() {
   );
 
   return (
-    <UiPilotHost
+    <NotLMHost
       pack={pack}
       getContext={getContext}
       navigate={navigate}
@@ -505,7 +505,7 @@ export function App() {
             <span>{title} · demo-todo</span>
             <button
               type="button"
-              className="uipilot-chat-close"
+              className="notlm-chat-close"
               onClick={onClose}
               aria-label="Close assistant"
             >
@@ -516,6 +516,6 @@ export function App() {
       }}
     >
       <TodoWorkspace bagRef={bagRef} pendingModal={pendingModal} clearModal={clearModal} />
-    </UiPilotHost>
+    </NotLMHost>
   );
 }

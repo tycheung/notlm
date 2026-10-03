@@ -222,7 +222,7 @@ describe('transports', () => {
   it('localStorage round-trips', () => {
     const store = new Map<string, string>();
     const transport = createLocalStorageMissLogTransport({
-      key: 'uipilot:misses',
+      key: 'notlm:misses',
       storage: {
         getItem: (k) => store.get(k) ?? null,
         setItem: (k, v) => {
@@ -237,7 +237,7 @@ describe('transports', () => {
   it('http posts MissRecord JSON', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
     const transport = createHttpMissLogTransport({
-      url: '/api/uipilot/misses',
+      url: '/api/notlm/misses',
       fetch: fetchMock as unknown as typeof fetch,
       getHeaders: () => ({ Authorization: 'Bearer x' }),
     });
@@ -271,7 +271,7 @@ describe('transports', () => {
   it('http exchange posts MissExchange JSON and no-ops without fetch', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
     const transport = createHttpMissExchangeTransport({
-      url: '/api/uipilot/misses',
+      url: '/api/notlm/misses',
       fetch: fetchMock as unknown as typeof fetch,
       getHeaders: async () => ({ Authorization: 'Bearer y' }),
     });

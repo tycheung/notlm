@@ -12,7 +12,7 @@ import {
   writeDraft,
   isSpotlightOnly,
 } from './index.js';
-import type { NavResolve } from '@uipilot/core';
+import type { NavResolve } from '@notlm/core';
 
 describe('draftBridge', () => {
   beforeEach(() => {

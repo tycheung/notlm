@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import type { CoachEvent, RuntimeContextBase } from '@uipilot/core';
-import { UiPilotHost, createGuideNavigate, useUiPilot } from '@uipilot/react';
+import type { CoachEvent, RuntimeContextBase } from '@notlm/core';
+import { NotLMHost, createGuideNavigate, useNotLM } from '@notlm/react';
 import { loadDemoHelloPack } from './loadDemoPack';
 
 type ContextBag = { helloCount: number };
 
 function HelloWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag> }) {
-  const { notifyStepCompleted } = useUiPilot();
+  const { notifyStepCompleted } = useNotLM();
   const [greeted, setGreeted] = useState(false);
 
   const sayHello = () => {
@@ -19,7 +19,7 @@ function HelloWorkspace({ bagRef }: { bagRef: React.MutableRefObject<ContextBag>
     <main>
       <header>
         <h1>demo-hello</h1>
-        <p className="muted">Third-host proof — minimal UiPilotHost wiring.</p>
+        <p className="muted">Third-host proof — minimal NotLMHost wiring.</p>
       </header>
       <section className="demo-panel">
         <button type="button" data-guide-id="guide-hello" onClick={sayHello}>
@@ -43,7 +43,7 @@ export function App() {
   const navigate = useMemo(() => createGuideNavigate(), []);
 
   return (
-    <UiPilotHost
+    <NotLMHost
       pack={pack}
       getContext={getContext}
       navigate={navigate}
@@ -55,9 +55,9 @@ export function App() {
       className="demo-hello-coach"
     >
       <HelloWorkspace bagRef={bagRef} />
-    </UiPilotHost>
+    </NotLMHost>
   );
 }
 
 export const DEMO_STATUS = 'hello-host' as const;
-export const DEMO_APPS = ['@uipilot/demo-todo', '@uipilot/demo-crm', '@uipilot/demo'] as const;
+export const DEMO_APPS = ['@notlm/demo-todo', '@notlm/demo-crm', '@notlm/demo'] as const;

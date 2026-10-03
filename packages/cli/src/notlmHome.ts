@@ -8,27 +8,27 @@ import {
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const UIPILOT_DIRNAME = '.uipilot';
+export const NOTLM_DIRNAME = '.notlm';
 
-export type UipilotHome = {
-  /** Directory containing `.uipilot` (or that is the home itself). */
+export type NotlmHome = {
+  /** Directory containing `.notlm` (or that is the home itself). */
   projectRoot: string;
-  /** Absolute path to `.uipilot`. */
+  /** Absolute path to `.notlm`. */
   home: string;
 };
 
-export function resolveUipilotHome(dir?: string): UipilotHome {
+export function resolveNotlmHome(dir?: string): NotlmHome {
   const projectRoot = resolve(dir ?? process.cwd());
-  if (basenameIsUipilot(projectRoot)) {
+  if (basenameIsNotlm(projectRoot)) {
     return { projectRoot: dirname(projectRoot), home: projectRoot };
   }
-  const nested = join(projectRoot, UIPILOT_DIRNAME);
+  const nested = join(projectRoot, NOTLM_DIRNAME);
   return { projectRoot, home: nested };
 }
 
-function basenameIsUipilot(p: string): boolean {
+function basenameIsNotlm(p: string): boolean {
   const base = p.replace(/[/\\]+$/, '').split(/[/\\]/).pop();
-  return base === UIPILOT_DIRNAME;
+  return base === NOTLM_DIRNAME;
 }
 
 export function ensureDir(path: string): void {

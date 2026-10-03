@@ -1,7 +1,7 @@
-import type { SlotBag } from '@uipilot/core';
+import type { SlotBag } from '@notlm/core';
 
-const PREFIX = 'uipilot:draft:';
-export const DRAFT_CHANGED_EVENT = 'uipilot:draft-changed';
+const PREFIX = 'notlm:draft:';
+export const DRAFT_CHANGED_EVENT = 'notlm:draft-changed';
 
 export type DraftChangedDetail = {
   packId: string;

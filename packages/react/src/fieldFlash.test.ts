@@ -53,16 +53,16 @@ describe('flashGuideFieldsSequential', () => {
   it('blinks each field then advances to the next', () => {
     const cancel = flashGuideFieldsSequential(['guide-email', 'guide-name'], { gapMs: 100 });
     vi.runOnlyPendingTimers(); // start first
-    expect(document.querySelector('[data-guide-id="guide-name"]')?.classList.contains('uipilot-field-flash')).toBe(
+    expect(document.querySelector('[data-guide-id="guide-name"]')?.classList.contains('notlm-field-flash')).toBe(
       true
     );
-    expect(document.querySelector('[data-guide-id="guide-email"]')?.classList.contains('uipilot-field-flash')).toBe(
+    expect(document.querySelector('[data-guide-id="guide-email"]')?.classList.contains('notlm-field-flash')).toBe(
       false
     );
 
     vi.advanceTimersByTime(700 * 3); // finish first blinks
     vi.advanceTimersByTime(100); // gap
-    expect(document.querySelector('[data-guide-id="guide-email"]')?.classList.contains('uipilot-field-flash')).toBe(
+    expect(document.querySelector('[data-guide-id="guide-email"]')?.classList.contains('notlm-field-flash')).toBe(
       true
     );
     cancel();

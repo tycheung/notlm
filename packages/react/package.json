@@ -1,5 +1,5 @@
 {
-  "name": "@uipilot/react",
+  "name": "@notlm/react",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,7 +22,7 @@
     "react-dom": "^18.3.1"
   },
   "dependencies": {
-    "@uipilot/core": "*"
+    "@notlm/core": "*"
   },
   "scripts": {
     "build": "tsc -b"

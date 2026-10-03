@@ -7,20 +7,20 @@ import { join, relative } from 'node:path';
 const ROOT = join(process.cwd());
 
 const BANNED_FROM_CORE = [
-  '@uipilot/react',
-  '@uipilot/author',
-  '@uipilot/mapper',
-  '@uipilot/cli',
-  '@uipilot/codegen',
-  '@uipilot/llm',
+  '@notlm/react',
+  '@notlm/author',
+  '@notlm/mapper',
+  '@notlm/cli',
+  '@notlm/codegen',
+  '@notlm/llm',
 ];
 
 const BANNED_FROM_REACT = [
-  '@uipilot/author',
-  '@uipilot/mapper',
-  '@uipilot/cli',
-  '@uipilot/codegen',
-  '@uipilot/llm',
+  '@notlm/author',
+  '@notlm/mapper',
+  '@notlm/cli',
+  '@notlm/codegen',
+  '@notlm/llm',
 ];
 
 function collectTsFiles(dir: string, out: string[] = []): string[] {
@@ -91,17 +91,17 @@ describe('import graph (apps → react → core)', () => {
     expect(offendersInDir('packages/core/src', BANNED_FROM_CORE)).toEqual([]);
   });
 
-  it('react may import core only among @uipilot packages (not author/mapper/cli/llm)', () => {
+  it('react may import core only among @notlm packages (not author/mapper/cli/llm)', () => {
     expect(offendersInDir('packages/react/src', BANNED_FROM_REACT)).toEqual([]);
   });
 
   it('apps must not import author/cli/mapper/llm/codegen internals', () => {
     const banned = [
-      '@uipilot/author',
-      '@uipilot/cli',
-      '@uipilot/mapper',
-      '@uipilot/llm',
-      '@uipilot/codegen',
+      '@notlm/author',
+      '@notlm/cli',
+      '@notlm/mapper',
+      '@notlm/llm',
+      '@notlm/codegen',
     ];
     const hits = [
       ...offendersInDir('apps/demo-todo/src', banned),
@@ -119,20 +119,20 @@ describe('import graph (apps → react → core)', () => {
 
   it('operating cli must not import author/mapper/codegen/llm', () => {
     const banned = [
-      '@uipilot/author',
-      '@uipilot/mapper',
-      '@uipilot/codegen',
-      '@uipilot/llm',
+      '@notlm/author',
+      '@notlm/mapper',
+      '@notlm/codegen',
+      '@notlm/llm',
     ];
     expect(offendersInDir('packages/cli/src', banned)).toEqual([]);
   });
 
   it('schema and ranker must not import authoring packages', () => {
     const banned = [
-      '@uipilot/author',
-      '@uipilot/mapper',
-      '@uipilot/codegen',
-      '@uipilot/llm',
+      '@notlm/author',
+      '@notlm/mapper',
+      '@notlm/codegen',
+      '@notlm/llm',
     ];
     expect(offendersInDir('packages/schema/src', banned)).toEqual([]);
     expect(offendersInDir('packages/ranker/src', banned)).toEqual([]);
@@ -157,7 +157,7 @@ describe('import graph (apps → react → core)', () => {
     const hits: string[] = [];
     for (const file of collectTsFiles(join(ROOT, 'packages'))) {
       const text = readFileSync(file, 'utf8');
-      if (/uipilot-training|uipilot-trainer/i.test(text)) {
+      if (/notlm-training|notlm-trainer/i.test(text)) {
         hits.push(relative(ROOT, file));
       }
     }
@@ -178,7 +178,7 @@ describe('import graph (apps → react → core)', () => {
       const full = join(ROOT, rel);
       try {
         const text = readFileSync(full, 'utf8');
-        if (/uipilot-training|uipilot-trainer/i.test(text)) hits.push(rel);
+        if (/notlm-training|notlm-trainer/i.test(text)) hits.push(rel);
       } catch {
         /* missing ok */
       }

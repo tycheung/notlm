@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useUiPilot } from './UiPilotContext.js';
+import { useNotLM } from './NotLMContext.js';
 
 /**
  * Portable checklist over evaluateFlowStatuses (+ optional phase labels).
@@ -14,7 +14,7 @@ export function ChecklistPanel() {
     executeStep,
     hostRootClassName,
     hostRootStyle,
-  } = useUiPilot();
+  } = useNotLM();
 
   useEffect(() => {
     if (!checklistOpen) return;
@@ -32,53 +32,53 @@ export function ChecklistPanel() {
 
   return (
     <div
-      className={[hostRootClassName, 'uipilot-checklist-root'].filter(Boolean).join(' ')}
+      className={[hostRootClassName, 'notlm-checklist-root'].filter(Boolean).join(' ')}
       style={hostRootStyle}
-      data-testid="uipilot-checklist"
+      data-testid="notlm-checklist"
     >
       <button
         type="button"
-        className="uipilot-checklist-backdrop"
+        className="notlm-checklist-backdrop"
         aria-label="Close checklist"
         onClick={() => setChecklistOpen(false)}
       />
       <div
-        className="uipilot-checklist-panel"
+        className="notlm-checklist-panel"
         role="dialog"
         aria-label="Event checklist"
       >
-        <div className="uipilot-checklist-header">
+        <div className="notlm-checklist-header">
           <strong>Event checklist</strong>
           <button
             type="button"
-            className="uipilot-checklist-close"
+            className="notlm-checklist-close"
             onClick={() => setChecklistOpen(false)}
             aria-label="Close checklist"
           >
             ×
           </button>
         </div>
-        <ul className="uipilot-checklist-list" role="list">
+        <ul className="notlm-checklist-list" role="list">
           {statuses.map((s) => {
             const disabled = !s.available && !s.complete;
             return (
-              <li key={s.id} className="uipilot-checklist-item">
+              <li key={s.id} className="notlm-checklist-item">
                 <button
                   type="button"
-                  className="uipilot-checklist-row"
+                  className="notlm-checklist-row"
                   disabled={disabled}
-                  data-guide-id={`uipilot-checklist-${s.id}`}
+                  data-guide-id={`notlm-checklist-${s.id}`}
                   onClick={() => {
                     if (disabled) return;
                     setChecklistOpen(false);
                     executeStep(s.id);
                   }}
                 >
-                  <span className="uipilot-checklist-title">{s.title}</span>
+                  <span className="notlm-checklist-title">{s.title}</span>
                   {s.phaseLabel ? (
-                    <span className="uipilot-checklist-phase">{s.phaseLabel}</span>
+                    <span className="notlm-checklist-phase">{s.phaseLabel}</span>
                   ) : null}
-                  <span className="uipilot-checklist-state">
+                  <span className="notlm-checklist-state">
                     {s.complete ? 'Done' : s.available ? 'Ready' : s.blockedReason ?? 'Blocked'}
                   </span>
                 </button>

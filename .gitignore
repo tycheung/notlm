@@ -12,8 +12,8 @@ test-results
 .pytest_cache
 
 # Saturation / author drafts generated locally (keep pack/ committed)
-**/.uipilot/saturation/
-**/.uipilot/drafts/
+**/.notlm/saturation/
+**/.notlm/drafts/
 
 # Local AI / agent tooling (not shipped as product)
 # Keep committed Cursor rules; ignore session/cache under .cursor/

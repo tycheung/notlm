@@ -14,7 +14,7 @@ const binderLeaf = {
 
 /** Recursive binder predicate (path/op or all/any). */
 export const binderPredicateSchema = {
-  $id: 'https://uipilot.dev/schemas/binder-predicate.json',
+  $id: 'https://notlm.dev/schemas/binder-predicate.json',
   oneOf: [
     binderLeaf,
     {
@@ -24,7 +24,7 @@ export const binderPredicateSchema = {
       properties: {
         all: {
           type: 'array',
-          items: { $ref: 'https://uipilot.dev/schemas/binder-predicate.json' },
+          items: { $ref: 'https://notlm.dev/schemas/binder-predicate.json' },
         },
       },
     },
@@ -35,7 +35,7 @@ export const binderPredicateSchema = {
       properties: {
         any: {
           type: 'array',
-          items: { $ref: 'https://uipilot.dev/schemas/binder-predicate.json' },
+          items: { $ref: 'https://notlm.dev/schemas/binder-predicate.json' },
         },
       },
     },
@@ -43,7 +43,7 @@ export const binderPredicateSchema = {
 } as const;
 
 export const manifestSchema = {
-  $id: 'https://uipilot.dev/schemas/manifest.json',
+  $id: 'https://notlm.dev/schemas/manifest.json',
   type: 'object',
   additionalProperties: true,
   required: ['id'],
@@ -57,7 +57,7 @@ export const manifestSchema = {
 } as const;
 
 export const flowSchema = {
-  $id: 'https://uipilot.dev/schemas/flow.json',
+  $id: 'https://notlm.dev/schemas/flow.json',
   type: 'array',
   items: {
     type: 'object',
@@ -94,7 +94,7 @@ export const flowSchema = {
 } as const;
 
 export const controlsSchema = {
-  $id: 'https://uipilot.dev/schemas/controls.json',
+  $id: 'https://notlm.dev/schemas/controls.json',
   type: 'array',
   items: {
     type: 'object',
@@ -142,7 +142,7 @@ export const controlsSchema = {
 } as const;
 
 export const intentsSchema = {
-  $id: 'https://uipilot.dev/schemas/intents.json',
+  $id: 'https://notlm.dev/schemas/intents.json',
   type: 'object',
   additionalProperties: true,
   required: ['aliases'],
@@ -161,7 +161,7 @@ export const intentsSchema = {
 } as const;
 
 export const normalizeSchema = {
-  $id: 'https://uipilot.dev/schemas/normalize.json',
+  $id: 'https://notlm.dev/schemas/normalize.json',
   type: 'object',
   additionalProperties: true,
   properties: {
@@ -197,7 +197,7 @@ export const normalizeSchema = {
 } as const;
 
 export const repliesSchema = {
-  $id: 'https://uipilot.dev/schemas/replies.json',
+  $id: 'https://notlm.dev/schemas/replies.json',
   type: 'object',
   additionalProperties: {
     type: 'array',
@@ -207,7 +207,7 @@ export const repliesSchema = {
 
 /** Binders file: array of { stepId, …predicate }. */
 export const bindersSchema = {
-  $id: 'https://uipilot.dev/schemas/binders.json',
+  $id: 'https://notlm.dev/schemas/binders.json',
   type: 'array',
   items: {
     type: 'object',
@@ -225,7 +225,7 @@ export const bindersSchema = {
 } as const;
 
 export const corpusSchema = {
-  $id: 'https://uipilot.dev/schemas/corpus.json',
+  $id: 'https://notlm.dev/schemas/corpus.json',
   type: 'array',
   items: {
     type: 'object',
@@ -241,7 +241,7 @@ export const corpusSchema = {
 } as const;
 
 export const scenariosSchema = {
-  $id: 'https://uipilot.dev/schemas/scenarios.json',
+  $id: 'https://notlm.dev/schemas/scenarios.json',
   type: 'array',
   items: {
     type: 'object',
@@ -266,7 +266,7 @@ export const scenariosSchema = {
 } as const;
 
 export const faqSchema = {
-  $id: 'https://uipilot.dev/schemas/faq.json',
+  $id: 'https://notlm.dev/schemas/faq.json',
   type: 'array',
   items: {
     type: 'object',
@@ -282,7 +282,7 @@ export const faqSchema = {
 } as const;
 
 export const lookupsSchema = {
-  $id: 'https://uipilot.dev/schemas/lookups.json',
+  $id: 'https://notlm.dev/schemas/lookups.json',
   type: 'array',
   items: {
     type: 'object',
@@ -302,7 +302,7 @@ export const lookupsSchema = {
 } as const;
 
 export const glossarySchema = {
-  $id: 'https://uipilot.dev/schemas/glossary.json',
+  $id: 'https://notlm.dev/schemas/glossary.json',
   type: 'array',
   items: {
     type: 'object',
@@ -318,7 +318,7 @@ export const glossarySchema = {
 } as const;
 
 export const configSchema = {
-  $id: 'https://uipilot.dev/schemas/config.json',
+  $id: 'https://notlm.dev/schemas/config.json',
   type: 'object',
   additionalProperties: true,
   properties: {
@@ -335,7 +335,7 @@ export const configSchema = {
  * snake_case aliases (utterance, pack_id, …) are not part of this contract.
  */
 export const missRecordSchema = {
-  $id: 'https://uipilot.dev/schemas/miss-record.json',
+  $id: 'https://notlm.dev/schemas/miss-record.json',
   type: 'object',
   additionalProperties: true,
   required: ['text', 'kind', 'at'],
@@ -355,7 +355,7 @@ export const missRecordSchema = {
 
 /** GET/export body: JSON array of MissRecords (host extras allowed per item). */
 export const missRecordListSchema = {
-  $id: 'https://uipilot.dev/schemas/miss-record-list.json',
+  $id: 'https://notlm.dev/schemas/miss-record-list.json',
   type: 'array',
   items: {
     type: 'object',
@@ -385,7 +385,7 @@ const missProposedProperties = {
 
 /** Portable MissExchange = MissRecord + LLM reply + optional proposed label. */
 export const missExchangeSchema = {
-  $id: 'https://uipilot.dev/schemas/miss-exchange.json',
+  $id: 'https://notlm.dev/schemas/miss-exchange.json',
   type: 'object',
   additionalProperties: true,
   required: ['text', 'kind', 'at', 'llmReply'],
@@ -421,7 +421,7 @@ export const missExchangeSchema = {
 } as const;
 
 export const missExchangeListSchema = {
-  $id: 'https://uipilot.dev/schemas/miss-exchange-list.json',
+  $id: 'https://notlm.dev/schemas/miss-exchange-list.json',
   type: 'array',
   items: {
     type: 'object',
@@ -482,7 +482,7 @@ const conversationTurnProperties = {
 
 /** Portable append-only ConversationTurn (POST ingest). */
 export const conversationTurnSchema = {
-  $id: 'https://uipilot.dev/schemas/conversation-turn.json',
+  $id: 'https://notlm.dev/schemas/conversation-turn.json',
   type: 'object',
   additionalProperties: true,
   required: ['conversationId', 'turnId', 'at', 'role', 'text'],
@@ -490,7 +490,7 @@ export const conversationTurnSchema = {
 } as const;
 
 export const conversationTurnListSchema = {
-  $id: 'https://uipilot.dev/schemas/conversation-turn-list.json',
+  $id: 'https://notlm.dev/schemas/conversation-turn-list.json',
   type: 'array',
   items: {
     type: 'object',
@@ -502,7 +502,7 @@ export const conversationTurnListSchema = {
 
 /** Aggregated ConversationRecord for training dumps. */
 export const conversationRecordSchema = {
-  $id: 'https://uipilot.dev/schemas/conversation-record.json',
+  $id: 'https://notlm.dev/schemas/conversation-record.json',
   type: 'object',
   additionalProperties: true,
   required: ['conversationId', 'startedAt', 'turns'],
@@ -524,7 +524,7 @@ export const conversationRecordSchema = {
 } as const;
 
 export const conversationRecordListSchema = {
-  $id: 'https://uipilot.dev/schemas/conversation-record-list.json',
+  $id: 'https://notlm.dev/schemas/conversation-record-list.json',
   type: 'array',
   items: {
     type: 'object',

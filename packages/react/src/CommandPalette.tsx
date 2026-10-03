@@ -1,12 +1,12 @@
-import { editDistance } from '@uipilot/core';
+import { editDistance } from '@notlm/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useUiPilot } from './UiPilotContext.js';
+import { useNotLM } from './NotLMContext.js';
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function searchSteps(query: string, statuses: ReturnType<typeof useUiPilot>['statuses']) {
+function searchSteps(query: string, statuses: ReturnType<typeof useNotLM>['statuses']) {
   const q = normalize(query);
   if (!q) return statuses;
   return statuses
@@ -31,7 +31,7 @@ export function CommandPalette() {
     hostRootStyle,
     hostRootClassName,
     chrome,
-  } = useUiPilot();
+  } = useNotLM();
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,26 +78,26 @@ export function CommandPalette() {
 
   return (
     <div
-      className={[hostRootClassName, 'uipilot-palette-backdrop', classNames?.paletteBackdrop]
+      className={[hostRootClassName, 'notlm-palette-backdrop', classNames?.paletteBackdrop]
         .filter(Boolean)
         .join(' ')}
       style={hostRootStyle}
-      data-testid="uipilot-command-palette"
+      data-testid="notlm-command-palette"
     >
       <button
         type="button"
-        className="uipilot-palette-scrim"
+        className="notlm-palette-scrim"
         aria-label="Close command palette"
         onClick={() => setPaletteOpen(false)}
       />
       <div
-        className={['uipilot-palette-panel', classNames?.palettePanel].filter(Boolean).join(' ')}
+        className={['notlm-palette-panel', classNames?.palettePanel].filter(Boolean).join(' ')}
         role="dialog"
         aria-label={paletteAriaLabel}
       >
         <input
           ref={inputRef}
-          className="uipilot-palette-input"
+          className="notlm-palette-input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -118,9 +118,9 @@ export function CommandPalette() {
           placeholder={palettePlaceholder}
           aria-label={paletteSearchAriaLabel}
         />
-        <ul className="uipilot-palette-list" role="listbox">
+        <ul className="notlm-palette-list" role="listbox">
           {results.length === 0 && (
-            <li className="uipilot-palette-item" aria-disabled="true">
+            <li className="notlm-palette-item" aria-disabled="true">
               No matching steps
             </li>
           )}
@@ -131,14 +131,14 @@ export function CommandPalette() {
                 role="option"
                 aria-selected={index === activeIndex}
                 disabled={!item.available}
-                className={`uipilot-palette-item ${index === activeIndex ? 'uipilot-palette-item-active' : ''}`}
+                className={`notlm-palette-item ${index === activeIndex ? 'notlm-palette-item-active' : ''}`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => run(index)}
               >
                 <span>{item.title}</span>
                 {item.complete && <span> · Done</span>}
                 {!item.available && item.blockedReason && (
-                  <div className="uipilot-palette-item-meta">{item.blockedReason}</div>
+                  <div className="notlm-palette-item-meta">{item.blockedReason}</div>
                 )}
               </button>
             </li>

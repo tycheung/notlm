@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openChat, sendUtterance } from './helpers/chat';
 
-const MISS_KEY = 'uipilot:demo-todo:misses';
+const MISS_KEY = 'notlm:demo-todo:misses';
 
 test.describe('@guide-nlu demo-todo miss logging', () => {
   test('unknown utterance is stored in localStorage and deduped', async ({ page }) => {

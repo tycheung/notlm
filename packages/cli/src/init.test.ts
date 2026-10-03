@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cmdInit } from './commands.js';
-import { pathExists, resolveUipilotHome } from './uipilotHome.js';
+import { pathExists, resolveNotlmHome } from './notlmHome.js';
 
 const temps: string[] = [];
 
@@ -17,12 +17,12 @@ afterEach(() => {
   }
 });
 
-describe('uipilotCLI init', () => {
+describe('notlmCLI init', () => {
   it('creates pack tree from packs/_template', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'uipilot-init-'));
+    const root = mkdtempSync(join(tmpdir(), 'notlm-init-'));
     temps.push(root);
     await cmdInit(root);
-    const { home } = resolveUipilotHome(root);
+    const { home } = resolveNotlmHome(root);
     expect(pathExists(join(home, 'config.json'))).toBe(true);
     expect(pathExists(join(home, 'inventory.json'))).toBe(true);
     expect(pathExists(join(home, 'structured-draft.json'))).toBe(true);

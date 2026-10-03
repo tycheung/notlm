@@ -50,7 +50,7 @@ import {
   type RunTourFn,
   type OpenSearchHitFn,
   tryDispatchCapabilityCatalog,
-} from '@uipilot/core';
+} from '@notlm/core';
 import {
   createContext,
   useCallback,
@@ -61,7 +61,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import type { UiPilotChromeConfig } from './chromeTypes.js';
+import type { NotLMChromeConfig } from './chromeTypes.js';
 import { DEFAULT_GUIDE_ATTR, flashGuideField, flashGuideFieldsSequential } from './fieldFlash.js';
 import { applyPrefill } from './fieldPrefill.js';
 import { clickGuide } from './clickGuide.js';
@@ -71,7 +71,7 @@ import {
   isSpotlightOnly,
   runBeforeOpen,
 } from './guideInteract.js';
-import { appearanceToCssVars } from './uipilot.css.js';
+import { appearanceToCssVars } from './notlm.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
@@ -106,7 +106,7 @@ function asLoadedPack(pack: PackRuntime): LoadedPack {
   };
 }
 
-export type UiPilotContextValue = {
+export type NotLMContextValue = {
   pack: PackRuntime;
   getContext: () => RuntimeContextBase;
   navigate: NavigateFn;
@@ -129,12 +129,12 @@ export type UiPilotContextValue = {
   setPaletteOpen: (open: boolean) => void;
   setChecklistOpen: (open: boolean) => void;
   clearSpotlight: () => void;
-  chrome: UiPilotChromeConfig;
+  chrome: NotLMChromeConfig;
   hostRootStyle: CSSProperties;
   hostRootClassName: string;
 };
 
-const UiPilotContext = createContext<UiPilotContextValue | null>(null);
+const NotLMContext = createContext<NotLMContextValue | null>(null);
 
 function newMessage(
   role: ChatMessage['role'],
@@ -153,7 +153,7 @@ function newMessage(
   };
 }
 
-export type UiPilotProviderProps = {
+export type NotLMProviderProps = {
   pack: PackRuntime;
   getContext: () => RuntimeContextBase;
   navigate: NavigateFn;
@@ -222,9 +222,9 @@ export type UiPilotProviderProps = {
     session: SessionSlots;
   }) => string | null;
   children: ReactNode;
-} & UiPilotChromeConfig;
+} & NotLMChromeConfig;
 
-export function UiPilotProvider({
+export function NotLMProvider({
   pack,
   getContext,
   navigate,
@@ -256,7 +256,7 @@ export function UiPilotProvider({
   labels,
   style,
   children,
-}: UiPilotProviderProps) {
+}: NotLMProviderProps) {
   const features = useMemo<AssistantFeatures>(
     () => ({
       chat: true,
@@ -599,7 +599,7 @@ export function UiPilotProvider({
     openSearchHit,
   ]);
 
-  const chrome = useMemo<UiPilotChromeConfig>(
+  const chrome = useMemo<NotLMChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
     [appearance, className, classNames, components, labels, style]
   );
@@ -609,7 +609,7 @@ export function UiPilotProvider({
     [appearance, style]
   );
 
-  const hostRootClassName = ['uipilot-host-root', className, classNames?.root]
+  const hostRootClassName = ['notlm-host-root', className, classNames?.root]
     .filter(Boolean)
     .join(' ');
 
@@ -916,7 +916,7 @@ export function UiPilotProvider({
     ]
   );
 
-  const value = useMemo<UiPilotContextValue>(
+  const value = useMemo<NotLMContextValue>(
     () => ({
       pack,
       getContext,
@@ -965,16 +965,16 @@ export function UiPilotProvider({
   );
 
   return (
-    <UiPilotContext.Provider value={value}>{children}</UiPilotContext.Provider>
+    <NotLMContext.Provider value={value}>{children}</NotLMContext.Provider>
   );
 }
 
-export function useUiPilot(): UiPilotContextValue {
-  const ctx = useContext(UiPilotContext);
+export function useNotLM(): NotLMContextValue {
+  const ctx = useContext(NotLMContext);
   if (!ctx) {
-    throw new Error('useUiPilot must be used within UiPilotProvider');
+    throw new Error('useNotLM must be used within NotLMProvider');
   }
   return ctx;
 }
 
-export { UiPilotContext };
+export { NotLMContext };

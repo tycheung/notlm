@@ -41,10 +41,10 @@ test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
     page.on('request', assertNoProductApi);
 
     await page.goto('/');
-    await expect(page.getByTestId('uipilot-fab')).toBeVisible();
+    await expect(page.getByTestId('notlm-fab')).toBeVisible();
     await page.locator('body').click();
     await page.keyboard.press('Control+k');
-    await expect(page.getByTestId('uipilot-command-palette')).toBeVisible();
+    await expect(page.getByTestId('notlm-command-palette')).toBeVisible();
     await expect(
       page.getByRole('dialog', { name: 'Workflow command palette' })
     ).toBeVisible();
@@ -57,7 +57,7 @@ test.describe('@guide-nlu @ui-actions demo-todo coach', () => {
     );
     await page.goto('/');
     await openChat(page);
-    await expect(page.getByTestId('uipilot-chat-input')).toBeVisible();
+    await expect(page.getByTestId('notlm-chat-input')).toBeVisible();
     await expect(page.getByText(/Voice unavailable — type instead/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /voice input/i })).toHaveAttribute(
       'title',

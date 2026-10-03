@@ -55,19 +55,19 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'npm run dev -w @uipilot/demo-todo',
+      command: 'npm run dev -w @notlm/demo-todo',
       url: demoTodoBaseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
     },
     {
-      command: 'npm run dev -w @uipilot/demo-crm',
+      command: 'npm run dev -w @notlm/demo-crm',
       url: demoCrmBaseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
     },
     {
-      command: 'npm run dev -w @uipilot/demo',
+      command: 'npm run dev -w @notlm/demo',
       url: demoHelloBaseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,

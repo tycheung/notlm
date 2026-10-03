@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { validatePackFolder } from '@uipilot/schema';
+import { validatePackFolder } from '@notlm/schema';
 import {
   PACK_PIECES,
   copyTemplateFile,
@@ -9,13 +9,13 @@ import {
   packDir,
   pathExists,
   readJsonFile,
-  resolveUipilotHome,
+  resolveNotlmHome,
   templateRoot,
   writeJsonFile,
-} from './uipilotHome.js';
+} from './notlmHome.js';
 
 export async function cmdInit(dir?: string): Promise<void> {
-  const { home } = resolveUipilotHome(dir);
+  const { home } = resolveNotlmHome(dir);
   if (pathExists(home)) {
     console.error(`Already exists: ${home}`);
     process.exitCode = 1;
@@ -67,9 +67,9 @@ export async function cmdInit(dir?: string): Promise<void> {
 }
 
 export async function cmdValidate(dir?: string): Promise<void> {
-  const { home } = resolveUipilotHome(dir);
+  const { home } = resolveNotlmHome(dir);
   if (!pathExists(home)) {
-    console.error(`Missing UiPilot home: ${home} (run uipilotCLI init)`);
+    console.error(`Missing NotLM home: ${home} (run notlmCLI init)`);
     process.exitCode = 1;
     return;
   }

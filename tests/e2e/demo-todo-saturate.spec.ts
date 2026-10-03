@@ -19,7 +19,7 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
 
   const scenariosPath = join(
     process.cwd(),
-    'packs/demo-todo/.uipilot/scenarios.json'
+    'packs/demo-todo/.notlm/scenarios.json'
   );
   const scenarios = JSON.parse(readFileSync(scenariosPath, 'utf8')) as Array<{
     id: string;
@@ -58,7 +58,7 @@ test.describe('@guide-saturate @guide-nlu demo-todo saturation pool', () => {
   test('appearance accent token paints FAB (teal brand)', async ({ page }) => {
     page.on('request', assertNoProductApi);
     await page.goto('/');
-    await expect(page.getByTestId('uipilot-fab')).toHaveCSS(
+    await expect(page.getByTestId('notlm-fab')).toHaveCSS(
       'background-color',
       'rgb(15, 118, 110)'
     );

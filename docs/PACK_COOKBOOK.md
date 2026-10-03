@@ -1,17 +1,17 @@
-# Pack cookbook — wire up a UiPilot chatbot (smart cache)
+# Pack cookbook — wire up a NotLM chatbot (smart cache)
 
-**Audience:** developers adding UiPilot to a host SPA.  
-**Goal:** ship a reviewable `.uipilot/pack/` by hand or after CLI drafts — not invent a new DSL.
+**Audience:** developers adding NotLM to a host SPA.  
+**Goal:** ship a reviewable `.notlm/pack/` by hand or after CLI drafts — not invent a new DSL.
 
-UiPilot is a **smart-cache SPA chatbot** (pack NLU → optional Laya → optional LLM).
+NotLM is a **smart-cache SPA chatbot** (pack NLU → optional Laya → optional LLM).
 Pack JSON is the cache content. **Coaching** (spotlight / guide-id tours) is optional.
 
 Reference packs in this repo:
 
 | Pack | Role |
 |------|------|
-| `packs/demo-todo/.uipilot/` | Smallest end-to-end example (start here) |
-| `packs/demo-crm/.uipilot/` | Second host; same folder pack shapes |
+| `packs/demo-todo/.notlm/` | Smallest end-to-end example (start here) |
+| `packs/demo-crm/.notlm/` | Second host; same folder pack shapes |
 | `packs/_template/` | Empty schema fixture |
 | `packs/_base-en/faq.json` | Shared English greetings / soft conversational FAQ (merged under product FAQ) |
 
@@ -36,7 +36,7 @@ User says “add a todo” / picks a palette row
 - Pack runtime NLU is **deterministic** (aliases / corpus) — the smart-cache hot path.
 - Laya / LLM run only on **miss** (host-wired fallback).
 - Runtime **never** calls your product APIs. It only replies, navigates, spotlights, and activates annotated controls.
-- All pack learnings live under **one folder** (default `.uipilot/`). Do not generate `guideIds.ts` as source of truth.
+- All pack learnings live under **one folder** (default `.notlm/`). Do not generate `guideIds.ts` as source of truth.
 - Set `manifest.productRole` for OOD refuse voice; never rely on core brand defaults.
 
 ---
@@ -44,7 +44,7 @@ User says “add a todo” / picks a palette row
 ## Folder layout
 
 ```text
-.uipilot/
+.notlm/
   config.json                 # features, guideAttr (no secrets)
   checklist.json              # open gaps from map/author (optional to edit)
   scenarios.json              # labeled utterances for tune (optional)
@@ -67,7 +67,7 @@ Minimal mental model: **`manifest` + five pack files**. Everything else is tooli
 
 ### Training = edit pack JSON
 
-Prefer fixing stress misses by editing JSON (then `npm run build:uipilot` / vendor sync), not `@uipilot/core`:
+Prefer fixing stress misses by editing JSON (then `npm run build:notlm` / vendor sync), not `@notlm/core`:
 
 | Change | Edit |
 |--------|------|
@@ -86,13 +86,13 @@ Platform defaults ship generic English only. Host brand tokens (product jargon) 
 Init:
 
 ```bash
-uipilotCLI init ./my-app
+notlmCLI init ./my-app
 ```
 
 Validate / corpus gate (run after every pack edit):
 
 ```bash
-uipilotCLI intents check ./my-app
+notlmCLI intents check ./my-app
 # or against a pack folder in this monorepo:
 npm run check:demo
 ```
@@ -114,11 +114,11 @@ Copy this for every new step. A step is **not done** until all six are true.
 
 Host-only work (never put secrets or brand tokens in pack JSON):
 
-1. Mount `UiPilotProvider` / `UiPilotHost` with `pack`, `getContext`, `navigate`.
+1. Mount `NotLMProvider` / `NotLMHost` with `pack`, `getContext`, `navigate`.
 2. Put `data-guide-id="…"` on the real buttons/fields the coach may activate (ids must match `controls.json`).
 3. Implement `navigate(path)` so it finds that guide id and **clicks** (or focuses) it — same as a user.
 4. Expose completeness fields on `getContext().data` that binders read.
-5. On the save/confirm path that finishes a step, call `useUiPilot().notifyStepCompleted(stepId)` when you use the session queue.
+5. On the save/confirm path that finishes a step, call `useNotLM().notifyStepCompleted(stepId)` when you use the session queue.
 6. Keep chrome look in React (`appearance` / CSS) — not in pack JSON.
 
 ---
@@ -283,11 +283,11 @@ Suggested mix per step: **clean**, **slang**, **typo/truncated STT**, plus at le
 
 ## Day-1 walkthrough (smallest path)
 
-1. **Init** `.uipilot/` (`uipilotCLI init` or copy `packs/demo-todo/.uipilot/pack/` and rename ids).
+1. **Init** `.notlm/` (`notlmCLI init` or copy `packs/demo-todo/.notlm/pack/` and rename ids).
 2. **Pick one job** (e.g. “create list”). Add one flow step, one control, one binder, 2–3 aliases, 3 corpus rows.
 3. **Annotate** the real CTA with `data-guide-id` matching `controls[].id`.
 4. **Mount** Host with `getContext` + `navigate` that clicks `[data-guide-id=…]`.
-5. **Run** `uipilotCLI intents check` until green.
+5. **Run** `notlmCLI intents check` until green.
 6. **Manual smoke:** type the utterance in chat; confirm spotlight + click; confirm binder flips when state updates.
 7. **Only then** add the next step (`requires` the first).
 
@@ -295,12 +295,12 @@ Optional acceleration (still review before accept):
 
 ```bash
 # Grow pack aliases / scenarios offline, then:
-uipilotCLI intents check ./my-app
-uipilotCLI intents check ./my-app
-uipilotCLI pack accept <draftId> ./my-app   # only when check is green
+notlmCLI intents check ./my-app
+notlmCLI intents check ./my-app
+notlmCLI pack accept <draftId> ./my-app   # only when check is green
 ```
 
-Drafts land under `.uipilot/drafts/` — treat them like a PR: read the diff, fix, then accept.
+Drafts land under `.notlm/drafts/` — treat them like a PR: read the diff, fix, then accept.
 
 ---
 
@@ -349,8 +349,8 @@ CLI never auto-merges into `pack/` without an explicit accept path. That is inte
 [ ] Host: field inputs annotated for prefill / explain flash
 [ ] Host: list rows annotated (`guideIdTemplate`) when using lookups
 [ ] controls.userFill: guide ids the coach cannot type — sequential 3× blink tour on step launch
-[ ] uipilotCLI annotate checklist  # merges host DoD into checklist.json
-[ ] uipilotCLI intents check green
+[ ] notlmCLI annotate checklist  # merges host DoD into checklist.json
+[ ] notlmCLI intents check green
 [ ] Manual chat/palette smoke on the happy path
 ```
 
@@ -364,13 +364,13 @@ When a step needs personal data the coach must not invent (name, email, etc.):
 2. On the step’s control in `controls.json`, set `"userFill": ["guide-your-name", "guide-email"]`.
 3. Do **not** put those keys in `prefill` — prefill is for coach-known values only.
 
-On `executeStep`, UiPilot scrolls top→bottom and blinks each empty `userFill` field **3 times** before moving to the next, and tells the user to fill them in.
+On `executeStep`, NotLM scrolls top→bottom and blinks each empty `userFill` field **3 times** before moving to the next, and tells the user to fill them in.
 
 ---
 
 ## Base English FAQ + dynamic help
 
-`packs/_base-en/faq.json` supplies portable greetings (“hello”), who-are-you, and soft how-to-talk copy. Node loaders (`loadUipilotHomeFromDir`) merge it under product `pack/faq.json` (product wins on the same `id`). Browser demos import + `mergeFaqEntries` the same way.
+`packs/_base-en/faq.json` supplies portable greetings (“hello”), who-are-you, and soft how-to-talk copy. Node loaders (`loadNotlmHomeFromDir`) merge it under product `pack/faq.json` (product wins on the same `id`). Browser demos import + `mergeFaqEntries` the same way.
 
 Ask **“what can you do”** for a live list of **currently available** flow steps (meta `help`) — not static marketing prose.
 
@@ -402,9 +402,9 @@ Runtime: after step NLU misses, the coach fuzzy-matches the name, confirms, and 
 
 ## Record mode (happy-path → draft DAG)
 
-1. `uipilotCLI trace new ./my-app` — creates an empty JSON under `.uipilot/traces/`.
+1. `notlmCLI trace new ./my-app` — creates an empty JSON under `.notlm/traces/`.
 2. Append click/navigate events (`guideId`, `url`, optional `text`) while walking the job.
-3. `uipilotCLI trace ingest <trace.json> ./my-app` — writes a **low-confidence** flow/intents/corpus draft under `drafts/`.
+3. `notlmCLI trace ingest <trace.json> ./my-app` — writes a **low-confidence** flow/intents/corpus draft under `drafts/`.
 4. Review requires edges; run `intents check`; accept only when green.
 
 Record mode never auto-merges into `pack/`.
@@ -415,28 +415,28 @@ Record mode never auto-merges into `pack/`.
 
 Flow saturation teaches checklist phrasing. **User-ask** invents what real people type after a 30-second product pitch — pricing, sharing, offline, “can I…”, frustrated typos — then maps those into step aliases **or** `pack/faq.json` answers so chat feels like a product assistant, not a bare NLU unit.
 
-1. Put a blurb in `.uipilot/config.json` → `author.productBlurb`, or pass `--blurb="..."`.
+1. Put a blurb in `.notlm/config.json` → `author.productBlurb`, or pass `--blurb="..."`.
 2. Generate at scale (hard augment, ignore novelty plateau):
 
 ```bash
 # 5000–10000 naturalistic questions (LLM). Default force=5000.
 # Grow user-ask scenarios offline (out of scope for this repo), then:
-uipilotCLI intents check ./my-app
+notlmCLI intents check ./my-app
 ```
 
 3. Soft-label the **entire** pool (chunked LLM calls):
 
 ```bash
 # Soft-label / FAQ drafts are offline; merge into scenarios + pack, then:
-uipilotCLI intents check ./my-app
+notlmCLI intents check ./my-app
 ```
 
-Drafts land under `.uipilot/drafts/scenarios-pool-*/` with `scenarios.json` plus optional `faq.json` (product Q&A).
+Drafts land under `.notlm/drafts/scenarios-pool-*/` with `scenarios.json` plus optional `faq.json` (product Q&A).
 
-4. Review: merge labeled scenarios into `.uipilot/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
-5. `uipilotCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
-6. Optional: ship `pack/ranker.json` (+ `ranker.onnx`) then enable `features.onnxRanker` / `UIPILOT_ONNX_RANKER=1` and pass prebuilt `onnxBytes` into `createRankerSession` (JSON infer always available).
-7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'uipilot:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Offline recalibration of misses / exchanges is out of scope for this repo.
+4. Review: merge labeled scenarios into `.notlm/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
+5. `notlmCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
+6. Optional: ship `pack/ranker.json` (+ `ranker.onnx`) then enable `features.onnxRanker` / `NOTLM_ONNX_RANKER=1` and pass prebuilt `onnxBytes` into `createRankerSession` (JSON infer always available).
+7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'notlm:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Offline recalibration of misses / exchanges is out of scope for this repo.
 8. **Learning Mode (optional train window):** `features.learningMode: true` + host `fallbackLlm`. Default **off** for production freeze. See ARCHITECTURE “MissExchange + Learning Mode”.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
@@ -445,7 +445,7 @@ Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.
 
 ## Deterministic self-serve packs (not only coaching)
 
-UiPilot is a **process engine** fronted by chat. A pack can coach operators **or**
+NotLM is a **process engine** fronted by chat. A pack can coach operators **or**
 run customer/admin self-serve flows — as long as every action is a **visible UI
 step** (same buttons/forms a human would use). No silent product APIs.
 
@@ -497,8 +497,8 @@ affirmed); a typed step alias after a proactive offer still runs gates.
 
 ## STT-truncated corpus
 
-Add truncated utterances to `.uipilot/scenarios.json` (and optional `pack/corpus.json`)
-so `uipilotCLI intents check` gates fuzzy / prefix matches used by Web Speech.
+Add truncated utterances to `.notlm/scenarios.json` (and optional `pack/corpus.json`)
+so `notlmCLI intents check` gates fuzzy / prefix matches used by Web Speech.
 
 ## Related docs
 

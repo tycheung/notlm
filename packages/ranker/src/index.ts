@@ -43,6 +43,6 @@ export function isOnnxRankerEnabled(
 ): boolean {
   if (features?.onnxRanker === true) return true;
   if (features?.onnxRanker === false) return false;
-  const v = env.UIPILOT_ONNX_RANKER?.trim().toLowerCase();
+  const v = env.NOTLM_ONNX_RANKER?.trim().toLowerCase();
   return v === '1' || v === 'true' || v === 'yes';
 }

@@ -1,4 +1,4 @@
-import type { SlotBag } from '@uipilot/core';
+import type { SlotBag } from '@notlm/core';
 import { useCallback, useEffect, useState } from 'react';
 import {
   DRAFT_CHANGED_EVENT,

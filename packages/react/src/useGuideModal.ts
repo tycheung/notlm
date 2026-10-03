@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 /**
  * Host-side pending modal bridge for pack `openModal` keys.
- * Wire `openModal` into UiPilotProvider; render dialogs when `pendingModal` is set.
+ * Wire `openModal` into NotLMProvider; render dialogs when `pendingModal` is set.
  */
 export function useGuideModal() {
   const [pendingModal, setPendingModal] = useState<string | null>(null);

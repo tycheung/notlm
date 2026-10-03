@@ -1,4 +1,4 @@
-import { installLayaSidecar, installNightlyCelery } from '@uipilot/ops';
+import { installLayaSidecar, installNightlyCelery } from '@notlm/ops';
 import { resolve } from 'node:path';
 
 function argValue(args: string[], flag: string): string | undefined {

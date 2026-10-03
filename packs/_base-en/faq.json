@@ -22,7 +22,7 @@
       "are you a bot",
       "are you an assistant"
     ],
-    "text": "I am UiPilot — a coach that guides you through this app by highlighting and clicking real on-screen controls. I do not call hidden APIs."
+    "text": "I am NotLM — a coach that guides you through this app by highlighting and clicking real on-screen controls. I do not call hidden APIs."
   },
   {
     "id": "how_to_talk",

@@ -1,14 +1,14 @@
-import { checkIntents } from '@uipilot/core';
+import { checkIntents } from '@notlm/core';
 import {
   loadPackFolderJson,
   pathExists,
-  resolveUipilotHome,
-} from './uipilotHome.js';
+  resolveNotlmHome,
+} from './notlmHome.js';
 
 export async function cmdIntentsCheck(dir?: string): Promise<void> {
-  const { home } = resolveUipilotHome(dir);
+  const { home } = resolveNotlmHome(dir);
   if (!pathExists(home)) {
-    console.error(`Missing UiPilot home: ${home} (run uipilotCLI init)`);
+    console.error(`Missing NotLM home: ${home} (run notlmCLI init)`);
     process.exitCode = 1;
     return;
   }

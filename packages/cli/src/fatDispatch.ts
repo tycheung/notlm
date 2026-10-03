@@ -35,5 +35,5 @@ export function isUnsupportedCommand(cmd: string | undefined, sub?: string): boo
 }
 
 export function unsupportedCommandMessage(cmd: string): string {
-  return `Not available in uipilotCLI: ${cmd}`;
+  return `Not available in notlmCLI: ${cmd}`;
 }

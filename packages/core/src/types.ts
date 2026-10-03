@@ -1,5 +1,5 @@
 /**
- * Portable uipilot core types.
+ * Portable notlm core types.
  * Domain step ids are opaque strings defined by packs — not host GuideStepId unions.
  */
 
@@ -55,7 +55,7 @@ export type NavResolve = {
   openModal?: string;
   /**
    * Host-defined non-modal surface key (drawer, wizard, upload panel).
-   * Hosts bridge via `openSurface` on UiPilotProvider.
+   * Hosts bridge via `openSurface` on NotLMProvider.
    */
   openSurface?: string;
   /** Optional step id associated with the openSurface request. */
@@ -332,7 +332,7 @@ export type AssistantFeatures = {
   voice?: boolean;
   checklist?: boolean;
   /**
-   * When true (or UIPILOT_ONNX_RANKER=1), prefer the corpus-trained ONNX/JSON
+   * When true (or NOTLM_ONNX_RANKER=1), prefer the corpus-trained ONNX/JSON
    * intent+slot ranker instead of rules-only parseUtterance.
    */
   onnxRanker?: boolean;
@@ -351,13 +351,13 @@ export type AssistantFeatures = {
   /**
    * Decision fallback (Laya): call host `fallbackLlm` on miss.
    * **Default on** when unset — set `false` to force offline-only.
-   * Env hint for hosts: `UIPILOT_LAYA_ENABLED=1`.
+   * Env hint for hosts: `NOTLM_LAYA_ENABLED=1`.
    */
   layaDecisionFallback?: boolean;
   /**
    * After Laya (`fallbackLlm`) refuses, call host `secondaryFallbackLlm`.
    * **Default off.** Requires both the feature flag and a wired secondary fn.
-   * Host env hint: `UIPILOT_FALLBACK_LLM_ON_LAYA_MISS=yes`.
+   * Host env hint: `NOTLM_FALLBACK_LLM_ON_LAYA_MISS=yes`.
    */
   llmFallbackOnLayaMiss?: boolean;
   /**

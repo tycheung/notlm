@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-08T00:45:07.535Z",
-  "baseUrl": ".uipilot/fixtures/sample.html",
+  "baseUrl": ".notlm/fixtures/sample.html",
   "steps": [
     {
       "id": "link-lists",
@@ -97,56 +97,56 @@
       "role": "link",
       "name": "Lists",
       "selectorHint": "a",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-button-new-list",
       "role": "button",
       "name": "New list",
       "selectorHint": "[data-guide-id=\"guide-button-new-list\"]",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-textbox-list-title",
       "role": "textbox",
       "name": "List title",
       "selectorHint": "#title",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-combobox-visibility",
       "role": "combobox",
       "name": "Visibility",
       "selectorHint": "select[name=\"visibility\"]",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-button-save",
       "role": "button",
       "name": "Save",
       "selectorHint": "button[type=\"submit\"]",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-button-cancel",
       "role": "button",
       "name": "Cancel",
       "selectorHint": "span",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-link-help",
       "role": "link",
       "name": "Help",
       "selectorHint": "a",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-region-sidebar",
       "role": "div",
       "name": "Sidebar marker",
       "selectorHint": "[data-guide-id=\"guide-region-sidebar\"]",
-      "path": ".uipilot/fixtures/sample.html"
+      "path": ".notlm/fixtures/sample.html"
     },
     {
       "id": "guide-create-list",

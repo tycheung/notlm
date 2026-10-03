@@ -1,4 +1,4 @@
-import { normalizeUtterance } from '@uipilot/core';
+import { normalizeUtterance } from '@notlm/core';
 
 const FNV_OFFSET = 2166136261;
 

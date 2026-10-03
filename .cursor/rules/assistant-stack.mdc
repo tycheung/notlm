@@ -1,5 +1,5 @@
 ---
-description: UiPilot is a smart-cache SPA chatbot frontline with Laya then LLM fallback; coaching is one pattern
+description: NotLM is a smart-cache SPA chatbot frontline with Laya then LLM fallback; coaching is one pattern
 globs: packages/**/*,docs/**/*,ARCHITECTURE.md,README.md
 alwaysApply: true
 ---
@@ -8,7 +8,7 @@ alwaysApply: true
 
 ## Identity
 
-UiPilot is a **generic SPA chatbot frontline**, not a “product coach” product.
+NotLM is a **generic SPA chatbot frontline**, not a “product coach” product.
 Deterministic pack NLU is a **smart cache** in front of optional neural backups.
 
 | Layer | Role |
@@ -30,7 +30,7 @@ Deterministic pack NLU is a **smart cache** in front of optional neural backups.
 ## Rules
 
 1. Miss path must remain **cache → Laya → LLM** (host may disable layers).
-2. Do not document or code UiPilot as “the coach.” Prefer “assistant,” “chat,”
+2. Do not document or code NotLM as “the coach.” Prefer “assistant,” “chat,”
    “pack runtime,” or “smart cache.”
 3. Domain words, refuse copy, and role strings live in **host pack / env**, not core.
 ---

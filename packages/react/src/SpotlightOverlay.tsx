@@ -56,16 +56,16 @@ export function SpotlightOverlay({
     : null;
 
   return (
-    <div className="uipilot-spotlight-root uipilot-host-root" role="dialog" aria-label="Guided highlight">
+    <div className="notlm-spotlight-root notlm-host-root" role="dialog" aria-label="Guided highlight">
       <button
         type="button"
-        className="uipilot-spotlight-scrim"
+        className="notlm-spotlight-scrim"
         aria-label="Dismiss guide highlight"
         onClick={onDismiss}
       />
       {hole && (
         <div
-          className="uipilot-spotlight-ring"
+          className="notlm-spotlight-ring"
           style={{
             top: hole.top,
             left: hole.left,
@@ -75,14 +75,14 @@ export function SpotlightOverlay({
         />
       )}
       <div
-        className="uipilot-spotlight-card"
+        className="notlm-spotlight-card"
         style={{
           top: hole ? Math.min(window.innerHeight - 120, hole.top + hole.height + 12) : 24,
           left: hole ? Math.min(window.innerWidth - 320, Math.max(16, hole.left)) : 16,
         }}
       >
         <p style={{ margin: '0 0 0.75rem' }}>{spotlight.message}</p>
-        <button type="button" className="uipilot-chat-btn" onClick={onDismiss}>
+        <button type="button" className="notlm-chat-btn" onClick={onDismiss}>
           Got it
         </button>
       </div>

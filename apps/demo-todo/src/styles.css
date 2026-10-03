@@ -103,7 +103,7 @@ kbd {
 
 /* Demo host chrome — tokens also set via appearance prop */
 .demo-todo-coach {
-  --uipilot-surface-muted: #ecfdf5;
+  --notlm-surface-muted: #ecfdf5;
 }
 
 .demo-coach-header {

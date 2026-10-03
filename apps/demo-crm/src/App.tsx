@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { RuntimeContextBase } from '@uipilot/core';
+import type { RuntimeContextBase } from '@notlm/core';
 import {
-  UiPilotHost,
+  NotLMHost,
   createGuideNavigate,
   useDraftBridge,
   useGuideModal,
-  useUiPilot,
-} from '@uipilot/react';
+  useNotLM,
+} from '@notlm/react';
 import { loadDemoCrmPack } from './loadDemoPack';
 
 type Contact = { id: string; name: string; email: string };
@@ -27,7 +27,7 @@ function CrmWorkspace({
   pendingModal: string | null;
   clearModal: () => void;
 }) {
-  const { notifyStepCompleted } = useUiPilot();
+  const { notifyStepCompleted } = useNotLM();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [draftOpen, setDraftOpen] = useState(false);
   const { draft, patchDraft, clear: clearDraftBag } = useDraftBridge(
@@ -75,7 +75,7 @@ function CrmWorkspace({
       <header className="demo-header">
         <h1>demo-crm</h1>
         <p>
-          Second host app — same <code>UiPilotHost</code> pattern. Coach clicks buttons only; no
+          Second host app — same <code>NotLMHost</code> pattern. Coach clicks buttons only; no
           CRM API calls. Drafts share <code>useDraftBridge</code>.
         </p>
       </header>
@@ -145,7 +145,7 @@ export function App() {
   );
 
   return (
-    <UiPilotHost
+    <NotLMHost
       pack={pack}
       getContext={getContext}
       navigate={navigate}
@@ -161,6 +161,6 @@ export function App() {
       className="demo-crm-coach"
     >
       <CrmWorkspace bagRef={bagRef} pendingModal={pendingModal} clearModal={clearModal} />
-    </UiPilotHost>
+    </NotLMHost>
   );
 }

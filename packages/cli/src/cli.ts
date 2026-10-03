@@ -75,12 +75,12 @@ async function main(): Promise<void> {
 
 function usage(): void {
   console.log(`Usage:
-  uipilotCLI init [dir]
-  uipilotCLI validate [dir]
-  uipilotCLI intents check [dir]
-  uipilotCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]
-  uipilotCLI laya install [dir] [--with-celery] [--disabled]
-  uipilotCLI celery setup [dir] [--force]
+  notlmCLI init [dir]
+  notlmCLI validate [dir]
+  notlmCLI intents check [dir]
+  notlmCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]
+  notlmCLI laya install [dir] [--with-celery] [--disabled]
+  notlmCLI celery setup [dir] [--force]
 `);
 }
 

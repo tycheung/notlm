@@ -1,6 +1,6 @@
 {
   "capturedAt": "2026-09-07T21:43:08.653Z",
-  "baseUrl": ".uipilot/fixtures/sample.html",
+  "baseUrl": ".notlm/fixtures/sample.html",
   "controls": [
     {
       "role": "link",
@@ -8,7 +8,7 @@
       "selectorHint": "a",
       "existingGuideId": "guide-link-lists",
       "proposedGuideId": "guide-link-lists",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "button",
@@ -16,7 +16,7 @@
       "selectorHint": "[data-guide-id=\"guide-button-new-list\"]",
       "existingGuideId": "guide-button-new-list",
       "proposedGuideId": "guide-button-new-list",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "textbox",
@@ -24,7 +24,7 @@
       "selectorHint": "#title",
       "existingGuideId": "guide-textbox-list-title",
       "proposedGuideId": "guide-textbox-list-title",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "combobox",
@@ -32,7 +32,7 @@
       "selectorHint": "select[name=\"visibility\"]",
       "existingGuideId": "guide-combobox-visibility",
       "proposedGuideId": "guide-combobox-visibility",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "button",
@@ -40,7 +40,7 @@
       "selectorHint": "button[type=\"submit\"]",
       "existingGuideId": "guide-button-save",
       "proposedGuideId": "guide-button-save",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "button",
@@ -48,7 +48,7 @@
       "selectorHint": "span",
       "existingGuideId": "guide-button-cancel",
       "proposedGuideId": "guide-button-cancel",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "link",
@@ -56,7 +56,7 @@
       "selectorHint": "a",
       "existingGuideId": "guide-link-help",
       "proposedGuideId": "guide-link-help",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "div",
@@ -64,7 +64,7 @@
       "selectorHint": "[data-guide-id=\"guide-region-sidebar\"]",
       "existingGuideId": "guide-region-sidebar",
       "proposedGuideId": "guide-region-sidebar",
-      "url": ".uipilot/fixtures/sample.html"
+      "url": ".notlm/fixtures/sample.html"
     },
     {
       "role": "unknown",

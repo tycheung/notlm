@@ -2,10 +2,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  loadPackJsonFromUipilotHome,
-  loadUipilotHomeFromDir,
+  loadPackJsonFromNotlmHome,
+  loadNotlmHomeFromDir,
   normalizeBindersMap,
-  resolveUipilotHomeDir,
+  resolveNotlmHomeDir,
 } from './loadFolder.js';
 
 const assistantRoot = join(dirname(fileURLToPath(import.meta.url)), '../../../');
@@ -30,18 +30,18 @@ describe('normalizeBindersMap', () => {
   });
 });
 
-describe('loadUipilotHomeFromDir', () => {
-  it('resolves project root vs nested UiPilot home', () => {
-    const fromRoot = resolveUipilotHomeDir(demoTodoRoot);
-    expect(fromRoot.home.replace(/\\/g, '/')).toMatch(/packs\/demo-todo\/\.uipilot$/);
+describe('loadNotlmHomeFromDir', () => {
+  it('resolves project root vs nested NotLM home', () => {
+    const fromRoot = resolveNotlmHomeDir(demoTodoRoot);
+    expect(fromRoot.home.replace(/\\/g, '/')).toMatch(/packs\/demo-todo\/\.notlm$/);
 
-    const fromHome = resolveUipilotHomeDir(fromRoot.home);
+    const fromHome = resolveNotlmHomeDir(fromRoot.home);
     expect(fromHome.home).toBe(fromRoot.home);
     expect(fromHome.projectRoot).toBe(fromRoot.projectRoot);
   });
 
   it('loads demo-todo pack from disk', () => {
-    const { pack, packJson } = loadUipilotHomeFromDir(demoTodoRoot);
+    const { pack, packJson } = loadNotlmHomeFromDir(demoTodoRoot);
     expect(pack.id).toBe('demo-todo');
     expect(pack.steps.length).toBeGreaterThanOrEqual(2);
     expect(packJson.binders.create_list).toMatchObject({
@@ -57,7 +57,7 @@ describe('loadUipilotHomeFromDir', () => {
     expect(pack.faq?.some((e) => e.id === 'local_only')).toBe(true);
   });
 
-  it('loadPackJsonFromUipilotHome requires pack pieces', () => {
-    expect(() => loadPackJsonFromUipilotHome(join(demoTodoRoot, 'missing-home'))).toThrow(/Missing/);
+  it('loadPackJsonFromNotlmHome requires pack pieces', () => {
+    expect(() => loadPackJsonFromNotlmHome(join(demoTodoRoot, 'missing-home'))).toThrow(/Missing/);
   });
 });

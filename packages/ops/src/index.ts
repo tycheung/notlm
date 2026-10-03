@@ -19,7 +19,7 @@ export function opsTemplatesRoot(): string {
 export type LayaInstallOpts = {
   /** Host backend directory to scaffold into (e.g. ./backend). */
   targetDir: string;
-  /** Relative subdir under target for sidecar (default uipilot_laya). */
+  /** Relative subdir under target for sidecar (default notlm_laya). */
   sidecarName?: string;
   /** Default on in generated .env.example */
   enabledByDefault?: boolean;
@@ -29,14 +29,14 @@ export type LayaInstallOpts = {
 
 /**
  * Scaffold Laya sidecar + systemd unit + env example into a host backend tree.
- * Default enabled for ease of use (UIPILOT_LAYA_ENABLED=1).
+ * Default enabled for ease of use (NOTLM_LAYA_ENABLED=1).
  * Sidecar logic source of truth: packages/ops/templates/laya/sidecar_app.py
  */
 export function installLayaSidecar(opts: LayaInstallOpts): {
   sidecarDir: string;
   files: string[];
 } {
-  const sidecarName = opts.sidecarName ?? 'uipilot_laya';
+  const sidecarName = opts.sidecarName ?? 'notlm_laya';
   const enabled = opts.enabledByDefault !== false;
   const productRole =
     (opts.productRole ?? 'a product assistant').trim() || 'a product assistant';
@@ -55,19 +55,19 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
 
   copy('laya/sidecar_app.py', join(sidecarDir, 'app.py'));
   copy('laya/requirements-laya.txt', join(sidecarDir, 'requirements-laya.txt'));
-  copy('laya/uipilot-laya.service', join(sidecarDir, 'uipilot-laya.service'));
+  copy('laya/notlm-laya.service', join(sidecarDir, 'notlm-laya.service'));
   copy('laya/README.md', join(sidecarDir, 'README.md'));
 
   const envPath = join(sidecarDir, '.env.example');
   writeFileSync(
     envPath,
     [
-      `# UiPilot Laya decision sidecar (default ${enabled ? 'ON' : 'OFF'})`,
-      `UIPILOT_LAYA_ENABLED=${enabled ? '1' : '0'}`,
-      'UIPILOT_LAYA_HOST=127.0.0.1',
-      'UIPILOT_LAYA_PORT=8765',
-      'UIPILOT_LAYA_CHECKPOINT=',
-      `UIPILOT_LAYA_PRODUCT_ROLE=${productRole}`,
+      `# NotLM Laya decision sidecar (default ${enabled ? 'ON' : 'OFF'})`,
+      `NOTLM_LAYA_ENABLED=${enabled ? '1' : '0'}`,
+      'NOTLM_LAYA_HOST=127.0.0.1',
+      'NOTLM_LAYA_PORT=8765',
+      'NOTLM_LAYA_CHECKPOINT=',
+      `NOTLM_LAYA_PRODUCT_ROLE=${productRole}`,
       '',
     ].join('\n'),
     'utf8'
@@ -80,13 +80,13 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
     [
       '# Host proxy',
       '',
-      'Point `POST /uipilot/fallback` at `http://127.0.0.1:8765/decide`.',
+      'Point `POST /notlm/fallback` at `http://127.0.0.1:8765/decide`.',
       'Keep **one** sidecar process — never load Laya inside each Gunicorn worker.',
       'If health fails, return canned repair (degraded mode). Nightly pack/ranker',
       'promotion is CPU-only and must not call `laya train` on the server.',
       '',
-      'Sidecar `app.py` is installed from `@uipilot/ops` templates — edit the',
-      'template in the uipilot repo, then re-run `uipilotCLI laya install`.',
+      'Sidecar `app.py` is installed from `@notlm/ops` templates — edit the',
+      'template in the notlm repo, then re-run `notlmCLI laya install`.',
       '',
     ].join('\n'),
     'utf8'
@@ -112,7 +112,7 @@ export function installNightlyCelery(opts: CelerySetupOpts): {
   skipped?: string;
 } {
   const root = opsTemplatesRoot();
-  const dir = join(opts.targetDir, 'uipilot_celery');
+  const dir = join(opts.targetDir, 'notlm_celery');
   if (existsSync(dir) && !opts.force) {
     return { dir, files: [], skipped: `Already exists: ${dir}` };
   }

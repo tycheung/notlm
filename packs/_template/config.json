@@ -9,6 +9,6 @@
   },
   "author": {
     "provider": null,
-    "note": "Set UIPILOT_LLM_* in env; do not put API keys in this file"
+    "note": "Set NOTLM_LLM_* in env; do not put API keys in this file"
   }
 }

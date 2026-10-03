@@ -14,7 +14,7 @@ test.describe('@guide-nlu demo-crm nlu + queue', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(dialog.getByText(/didn.?t catch that/i)).toBeVisible();
-    await expect(page.getByTestId('uipilot-choice-add_contact')).toBeVisible();
+    await expect(page.getByTestId('notlm-choice-add_contact')).toBeVisible();
   });
 
   test('add contact asks for name slot then opens draft', async ({ page }) => {

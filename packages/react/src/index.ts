@@ -31,36 +31,36 @@ export { getSpeechRecognitionCtor, isWebSpeechSupported } from './speech.js';
 export { useWebSpeechInput } from './useWebSpeechInput.js';
 export { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
 export {
-  UIPILOT_CSS,
+  NOTLM_CSS,
   appearanceToCssVars,
-  type UiPilotAppearance,
-  type UiPilotChromeSlot,
-} from './uipilot.css.js';
+  type NotLMAppearance,
+  type NotLMChromeSlot,
+} from './notlm.css.js';
 export type {
   ChatHeaderSlotProps,
   ChatPanelSlotProps,
   FabButtonSlotProps,
-  UiPilotChromeClassNames,
-  UiPilotChromeComponents,
-  UiPilotChromeConfig,
-  UiPilotChromeLabels,
+  NotLMChromeClassNames,
+  NotLMChromeComponents,
+  NotLMChromeConfig,
+  NotLMChromeLabels,
 } from './chromeTypes.js';
 export {
-  UiPilotProvider,
-  UiPilotContext,
-  useUiPilot,
-  type UiPilotContextValue,
-  type UiPilotProviderProps,
+  NotLMProvider,
+  NotLMContext,
+  useNotLM,
+  type NotLMContextValue,
+  type NotLMProviderProps,
   type ExecuteStepOpts,
   type OpenModalFn,
   type OpenSurfaceFn,
   type OnWizardPageFn,
   type EnrichStatusesFn,
-} from './UiPilotContext.js';
+} from './NotLMContext.js';
 export { useGuideModal } from './useGuideModal.js';
 export { useGuideSurfaceBridge } from './useGuideSurface.js';
 export { CommandPalette } from './CommandPalette.js';
-export { UiPilotFab } from './UiPilotFab.js';
+export { NotLMFab } from './NotLMFab.js';
 export { SpotlightOverlay } from './SpotlightOverlay.js';
 export { ChecklistPanel } from './ChecklistPanel.js';
-export { UiPilotHost } from './UiPilotHost.js';
+export { NotLMHost } from './NotLMHost.js';

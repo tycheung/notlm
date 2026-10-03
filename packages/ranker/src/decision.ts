@@ -4,7 +4,7 @@ import {
   type IntentParsePack,
   type ParseDecisionHeads,
   type StepId,
-} from '@uipilot/core';
+} from '@notlm/core';
 import type { RankerInferResult, RankerIntentScore, RankerModelJson } from './types.js';
 import { inferRankerJson, labelsForStepShortlist } from './infer.js';
 

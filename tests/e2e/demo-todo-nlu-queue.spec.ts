@@ -15,10 +15,10 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(dialog.getByText(/didn.?t catch that/i)).toBeVisible();
-    await expect(page.getByTestId('uipilot-choice-create_list')).toBeVisible();
+    await expect(page.getByTestId('notlm-choice-create_list')).toBeVisible();
     await expect(page.getByText('No lists yet')).toBeVisible();
 
-    await page.getByTestId('uipilot-choice-create_list').click();
+    await page.getByTestId('notlm-choice-create_list').click();
     await answerSlotAsk(page, /name the list/i, 'Shopping');
     await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible({
       timeout: 10_000,
@@ -47,7 +47,7 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     await sendUtterance(page, 'Hello, what can you do for me today?');
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(
-      dialog.locator('.uipilot-chat-bubble-assistant').filter({
+      dialog.locator('.notlm-chat-bubble-assistant').filter({
         hasText: /UI coach|annotated workflows|what can you do/i,
       })
     ).toBeVisible();
@@ -59,7 +59,7 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     await sendUtterance(page, 'what can you do');
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(dialog.getByText(/available now/i)).toBeVisible();
-    await expect(page.getByTestId('uipilot-choice-create_list')).toBeVisible();
+    await expect(page.getByTestId('notlm-choice-create_list')).toBeVisible();
   });
 
   test('entity lookup finds a list by name and flashes its row', async ({ page }) => {

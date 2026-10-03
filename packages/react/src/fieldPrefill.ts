@@ -1,4 +1,4 @@
-import type { SlotBag } from '@uipilot/core';
+import type { SlotBag } from '@notlm/core';
 import { DEFAULT_GUIDE_ATTR } from './fieldFlash.js';
 import { writeDraft } from './draftBridge.js';
 

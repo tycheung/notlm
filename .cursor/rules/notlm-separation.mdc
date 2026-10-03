@@ -1,0 +1,34 @@
+---
+description: Cross-repo NotLM ownership — generic packages vs VB pack JSON vs Laya promote
+alwaysApply: true
+---
+
+# NotLM separation (workspace)
+
+## What NotLM is
+
+A **generic SPA chatbot frontline**: deterministic pack NLU as a **smart cache**,
+then **Laya**, then optional **LLM**. Coaching / `data-guide-id` tours are one
+optional pattern — not the product identity.
+
+## Ownership
+
+| Lives in | Examples |
+|----------|----------|
+| **`notlm/` packages** | Dispatch, normalize *engine*, catalogs, discourse, miss→Laya→LLM, React chrome |
+| **`react-frontend/.notlm/pack/*.json`** | All VB words, aliases, FAQ, replies, lexicon extras, meta enable lists, `productRole`, phrase lists, flow/controls |
+| **VB host TS** (`director-guide/`) | `executeStep`, ctx/API, thin adapters — **no** synonym lists |
+| **Backend** | `/notlm/fallback` proxy; Laya URL; setting keys — no VB synonym lists in shared templates |
+
+## Hard rules
+
+1. Never put host-brand synonyms or role defaults in `@notlm/core`.
+2. Never hand-edit `react-frontend/vendor/notlm` — change `notlm/`, build, sync vendor.
+3. Never `if (pack.id === 'vb-…')` in core.
+4. Laya **weights** ≠ FE green/blue ≠ BE CodePipeline app deploy (see `laya-cicd.mdc`).
+
+## When adding assistant behavior
+
+Prefer: generic capability in core (config-shaped) + data in pack JSON.
+If a JSON field is ignored, fix load/schema in NotLM — not a VB workaround.
+---

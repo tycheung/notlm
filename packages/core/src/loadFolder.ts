@@ -1,5 +1,5 @@
 /**
- * Node-only sync FS loader for `.uipilot/pack/*.json`.
+ * Node-only sync FS loader for `.notlm/pack/*.json`.
  * Browser / SPA hosts should use `loadPackFromJson` with fetched or bundled JSON.
  */
 import { existsSync, readFileSync } from 'node:fs';
@@ -17,29 +17,29 @@ import type {
   ReplyBank,
 } from './types.js';
 
-export const UIPILOT_DIRNAME = '.uipilot';
+export const NOTLM_DIRNAME = '.notlm';
 
 const PACK_REQUIRED = ['manifest', 'flow', 'controls', 'intents', 'binders'] as const;
 
-export type LoadUipilotHomeResult = {
+export type LoadNotlmHomeResult = {
   projectRoot: string;
-  /** Absolute path to `.uipilot`. */
+  /** Absolute path to `.notlm`. */
   home: string;
   packJson: PackJsonInput;
   pack: LoadedPack;
 };
 
-function basenameIsUipilot(p: string): boolean {
+function basenameIsNotlm(p: string): boolean {
   const base = p.replace(/[/\\]+$/, '').split(/[/\\]/).pop();
-  return base === UIPILOT_DIRNAME;
+  return base === NOTLM_DIRNAME;
 }
 
-export function resolveUipilotHomeDir(dir: string): { projectRoot: string; home: string } {
+export function resolveNotlmHomeDir(dir: string): { projectRoot: string; home: string } {
   const projectRoot = resolve(dir);
-  if (basenameIsUipilot(projectRoot)) {
+  if (basenameIsNotlm(projectRoot)) {
     return { projectRoot: dirname(projectRoot), home: projectRoot };
   }
-  return { projectRoot, home: join(projectRoot, UIPILOT_DIRNAME) };
+  return { projectRoot, home: join(projectRoot, NOTLM_DIRNAME) };
 }
 
 function readJsonFile(path: string): unknown {
@@ -63,9 +63,9 @@ export function normalizeBindersMap(raw: unknown): Record<string, BinderPredicat
   return out;
 }
 
-/** Walk up from `start` looking for `packs/_base-en/faq.json`, or use UIPILOT_BASE_FAQ. */
+/** Walk up from `start` looking for `packs/_base-en/faq.json`, or use NOTLM_BASE_FAQ. */
 export function resolveBaseFaqPath(start: string): string | null {
-  const fromEnv = process.env.UIPILOT_BASE_FAQ?.trim();
+  const fromEnv = process.env.NOTLM_BASE_FAQ?.trim();
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
   let dir = resolve(start);
   for (let i = 0; i < 8; i += 1) {
@@ -85,7 +85,7 @@ function readBaseFaq(projectRoot: string): FaqEntry[] | undefined {
   return Array.isArray(raw) ? (raw as FaqEntry[]) : undefined;
 }
 
-export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
+export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
   const pack = join(home, 'pack');
   const pieces: Record<string, unknown> = {};
   for (const key of PACK_REQUIRED) {
@@ -151,15 +151,15 @@ export function loadPackJsonFromUipilotHome(home: string): PackJsonInput {
 }
 
 /**
- * Sync load: `dir` (host project or UiPilot home) → LoadedPack.
+ * Sync load: `dir` (host project or NotLM home) → LoadedPack.
  * **Node-only** — uses `node:fs`. Keep browsers on `loadPackFromJson`.
  */
-export function loadUipilotHomeFromDir(dir: string): LoadUipilotHomeResult {
-  const { projectRoot, home } = resolveUipilotHomeDir(dir);
+export function loadNotlmHomeFromDir(dir: string): LoadNotlmHomeResult {
+  const { projectRoot, home } = resolveNotlmHomeDir(dir);
   if (!existsSync(home)) {
-    throw new Error(`Missing UiPilot home: ${home}`);
+    throw new Error(`Missing NotLM home: ${home}`);
   }
-  const packJson = loadPackJsonFromUipilotHome(home);
+  const packJson = loadPackJsonFromNotlmHome(home);
   return {
     projectRoot,
     home,

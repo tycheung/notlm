@@ -1,5 +1,5 @@
 {
-  "name": "@uipilot/core",
+  "name": "@notlm/core",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",

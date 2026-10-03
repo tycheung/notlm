@@ -1,15 +1,15 @@
 import { expect, type Page } from '@playwright/test';
 
-/** Open the UiPilot chat FAB dialog. */
+/** Open the NotLM chat FAB dialog. */
 export async function openChat(page: Page) {
-  await page.getByTestId('uipilot-fab').click();
+  await page.getByTestId('notlm-fab').click();
   await expect(page.getByRole('dialog', { name: 'Assistant' })).toBeVisible();
-  await expect(page.getByTestId('uipilot-chat-input')).toBeVisible();
+  await expect(page.getByTestId('notlm-chat-input')).toBeVisible();
 }
 
 export async function sendUtterance(page: Page, text: string) {
-  await page.getByTestId('uipilot-chat-input').fill(text);
-  await page.getByTestId('uipilot-chat-send').click();
+  await page.getByTestId('notlm-chat-input').fill(text);
+  await page.getByTestId('notlm-chat-send').click();
 }
 
 /** Answer a pending slot ask (e.g. list/contact name). */
@@ -25,7 +25,7 @@ export async function answerSlotAsk(
 
 /** Dismiss a proactive next-step offer when present. */
 export async function dismissProactive(page: Page) {
-  const notNow = page.getByTestId('uipilot-choice-__no__');
+  const notNow = page.getByTestId('notlm-choice-__no__');
   if (await notNow.isVisible().catch(() => false)) {
     await notNow.click();
   }
@@ -33,7 +33,7 @@ export async function dismissProactive(page: Page) {
 
 /** Confirm a pending confirm prompt via Yes chip or typed yes. */
 export async function confirmYes(page: Page) {
-  const yesChip = page.getByTestId('uipilot-choice-__yes__');
+  const yesChip = page.getByTestId('notlm-choice-__yes__');
   await expect(yesChip).toBeVisible({ timeout: 10_000 });
   await yesChip.click();
 }
@@ -50,7 +50,7 @@ export async function coachCreateList(
   await sendUtterance(page, 'create list');
   await answerSlotAsk(page, /name the list/i, name);
   if (opts?.dismissProactive) {
-    const notNow = page.getByTestId('uipilot-choice-__no__');
+    const notNow = page.getByTestId('notlm-choice-__no__');
     if (await notNow.isVisible().catch(() => false)) {
       await notNow.click();
     }

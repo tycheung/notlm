@@ -18,7 +18,7 @@
 ## Coverage policy
 
 - Global unit ≥ 75%
-- `@uipilot/core` ≥ 85%
+- `@notlm/core` ≥ 85%
 - Omit generated emit output; test generators instead
 
 ## Corpus rule

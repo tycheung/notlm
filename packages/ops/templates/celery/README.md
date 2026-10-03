@@ -1,4 +1,4 @@
-# Optional lightweight Celery for UiPilot nightly **cache** promotion
+# Optional lightweight Celery for NotLM nightly **cache** promotion
 
 Off by default for Celery install. Use when the host has no existing worker.
 

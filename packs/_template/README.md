@@ -1,6 +1,6 @@
 # Pack template (JSON-only)
 
-Mirrors the host install folder. On a real app, `uipilotCLI init` creates `.uipilot/` with
+Mirrors the host install folder. On a real app, `notlmCLI init` creates `.notlm/` with
 the same files (`config.json` at home root; pack files under `pack/`).
 
 This repo keeps a copy under `packs/_template/` for schema fixtures.

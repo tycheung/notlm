@@ -18,15 +18,15 @@ function run(cmd, args, env) {
 }
 
 function existsPack(rel) {
-  return existsSync(join(process.cwd(), rel, '.uipilot', 'pack', 'manifest.json'));
+  return existsSync(join(process.cwd(), rel, '.notlm', 'pack', 'manifest.json'));
 }
 
-const pm = process.env.UIPILOT_PM || 'npm';
+const pm = process.env.NOTLM_PM || 'npm';
 const withDx = process.argv.includes('--with-dx');
 const withE2e =
   process.argv.includes('--with-e2e') ||
   process.env.CI === 'true' ||
-  process.env.UIPILOT_CI_E2E === '1';
+  process.env.NOTLM_CI_E2E === '1';
 const skipE2e = process.argv.includes('--skip-e2e');
 
 if (process.argv.includes('--with-saturation')) {
@@ -42,19 +42,19 @@ run(pm, ['run', 'test:coverage']);
 run(pm, ['run', 'check:host-bleed']);
 
 // Pack schema gate (ci-004) + demo intent regression (no live LLM).
-run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-todo']);
-run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', 'packs/demo-todo']);
-run(pm, ['run', 'uipilotCLI', '--', 'ranker', 'check', 'packs/demo-todo']);
+run(pm, ['run', 'notlmCLI', '--', 'validate', 'packs/demo-todo']);
+run(pm, ['run', 'notlmCLI', '--', 'intents', 'check', 'packs/demo-todo']);
+run(pm, ['run', 'notlmCLI', '--', 'ranker', 'check', 'packs/demo-todo']);
 if (existsPack('packs/demo-crm')) {
-  run(pm, ['run', 'uipilotCLI', '--', 'validate', 'packs/demo-crm']);
+  run(pm, ['run', 'notlmCLI', '--', 'validate', 'packs/demo-crm']);
 }
 
 if (withDx) {
   // Operator DX golden path: validate + intents check on all demo packs.
   for (const pack of ['packs/demo-todo', 'packs/demo-crm', 'packs/demo-hello']) {
     if (!existsPack(pack)) continue;
-    run(pm, ['run', 'uipilotCLI', '--', 'validate', pack]);
-    run(pm, ['run', 'uipilotCLI', '--', 'intents', 'check', pack]);
+    run(pm, ['run', 'notlmCLI', '--', 'validate', pack]);
+    run(pm, ['run', 'notlmCLI', '--', 'intents', 'check', pack]);
   }
 }
 

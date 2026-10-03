@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useUiPilot } from './UiPilotContext.js';
+import { useNotLM } from './NotLMContext.js';
 import { useWebSpeechInput } from './useWebSpeechInput.js';
 
 function cx(...parts: Array<string | undefined | false>): string {
   return parts.filter(Boolean).join(' ');
 }
 
-export function UiPilotFab() {
+export function NotLMFab() {
   const {
     panelOpen,
     setPanelOpen,
@@ -18,7 +18,7 @@ export function UiPilotFab() {
     chrome,
     hostRootStyle,
     hostRootClassName,
-  } = useUiPilot();
+  } = useNotLM();
   const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
   const voiceEnabled = features.voice !== false;
@@ -51,14 +51,14 @@ export function UiPilotFab() {
     <ChatHeader
       title={assistantTitle}
       onClose={() => setPanelOpen(false)}
-      className={cx('uipilot-chat-header', classNames?.chatHeader)}
+      className={cx('notlm-chat-header', classNames?.chatHeader)}
     />
   ) : (
-    <div className={cx('uipilot-chat-header', classNames?.chatHeader)}>
+    <div className={cx('notlm-chat-header', classNames?.chatHeader)}>
       <span>{assistantTitle}</span>
       <button
         type="button"
-        className="uipilot-chat-close"
+        className="notlm-chat-close"
         onClick={() => setPanelOpen(false)}
         aria-label="Close assistant"
       >
@@ -68,24 +68,24 @@ export function UiPilotFab() {
   );
 
   const messagesNode = (
-    <div ref={listRef} className={cx('uipilot-chat-messages', classNames?.chatMessages)}>
+    <div ref={listRef} className={cx('notlm-chat-messages', classNames?.chatMessages)}>
       {messages.map((m) => (
-        <div key={m.id} className="uipilot-chat-turn">
+        <div key={m.id} className="notlm-chat-turn">
           <div
-            className={`uipilot-chat-bubble ${
-              m.role === 'user' ? 'uipilot-chat-bubble-user' : 'uipilot-chat-bubble-assistant'
+            className={`notlm-chat-bubble ${
+              m.role === 'user' ? 'notlm-chat-bubble-user' : 'notlm-chat-bubble-assistant'
             }`}
           >
             {m.text}
           </div>
           {m.role === 'assistant' && m.choices && m.choices.length > 0 && (
-            <div className="uipilot-chat-choices" role="group" aria-label="Suggested steps">
+            <div className="notlm-chat-choices" role="group" aria-label="Suggested steps">
               {m.choices.map((c) => (
                 <button
                   key={c.id}
                   type="button"
-                  className="uipilot-chat-choice"
-                  data-testid={`uipilot-choice-${c.id}`}
+                  className="notlm-chat-choice"
+                  data-testid={`notlm-choice-${c.id}`}
                   onClick={() => {
                     handleUserUtterance(c.label);
                   }}
@@ -96,12 +96,12 @@ export function UiPilotFab() {
             </div>
           )}
           {m.role === 'assistant' && m.links && m.links.length > 0 && (
-            <div className="uipilot-chat-links" role="group" aria-label="Help links">
+            <div className="notlm-chat-links" role="group" aria-label="Help links">
               {m.links.map((link, i) =>
                 link.href ? (
                   <a
                     key={`${link.label}-${i}`}
-                    className="uipilot-chat-link"
+                    className="notlm-chat-link"
                     href={link.href}
                     target="_blank"
                     rel="noreferrer"
@@ -112,7 +112,7 @@ export function UiPilotFab() {
                   <button
                     key={`${link.label}-${i}`}
                     type="button"
-                    className="uipilot-chat-link"
+                    className="notlm-chat-link"
                     onClick={() => {
                       if (link.action === 'open_checklist') {
                         setChecklistOpen(true);
@@ -131,7 +131,7 @@ export function UiPilotFab() {
   );
 
   const inputRow = (
-    <div className="uipilot-chat-input-row">
+    <div className="notlm-chat-input-row">
       <textarea
         value={draft}
         onChange={(e) => {
@@ -145,22 +145,22 @@ export function UiPilotFab() {
           }
         }}
         rows={2}
-        className={cx('uipilot-chat-input', classNames?.chatInput)}
+        className={cx('notlm-chat-input', classNames?.chatInput)}
         placeholder="Ask or type a step…"
         aria-label="Assistant chat input"
-        data-testid="uipilot-chat-input"
+        data-testid="notlm-chat-input"
       />
       {voiceEnabled && (
         <button
           type="button"
-          className={`uipilot-chat-btn uipilot-chat-btn-mic ${listening ? 'uipilot-chat-btn-listening' : ''}`}
+          className={`notlm-chat-btn notlm-chat-btn-mic ${listening ? 'notlm-chat-btn-listening' : ''}`}
           onClick={toggle}
           title={supported ? (listening ? 'Stop listening' : 'Speak') : 'Voice unavailable'}
           aria-label={listening ? 'Stop voice input' : 'Start voice input'}
-          data-testid="uipilot-chat-mic"
+          data-testid="notlm-chat-mic"
         >
           <svg
-            className="uipilot-mic-icon"
+            className="notlm-mic-icon"
             viewBox="0 0 24 24"
             width="18"
             height="18"
@@ -173,9 +173,9 @@ export function UiPilotFab() {
       )}
       <button
         type="button"
-        className="uipilot-chat-btn uipilot-chat-btn-primary"
+        className="notlm-chat-btn notlm-chat-btn-primary"
         onClick={submit}
-        data-testid="uipilot-chat-send"
+        data-testid="notlm-chat-send"
       >
         Send
       </button>
@@ -187,7 +187,7 @@ export function UiPilotFab() {
       <p
         style={{
           fontSize: '0.75rem',
-          color: 'var(--uipilot-text-muted)',
+          color: 'var(--notlm-text-muted)',
           padding: '0 0.5rem 0.5rem',
         }}
       >
@@ -201,11 +201,11 @@ export function UiPilotFab() {
       messages={messagesNode}
       inputRow={inputRow}
       voiceHint={voiceHint}
-      className={cx('uipilot-chat-panel', classNames?.chatPanel)}
+      className={cx('notlm-chat-panel', classNames?.chatPanel)}
     />
   ) : (
     <div
-      className={cx('uipilot-chat-panel', classNames?.chatPanel)}
+      className={cx('notlm-chat-panel', classNames?.chatPanel)}
       role="dialog"
       aria-label={assistantTitle}
     >
@@ -232,9 +232,9 @@ export function UiPilotFab() {
 
   return (
     <div
-      className={cx(hostRootClassName, 'uipilot-fab-root', classNames?.fabRoot)}
+      className={cx(hostRootClassName, 'notlm-fab-root', classNames?.fabRoot)}
       style={hostRootStyle}
-      data-testid="uipilot-fab-dock"
+      data-testid="notlm-fab-dock"
       data-chat-enabled={chatEnabled ? 'true' : 'false'}
     >
       {chatEnabled && panelOpen && panelInner}
@@ -244,21 +244,21 @@ export function UiPilotFab() {
         <button
           type="button"
           className={cx(
-            'uipilot-fab-btn',
-            'uipilot-fab-btn-secondary',
-            'uipilot-checklist-fab',
+            'notlm-fab-btn',
+            'notlm-fab-btn-secondary',
+            'notlm-checklist-fab',
             classNames?.fabButton
           )}
           onClick={toggleChecklist}
           aria-expanded={checklistOpen}
           aria-label={checklistOpen ? 'Close checklist' : 'Open checklist'}
           data-guide-id="guide-checklist-fab"
-          data-testid="uipilot-checklist-fab"
+          data-testid="notlm-checklist-fab"
           data-checklist-open={checklistOpen ? 'true' : 'false'}
           title="Checklist (setup & run status)"
         >
           <svg
-            className="uipilot-fab-icon"
+            className="notlm-fab-icon"
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
@@ -273,21 +273,21 @@ export function UiPilotFab() {
           <FabButton
             open={panelOpen}
             onToggle={toggleAssistant}
-            className={cx('uipilot-fab-btn', classNames?.fabButton)}
+            className={cx('notlm-fab-btn', classNames?.fabButton)}
           />
         ) : (
           <button
             type="button"
-            className={cx('uipilot-fab-btn', classNames?.fabButton)}
+            className={cx('notlm-fab-btn', classNames?.fabButton)}
             onClick={toggleAssistant}
             aria-expanded={panelOpen}
             aria-label={panelOpen ? 'Close assistant' : 'Open assistant'}
             data-guide-id="guide-assistant-fab"
-            data-testid="uipilot-fab"
+            data-testid="notlm-fab"
             data-assistant-open={panelOpen ? 'true' : 'false'}
           >
             <svg
-              className="uipilot-fab-icon"
+              className="notlm-fab-icon"
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden="true"
