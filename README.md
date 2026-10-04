@@ -1,65 +1,65 @@
 # NotLM
 
-**UI, but for you** — a plug-and-play **SPA chatbot frontline**: deterministic pack
-NLU as a **smart cache**, optional **Laya** miss fallback, optional **LLM** backup,
-plus chat FAB / command palette. **Coaching** (`data-guide-id` spotlight, step tours)
-is one pack-driven pattern — not the product identity.
+NotLM is a chatbot for your web app that *feels* like talking to an AI assistant —
+ask in plain language, get answers, get taken to the right screen — without sending
+every message to a large language model.
 
-This repo is the **runtime**: `@notlm/core`, `@notlm/react`, `@notlm/schema`,
-`@notlm/ranker` (infer), and a thin `notlmCLI` (`init` / `validate` /
-`intents check` / `ranker check`). Pack JSON and optional prebuilt ranker artifacts
-are host-owned inputs.
+Most of what people actually say in a product (“open billing”, “what’s this?”,
+“why can’t I save?”) is predictable. NotLM captures that bulk of traffic with a
+local **smart cache**: packaged intents, FAQs, and catalogs that run in the browser
+(or at the edge of your stack). You keep the conversational experience, cut LLM
+cost, and get snappier replies (no round-trip for the common path). When something
+truly novel slips through, an optional smaller model (**Laya**) and then an optional
+full LLM can still help — so the chat stays useful without paying LLM rates for
+every “take me to settings.”
+
+Coaching tours and UI spotlights (`data-guide-id`) are one pattern you can pack —
+not the whole product. The point is a frontline that understands *your* app.
+
+---
+
+## What it handles well (13 work types)
+
+Packs teach NotLM your product’s vocabulary. The runtime already knows these
+**thirteen jobs**; you fill in the words. This is product chat, not open-ended
+general AI.
+
+| # | Type | In plain English |
+|---|------|------------------|
+| 1 | **FAQ** | Answers “what is… / how do I…” from packed Q&A (plus shared greetings). |
+| 2 | **Goto** | Takes the user to a screen or step (“open billing”, “take me to settings”). |
+| 3 | **Query** | Reads live facts your app can resolve (“what’s next?”, “am I subscribed?”). |
+| 4 | **Mutation** | Starts a change safely — opens a form or previews a write; doesn’t silently mutate. |
+| 5 | **High-risk mutation** | Same idea, but requires a clear confirm before anything irreversible. |
+| 6 | **Context** | Explains blockers on the current page (“why can’t I save?”, “what’s missing?”). |
+| 7 | **Tour** | Walks through a short guided sequence (onboarding, “show me around”). |
+| 8 | **Search** | Opens the right find/lookup surface (“find contacts”, “search invoices”). |
+| 9 | **Compare** | Explains A vs B when your pack defines the distinction. |
+| 10 | **Handoff** | Drafts a short summary for another person or the desk (when enabled). |
+| 11 | **Audit** | Replays the last assistant action in plain language (“what did you just open?”). |
+| 12 | **OOD** | Refuses off-product asks cleanly instead of guessing or navigating randomly. |
+| 13 | **Disambiguation** | When several steps match, asks which one — or honors “the other one” / cancel / go back. |
+
+Where the words live: FAQ → `faq.json`; goto/tour → flow + aliases;
+query/mutation/tour/search → capability catalogs; compare/context/audit/handoff/OOD
+→ heuristics (+ optional FAQ); disambiguation → colliding aliases + choice chips.
+See [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md).
+
+---
+
+## How it works (for builders)
 
 ```text
 User utterance
-  → pack smart cache (intents / FAQ / catalogs / discourse)
+  → pack smart cache (intents / FAQ / catalogs / discourse)   ← most traffic
   → on miss: Laya (/decide)
   → on miss: optional host LLM (/notlm/fallback)
   → reply + optional UI actions (navigate / spotlight / tour)
 ```
 
-See `ARCHITECTURE.md` for bundle boundaries and [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md) for host wire-up.
-
-## What packs are optimized for (13 work types)
-
-A product pack teaches NotLM *how your SPA talks*. Core + the generic English base
-(`packs/_base-en`, heuristics, typed catalogs) are tuned so ordinary chat covers
-these **thirteen jobs** — not open-ended chat. Host packs fill in the product words;
-the runtime already knows the shapes.
-
-| # | Type | Plain English |
-|---|------|----------------|
-| 1 | **FAQ** | Answer “what is… / how do I…” from packed Q&A (plus shared greetings from `_base-en`). |
-| 2 | **Goto** | Take the user to a screen or step (“open billing”, “take me to settings”). |
-| 3 | **Query** | Read live facts the host can resolve (“what’s next?”, “am I subscribed?”). |
-| 4 | **Mutation** | Start a change safely — open a form or preview a write; don’t silently mutate. |
-| 5 | **High-risk mutation** | Same idea, but require a clear confirm before anything irreversible. |
-| 6 | **Context** | Explain blockers on the current page (“why can’t I save?”, “what’s missing?”). |
-| 7 | **Tour** | Walk through a short guided sequence (onboarding, “show me around”). |
-| 8 | **Search** | Open the right find/lookup surface (“find contacts”, “search invoices”). |
-| 9 | **Compare** | Explain A vs B when the pack has product distinctions. |
-| 10 | **Handoff** | Draft a short summary for another person or the desk (when the host enables it). |
-| 11 | **Audit** | Replay the last coach action in plain language (“what did you just open?”). |
-| 12 | **OOD** | Refuse off-product asks cleanly instead of hallucinating or navigating randomly. |
-| 13 | **Disambiguation** | When several steps match, ask which one — or honor “the other one” / cancel / go back. |
-
-Authoring map (where the words live): FAQ → `faq.json`; goto/tour steps → flow +
-aliases; query/mutation/tour/search → capability catalogs; compare/context/audit/
-handoff/OOD phrasing → heuristics (+ optional FAQ); disambiguation → colliding
-aliases + choice chips at runtime. Details: [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md).
-
-## Status
-
-Implementation in progress (not published). Package scope: `@notlm/*`. CLI: `notlmCLI`.
-
-## Quick links
-
-- Pack cookbook: `docs/PACK_COOKBOOK.md`
-- Architecture: `ARCHITECTURE.md`
-- Contributing: `CONTRIBUTING.md`
-- Security: `SECURITY.md`
-
-## Consumer sketch (target API)
+This repo is the **runtime**: `@notlm/core`, `@notlm/react`, `@notlm/schema`,
+`@notlm/ranker` (infer), and `notlmCLI` (`init` / `validate` / `intents check` /
+`ranker check`). Pack JSON and optional ranker artifacts are **host-owned**.
 
 ```tsx
 import { NotLMProvider, NotLMHost } from '@notlm/react';
@@ -74,3 +74,12 @@ import { NotLMProvider, NotLMHost } from '@notlm/react';
   <NotLMHost />
 </NotLMProvider>
 ```
+
+**Status:** in progress (not published). Packages: `@notlm/*`. CLI: `notlmCLI`.
+
+| Doc | |
+|-----|--|
+| Pack cookbook | [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md) |
+| Architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| Security | [`SECURITY.md`](SECURITY.md) |
