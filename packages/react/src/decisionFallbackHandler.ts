@@ -61,6 +61,9 @@ export type DecisionFallbackDeps = {
   executeMutation?: ExecuteMutationFn;
   runTour?: RunTourFn;
   openSearchHit?: OpenSearchHitFn;
+  getAbortSignal?: () => AbortSignal | undefined;
+  onBusyChange?: (busy: boolean) => void;
+  onFallbackMissText?: (text: string) => void;
 };
 
 export function createDecisionFallbackHandler(
@@ -104,7 +107,9 @@ export function createDecisionFallbackHandler(
     const missKind = event.kind;
     const text = (event.text ?? '').trim();
     if (!text) return;
+    deps.onFallbackMissText?.(text);
     const thinkingId = `thinking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    deps.onBusyChange?.(true);
     deps.setMessages((prev) => [
       ...prev,
       {
@@ -129,6 +134,7 @@ export function createDecisionFallbackHandler(
         .filter(Boolean)
         .join(';')
         .slice(0, 2000);
+      const signal = deps.getAbortSignal?.();
       const result = await invokeChainedDecisionFallback({
         primary: deps.fallbackLlm!,
         secondary: deps.secondaryFallbackLlm,
@@ -152,8 +158,23 @@ export function createDecisionFallbackHandler(
           knownMutationIds,
           knownTourIds,
           knownSearchIds,
+          signal,
+          onDelta: (partial) => {
+            deps.setMessages((prev) =>
+              prev.map((m) =>
+                m.id === thinkingId
+                  ? { ...m, text: partial, status: 'streaming' as const }
+                  : m
+              )
+            );
+          },
         },
       });
+      deps.onBusyChange?.(false);
+      if (signal?.aborted) {
+        deps.setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+        return;
+      }
       const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
         deps.setMessages((prev) => {
           const without = prev.filter((m) => m.id !== thinkingId);

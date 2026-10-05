@@ -62,9 +62,23 @@ export type LlmFallbackResult = {
   exchangeId?: string;
 };
 
+export type LlmStreamChunk =
+  | string
+  | {
+      delta?: string;
+      text?: string;
+      proposed?: MissProposed;
+      provider?: LlmFallbackResult['provider'];
+      exchangeId?: string;
+    };
+
 export type LlmFallbackFn = (
   request: LlmFallbackRequest
-) => Promise<LlmFallbackResult | null> | LlmFallbackResult | null;
+) =>
+  | LlmFallbackResult
+  | null
+  | Promise<LlmFallbackResult | null | AsyncIterable<LlmStreamChunk>>
+  | AsyncIterable<LlmStreamChunk>;
 
 export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 12_000;
 
@@ -303,11 +317,50 @@ export type InvokeLlmFallbackOpts = {
   knownMutationIds?: ReadonlySet<string> | readonly string[];
   knownTourIds?: ReadonlySet<string> | readonly string[];
   knownSearchIds?: ReadonlySet<string> | readonly string[];
+  signal?: AbortSignal;
+  onDelta?: (text: string) => void;
 };
 
+function isAsyncIterable(v: unknown): v is AsyncIterable<unknown> {
+  return Boolean(v && typeof v === 'object' && Symbol.asyncIterator in (v as object));
+}
+
+async function normalizeFallbackRaw(
+  raw: LlmFallbackResult | null | AsyncIterable<LlmStreamChunk>,
+  opts?: InvokeLlmFallbackOpts
+): Promise<LlmFallbackResult | null> {
+  if (raw == null) return null;
+  if (!isAsyncIterable(raw)) return raw;
+  let reply = '';
+  let proposed: MissProposed | undefined;
+  let provider: LlmFallbackResult['provider'];
+  let exchangeId: string | undefined;
+  for await (const chunk of raw) {
+    if (opts?.signal?.aborted) return null;
+    if (typeof chunk === 'string') {
+      reply += chunk;
+      opts?.onDelta?.(reply);
+      continue;
+    }
+    const c = chunk as Exclude<LlmStreamChunk, string>;
+    if (typeof c.delta === 'string') {
+      reply += c.delta;
+      opts?.onDelta?.(reply);
+    } else if (typeof c.text === 'string') {
+      reply = c.text;
+      opts?.onDelta?.(reply);
+    }
+    if (c.proposed) proposed = c.proposed;
+    if (c.provider) provider = c.provider;
+    if (typeof c.exchangeId === 'string') exchangeId = c.exchangeId;
+  }
+  if (!reply.trim()) return null;
+  return { reply, proposed, provider, exchangeId };
+}
+
 /**
- * Call host BYO fallback with a timeout. Returns null on failure/timeout
- * so the assistant can keep the canned repair reply.
+ * Call host BYO fallback with a timeout. Returns null on failure/timeout.
+ * Hosts may return a final object or an AsyncIterable of text deltas.
  */
 export async function invokeLlmFallback(
   fn: LlmFallbackFn,
@@ -316,28 +369,39 @@ export async function invokeLlmFallback(
 ): Promise<LlmFallbackResult | null> {
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_LLM_FALLBACK_TIMEOUT_MS;
   try {
-    const result = await Promise.race([
-      Promise.resolve(fn(request)),
+    if (opts?.signal?.aborted) return null;
+    const raced = await Promise.race([
+      Promise.resolve(fn(request)).then((r) =>
+        normalizeFallbackRaw(r as LlmFallbackResult | null | AsyncIterable<LlmStreamChunk>, opts)
+      ),
       new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), timeoutMs);
+        const t = setTimeout(() => resolve(null), timeoutMs);
+        opts?.signal?.addEventListener(
+          'abort',
+          () => {
+            clearTimeout(t);
+            resolve(null);
+          },
+          { once: true }
+        );
       }),
     ]);
-    if (!result || typeof result.reply !== 'string') return null;
-    const reply = sanitizeMissText(result.reply, DEFAULT_MISS_REPLY_CAP);
+    if (!raced || typeof raced.reply !== 'string') return null;
+    const reply = sanitizeMissText(raced.reply, DEFAULT_MISS_REPLY_CAP);
     if (!reply) return null;
     const out: LlmFallbackResult = { reply };
     let proposed: MissProposed | undefined;
-    if (result.proposed) {
+    if (raced.proposed) {
       proposed =
-        result.proposed.type === 'faq' ||
-        result.proposed.type === 'goto' ||
-        result.proposed.type === 'meta' ||
-        result.proposed.type === 'refuse' ||
-        result.proposed.type === 'query' ||
-        result.proposed.type === 'mutation' ||
-        result.proposed.type === 'tour' ||
-        result.proposed.type === 'search'
-          ? result.proposed
+        raced.proposed.type === 'faq' ||
+        raced.proposed.type === 'goto' ||
+        raced.proposed.type === 'meta' ||
+        raced.proposed.type === 'refuse' ||
+        raced.proposed.type === 'query' ||
+        raced.proposed.type === 'mutation' ||
+        raced.proposed.type === 'tour' ||
+        raced.proposed.type === 'search'
+          ? raced.proposed
           : { type: 'refuse' };
     } else {
       proposed = { type: 'refuse' };
@@ -358,10 +422,10 @@ export async function invokeLlmFallback(
       proposed = clampCatalogId(proposed, 'searchId', opts.knownSearchIds);
     }
     out.proposed = proposed;
-    if (result.provider?.id && result.provider?.model) {
-      out.provider = { id: result.provider.id, model: result.provider.model };
+    if (raced.provider?.id && raced.provider?.model) {
+      out.provider = { id: raced.provider.id, model: raced.provider.model };
     }
-    if (typeof result.exchangeId === 'string') out.exchangeId = result.exchangeId;
+    if (typeof raced.exchangeId === 'string') out.exchangeId = raced.exchangeId;
     return out;
   } catch {
     return null;
@@ -417,6 +481,9 @@ export async function invokeChainedDecisionFallback(
  * Compose primary + optional secondary into one `LlmFallbackFn` for hosts that
  * still pass a single prop. Prefer wiring `secondaryFallbackLlm` on the React host.
  */
+/** Alias — same as invokeChainedDecisionFallback (supports stream deltas via opts.onDelta). */
+export const invokeStreamingDecisionFallback = invokeChainedDecisionFallback;
+
 export function composeDecisionFallbackChain(input: {
   primary: LlmFallbackFn;
   secondary?: LlmFallbackFn | null;

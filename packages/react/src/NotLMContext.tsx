@@ -65,6 +65,12 @@ import {
 import { appearanceToCssVars } from './notlm.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
 import { swallowDispatchError } from './hostTelemetry.js';
+import type { ChatThread } from './ThreadList.js';
+import {
+  DEFAULT_WELCOME,
+  initialThreadState,
+  newChatMessage,
+} from './chatThreadState.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
 /** Host opens a pack-declared modal key (UI-actions only — no product APIs). */
@@ -124,26 +130,17 @@ export type NotLMContextValue = {
   chrome: NotLMChromeConfig;
   hostRootStyle: CSSProperties;
   hostRootClassName: string;
+  /** True while decision fallback (Laya/LLM) is in flight. */
+  fallbackBusy: boolean;
+  cancelFallback: () => void;
+  regenerateLastFallback: () => void;
+  threads: ChatThread[];
+  activeThreadId: string;
+  selectThread: (id: string) => void;
+  newThread: () => void;
 };
 
 const NotLMContext = createContext<NotLMContextValue | null>(null);
-
-function newMessage(
-  role: ChatMessage['role'],
-  text: string,
-  choices?: ChatChoice[],
-  extra?: { links?: ChatMessage['links']; intentKey?: string }
-): ChatMessage {
-  return {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    role,
-    text,
-    at: Date.now(),
-    ...(choices?.length ? { choices } : {}),
-    ...(extra?.links?.length ? { links: extra.links } : {}),
-    ...(extra?.intentKey ? { intentKey: extra.intentKey } : {}),
-  };
-}
 
 export type NotLMProviderProps = {
   pack: PackRuntime;
@@ -255,6 +252,7 @@ export function NotLMProvider({
       palette: true,
       spotlight: true,
       voice: true,
+      threads: true,
       ...featuresProp,
     }),
     [featuresProp]
@@ -267,15 +265,39 @@ export function NotLMProvider({
   const executeStepRef = useRef<(stepId: StepId, opts?: ExecuteStepOpts) => void>(
     () => {}
   );
+  const abortRef = useRef<AbortController | null>(null);
+  const lastFallbackTextRef = useRef<string | null>(null);
+  const [fallbackBusy, setFallbackBusy] = useState(false);
+
+  const welcome = DEFAULT_WELCOME;
+  const [activeThreadId, setActiveThreadId] = useState(() => conversationIdRef.current);
+  const initial = initialThreadState(conversationIdRef.current);
+  const [threads, setThreads] = useState<ChatThread[]>(() => initial.threads);
+  const [messagesByThread, setMessagesByThread] = useState<Record<string, ChatMessage[]>>(
+    () => initial.messagesByThread
+  );
+  const messages = messagesByThread[activeThreadId] ?? [];
+  const setMessages = useCallback(
+    (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
+      setMessagesByThread((prev) => {
+        const tid = conversationIdRef.current;
+        const cur = prev[tid] ?? [];
+        return { ...prev, [tid]: updater(cur) };
+      });
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === conversationIdRef.current
+            ? { ...t, updatedAt: Date.now() }
+            : t
+        )
+      );
+    },
+    []
+  );
 
   const [session, setSession] = useState<SessionSlots>(() => emptySession());
   const sessionRef = useRef(session);
   sessionRef.current = session;
-
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    newMessage('assistant', 'How can I help? Ask for a workflow step or open the command palette.'),
-  ]);
-
   const defaultPathname = useCallback(() => {
     try {
       return getContext().pathname;
@@ -326,6 +348,15 @@ export function NotLMProvider({
       executeMutation,
       runTour,
       openSearchHit,
+      getAbortSignal: () => {
+        abortRef.current?.abort();
+        abortRef.current = new AbortController();
+        return abortRef.current.signal;
+      },
+      onBusyChange: setFallbackBusy,
+      onFallbackMissText: (t) => {
+        lastFallbackTextRef.current = t;
+      },
     });
 
     return composeCoachEventHandlers(
@@ -351,7 +382,40 @@ export function NotLMProvider({
     executeMutation,
     runTour,
     openSearchHit,
+    setMessages,
   ]);
+
+  const cancelFallback = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setFallbackBusy(false);
+  }, []);
+
+  const selectThread = useCallback(
+    (id: string) => {
+      cancelFallback();
+      conversationIdRef.current = id;
+      setActiveThreadId(id);
+      if (conversationPipelineRef.current) {
+        // Pipeline conversationId is fixed at create; newThread remints pipeline via effect deps.
+      }
+    },
+    [cancelFallback]
+  );
+
+  const newThread = useCallback(() => {
+    cancelFallback();
+    const id = mintConversationId();
+    conversationIdRef.current = id;
+    setActiveThreadId(id);
+    setThreads((prev) => [{ id, title: 'Chat', updatedAt: Date.now() }, ...prev]);
+    setMessagesByThread((prev) => ({
+      ...prev,
+      [id]: [newChatMessage('assistant', welcome)],
+    }));
+  }, [cancelFallback, welcome]);
+
+  const handleUserUtteranceRef = useRef<(text: string) => void>(() => {});
 
   const chrome = useMemo<NotLMChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
@@ -386,7 +450,7 @@ export function NotLMProvider({
       conversationPipelineRef.current?.logChat('assistant', text);
       setMessages((prev) => [
         ...prev,
-        newMessage('assistant', text, opts?.choices, {
+        newChatMessage('assistant', text, opts?.choices, {
           links: opts?.links,
           intentKey: opts?.intentKey,
         }),
@@ -544,7 +608,7 @@ export function NotLMProvider({
       const trimmed = text.trim();
       if (!trimmed) return;
       conversationPipelineRef.current?.logChat('user', trimmed);
-      setMessages((prev) => [...prev, newMessage('user', trimmed)]);
+      setMessages((prev) => [...prev, newChatMessage('user', trimmed)]);
       setPanelOpen(true);
 
       const runCore = () => {
@@ -662,8 +726,17 @@ export function NotLMProvider({
       runTour,
       openSearchHit,
       resolveContextAsk,
+      setMessages,
     ]
   );
+
+  handleUserUtteranceRef.current = handleUserUtterance;
+
+  const regenerateLastFallback = useCallback(() => {
+    const text = lastFallbackTextRef.current?.trim();
+    if (!text) return;
+    handleUserUtteranceRef.current(text);
+  }, []);
 
   const value = useMemo<NotLMContextValue>(
     () => ({
@@ -689,12 +762,22 @@ export function NotLMProvider({
       chrome,
       hostRootStyle,
       hostRootClassName,
+      fallbackBusy,
+      cancelFallback,
+      regenerateLastFallback,
+      threads,
+      activeThreadId,
+      selectThread,
+      newThread,
     }),
     [
+      activeThreadId,
+      cancelFallback,
       checklistOpen,
       chrome,
       clearSpotlight,
       executeStep,
+      fallbackBusy,
       features,
       getContext,
       handleUserUtterance,
@@ -703,13 +786,17 @@ export function NotLMProvider({
       hostRootStyle,
       messages,
       navigate,
+      newThread,
       notifyStepCompleted,
       pack,
       paletteOpen,
       panelOpen,
+      regenerateLastFallback,
+      selectThread,
       session,
       spotlight,
       statuses,
+      threads,
     ]
   );
 
