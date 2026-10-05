@@ -445,9 +445,8 @@ export function App() {
   });
   const parseUtteranceFn = useMemo(() => {
     if (!onnxRanker) return undefined;
-    const session = createRankerSession(rankerJson as RankerModelJson, {
-      preferOnnx: true,
-    });
+    // Hybrid JSON ranker (no onnxBytes in this demo). Env flag enables hybrid, not ONNX.
+    const session = createRankerSession(rankerJson as RankerModelJson);
     return createHybridUtteranceParser(session, { minProbability: 0.35 });
   }, [onnxRanker]);
 

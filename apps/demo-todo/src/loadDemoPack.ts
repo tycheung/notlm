@@ -1,5 +1,4 @@
 import type {
-  BinderPredicate,
   FaqEntry,
   FlowStepDef,
   GlossaryEntry,
@@ -7,7 +6,7 @@ import type {
   LookupDef,
   ReplyBank,
 } from '@notlm/core';
-import { loadPackFromJson, mergeFaqEntries } from '@notlm/core';
+import { loadPackFromJson, mergeFaqEntries, normalizeBindersMap } from '@notlm/core';
 
 import baseFaqJson from '../../../packs/_base-en/faq.json';
 import bindersJson from '../../../packs/demo-todo/.notlm/pack/binders.json';
@@ -20,24 +19,13 @@ import lookupsJson from '../../../packs/demo-todo/.notlm/pack/lookups.json';
 import manifestJson from '../../../packs/demo-todo/.notlm/pack/manifest.json';
 import repliesJson from '../../../packs/demo-todo/.notlm/pack/replies.json';
 
-type BinderRow = BinderPredicate & { stepId: string };
-
-function bindersArrayToRecord(rows: BinderRow[]): Record<string, BinderPredicate> {
-  const out: Record<string, BinderPredicate> = {};
-  for (const row of rows) {
-    const { stepId, ...pred } = row;
-    out[stepId] = pred as BinderPredicate;
-  }
-  return out;
-}
-
 export function loadDemoTodoPack() {
   return loadPackFromJson({
     manifest: manifestJson as { id: string },
     flow: flowJson as FlowStepDef[],
     controls: controlsJson as never,
     intents: intentsJson as IntentConfig,
-    binders: bindersArrayToRecord(bindersJson as BinderRow[]),
+    binders: normalizeBindersMap(bindersJson),
     glossary: glossaryJson as GlossaryEntry[],
     faq: mergeFaqEntries(baseFaqJson as FaqEntry[], faqJson as FaqEntry[]),
     lookups: lookupsJson as LookupDef[],

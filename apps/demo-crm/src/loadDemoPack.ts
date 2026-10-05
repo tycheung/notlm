@@ -1,11 +1,10 @@
 import type {
-  BinderPredicate,
   FlowStepDef,
   GlossaryEntry,
   IntentConfig,
   ReplyBank,
 } from '@notlm/core';
-import { loadPackFromJson } from '@notlm/core';
+import { loadPackFromJson, normalizeBindersMap } from '@notlm/core';
 
 import bindersJson from '../../../packs/demo-crm/.notlm/pack/binders.json';
 import controlsJson from '../../../packs/demo-crm/.notlm/pack/controls.json';
@@ -14,17 +13,6 @@ import glossaryJson from '../../../packs/demo-crm/.notlm/pack/glossary.json';
 import intentsJson from '../../../packs/demo-crm/.notlm/pack/intents.json';
 import manifestJson from '../../../packs/demo-crm/.notlm/pack/manifest.json';
 import repliesJson from '../../../packs/demo-crm/.notlm/pack/replies.json';
-
-type BinderRow = BinderPredicate & { stepId: string };
-
-function bindersArrayToRecord(rows: BinderRow[]): Record<string, BinderPredicate> {
-  const out: Record<string, BinderPredicate> = {};
-  for (const row of rows) {
-    const { stepId, ...pred } = row;
-    out[stepId] = pred as BinderPredicate;
-  }
-  return out;
-}
 
 export function loadDemoCrmPack() {
   return loadPackFromJson({
@@ -41,7 +29,7 @@ export function loadDemoCrmPack() {
       userFill?: string[];
     }>,
     intents: intentsJson as IntentConfig,
-    binders: bindersArrayToRecord(bindersJson as BinderRow[]),
+    binders: normalizeBindersMap(bindersJson),
     glossary: glossaryJson as GlossaryEntry[],
     replies: repliesJson as ReplyBank,
   });
