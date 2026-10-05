@@ -19,5 +19,5 @@ PROMOTE_STEPS = (
     "feedback pull exchanges",
     "confidence-gated fold aliases/scenarios/faq",
     "intents check",
-    "auto ranker (CPU)",
+    "auto ranker (CPU ranker.json only; not 13-lane auto growth)",
 )

@@ -160,7 +160,8 @@ back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
   (`invokeChainedDecisionFallback`) — not in the host proxy.
 - **Hot path:** rules + pack `ranker.json` + **session phrase LRU** (not durable learning).
 - **Durable learning:** Celery/nightly promotes MissExchanges → aliases/scenarios → `auto ranker`
-  (CPU only). Does **not** retrain Laya weights on the server.
+  (CPU ranker.json only — not the 13-lane `auto` pack-growth loop). Does **not** retrain Laya
+  weights on the server.
 - **Mixed / OOD:** packed segments; in-DAG launches; OOD uses `repair.ood_capability` /
   `repair.partial_ood` with `{{entities}}` / `{{product_role}}`.
 - **Fine-tune:** train Laya checkpoints locally (separate training repo / CLI); see `docs/VERIFY_LAYA_CACHE.md`.
