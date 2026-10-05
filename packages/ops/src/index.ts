@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -130,8 +130,4 @@ export function installNightlyCelery(opts: CelerySetupOpts): {
     files.push(dest);
   }
   return { dir, files };
-}
-
-export function readTemplate(rel: string): string {
-  return readFileSync(join(opsTemplatesRoot(), rel), 'utf8');
 }
