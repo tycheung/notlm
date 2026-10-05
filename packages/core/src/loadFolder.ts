@@ -44,6 +44,11 @@ export function resolveNotlmHomeDir(dir: string): { projectRoot: string; home: s
   return { projectRoot, home: join(projectRoot, NOTLM_DIRNAME) };
 }
 
+/** Same as NotLM CLI: resolve `.notlm` from `dir` or `process.cwd()`. */
+export function resolveNotlmHome(dir?: string): { projectRoot: string; home: string } {
+  return resolveNotlmHomeDir(resolve(dir ?? process.cwd()));
+}
+
 function readJsonFile(path: string): unknown {
   return JSON.parse(readFileSync(path, 'utf8')) as unknown;
 }

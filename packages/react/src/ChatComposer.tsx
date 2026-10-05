@@ -1,8 +1,5 @@
 import type { ReactNode } from 'react';
-
-function cx(...parts: Array<string | undefined | false>): string {
-  return parts.filter(Boolean).join(' ');
-}
+import { cx } from './cx.js';
 
 export type ChatComposerProps = {
   value: string;

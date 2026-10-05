@@ -262,19 +262,19 @@ Snake_case keys are rejected by parse helpers. Offline LLM analysis of conversat
 is **out of scope** for this repo (external pack tooling). Existing `MissRecord` /
 `MissExchange` sinks remain supported.
 
-#### MissExchange + Learning Mode (1A)
+#### MissExchange + decision fallback (1A)
 
-**Production default = Learning Mode OFF** (`features.learningMode` unset/false).
-Offline NLU only; miss → canned repair. No LLM required.
+**Production default:** `layaDecisionFallback` on when unset — hosts wire
+`fallbackLlm` only when a sidecar/proxy is available. Set
+`features.layaDecisionFallback: false` for offline-only NLU (miss → canned repair).
 
-**Train window:** set `features.learningMode: true` and pass host `fallbackLlm`
-(BYO server proxy). Misses escalate to LLM → chat reply → **`MissExchange`** log.
-Invalid `proposed.goto.stepId` values are forced to `refuse` (no fake step chips).
+Misses can escalate to Laya → chat reply → **`MissExchange`** log when fallback
+is wired. Invalid `proposed.goto.stepId` values are forced to `refuse` (no fake
+step chips).
 
 Offline promotion of exchanges into pack drafts is **out of scope** for this repo
 (host / external pack tooling). After pack pieces and `scenarios.json` update,
-run `notlmCLI intents check`, then freeze Learning Mode when coverage is high
-enough.
+run `notlmCLI intents check`, then disable fallback when coverage is high enough.
 
 Host coverage API (e.g. VB): `GET …/notlm/misses/metrics` → `fallbackShare`,
 optional `localHitRate`, `recommendFreeze`.

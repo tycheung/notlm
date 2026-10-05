@@ -1,9 +1,9 @@
 /**
- * @guide-stream Minimal stream fallback smoke (fixture iterable).
+ * @guide-chrome FAB / chat panel / thread list smoke.
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('@guide-stream demo-todo stream fallback wiring', () => {
+test.describe('@guide-chrome demo-todo chrome smoke (FAB/chat/threads)', () => {
   test('chat panel opens and composer is present', async ({ page }) => {
     await page.goto('/');
     await page.getByTestId('notlm-fab').click();

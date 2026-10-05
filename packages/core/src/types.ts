@@ -344,11 +344,6 @@ export type AssistantFeatures = {
    */
   conversationLog?: boolean;
   /**
-   * @deprecated Prefer `layaDecisionFallback` + host `fallbackLlm`.
-   * Kept for pack JSON compatibility; runtime does not read this flag.
-   */
-  learningMode?: boolean;
-  /**
    * Decision fallback (Laya): call host `fallbackLlm` on miss.
    * **Default on** when unset — set `false` to force offline-only.
    * Env hint for hosts: `NOTLM_LAYA_ENABLED=1`.
@@ -366,11 +361,6 @@ export type AssistantFeatures = {
    * chip-only UX.
    */
   autoExecuteTrustedGoto?: boolean;
-  /**
-   * Multimodal / vision fallback. **Default off.** Only call a vision-capable
-   * secondary LLM when true and the host wires `visionFallbackLlm`.
-   */
-  visionFallback?: boolean;
   /**
    * Show thread list / new-chat in chrome. **Default on** when unset.
    */

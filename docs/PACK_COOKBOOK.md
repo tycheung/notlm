@@ -437,7 +437,7 @@ Drafts land under `.notlm/drafts/scenarios-pool-*/` with `scenarios.json` plus o
 5. `notlmCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
 6. Optional: ship `pack/ranker.json` (+ `ranker.onnx`) then enable `features.onnxRanker` / `NOTLM_ONNX_RANKER=1` and pass prebuilt `onnxBytes` into `createRankerSession` (JSON infer always available).
 7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'notlm:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Offline recalibration of misses / exchanges is out of scope for this repo.
-8. **Learning Mode (optional train window):** `features.learningMode: true` + host `fallbackLlm`. Default **off** for production freeze. See ARCHITECTURE “MissExchange + Learning Mode”.
+8. **Decision fallback (optional train window):** wire host `fallbackLlm` when `features.layaDecisionFallback` is not `false`. See ARCHITECTURE “MissExchange + decision fallback”.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
 
@@ -481,9 +481,9 @@ Example shape:
 
 ### Learning → freeze (same for any pack)
 
-1. Ship offline pack (`learningMode` off).
-2. Train window: Learning Mode on + BYO LLM → MissExchanges → drafts → accept.
-3. Freeze when `fallbackShare` is low / `recommendFreeze` — Learning Mode off again.
+1. Ship offline pack (`layaDecisionFallback: false` or no `fallbackLlm` wired).
+2. Train window: enable fallback + BYO LLM → MissExchanges → drafts → accept.
+3. Freeze when `fallbackShare` is low / `recommendFreeze` — disable fallback again.
 
 Demo-todo remains the portable offline demo (localStorage misses, no LLM required).
 

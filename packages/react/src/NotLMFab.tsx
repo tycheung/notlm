@@ -5,10 +5,7 @@ import { ChatMessages } from './ChatMessages.js';
 import { ChatComposer } from './ChatComposer.js';
 import { ThreadList } from './ThreadList.js';
 import { useFocusTrap } from './useFocusTrap.js';
-
-function cx(...parts: Array<string | undefined | false>): string {
-  return parts.filter(Boolean).join(' ');
-}
+import { cx } from './cx.js';
 
 export function NotLMFab() {
   const {

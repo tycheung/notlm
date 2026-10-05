@@ -5,7 +5,6 @@ import {
   tryHandleExplainLast,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
-import { isVisionFallbackEnabled } from './fallbackLlm.js';
 import { loadPackFromJson } from './loadPack.js';
 import { emptySession } from './slots.js';
 import type { DispatchDeps } from './dispatchDeps.js';
@@ -288,14 +287,5 @@ describe('capability dispatch', () => {
         searchId: 'search_workspaces',
       })
     ).toBe(true);
-  });
-});
-
-describe('vision fallback gate', () => {
-  it('defaults off and requires explicit feature flag', () => {
-    expect(isVisionFallbackEnabled(undefined)).toBe(false);
-    expect(isVisionFallbackEnabled({})).toBe(false);
-    expect(isVisionFallbackEnabled({ visionFallback: false })).toBe(false);
-    expect(isVisionFallbackEnabled({ visionFallback: true })).toBe(true);
   });
 });

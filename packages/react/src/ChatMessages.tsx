@@ -1,10 +1,7 @@
 import type { ChatMessage } from '@notlm/core';
 import type { ReactNode, RefObject } from 'react';
 import { parseSafeMarkdown } from './safeMarkdown.js';
-
-function cx(...parts: Array<string | undefined | false>): string {
-  return parts.filter(Boolean).join(' ');
-}
+import { cx } from './cx.js';
 
 function AssistantBody({ text, status }: { text: string; status?: ChatMessage['status'] }) {
   if (status === 'thinking') {

@@ -50,9 +50,6 @@ export type LlmFallbackRequest = {
   mutationIds?: string[];
   tourIds?: string[];
   searchIds?: string[];
-  /** Optional image payload for vision LLM (host only when visionFallback on). */
-  imageBase64?: string;
-  imageMime?: string;
 };
 
 export type LlmFallbackResult = {
@@ -82,8 +79,6 @@ export type LlmFallbackFn = (
 
 export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 12_000;
 
-/** Learning Mode field remains on AssistantFeatures for host docs; gate unused at runtime. */
-
 /**
  * Decision fallback (Laya): **default on** unless explicitly disabled.
  * Hosts should still only pass `fallbackLlm` when a sidecar/proxy is available.
@@ -92,7 +87,7 @@ export function isDecisionFallbackEnabled(features?: AssistantFeatures | null): 
   if (!features) return true;
   if (features.layaDecisionFallback === false) return false;
   if (features.layaDecisionFallback === true) return true;
-  // Unset: default on (ease of use). learningMode false alone does not disable.
+  // Unset: default on (ease of use).
   return true;
 }
 
@@ -292,11 +287,6 @@ export function isAutoExecuteTrustedGotoEnabled(
 ): boolean {
   if (!features) return true;
   return features.autoExecuteTrustedGoto !== false;
-}
-
-export function isVisionFallbackEnabled(features?: AssistantFeatures | null): boolean {
-  if (!features) return false;
-  return features.visionFallback === true;
 }
 
 function clampCatalogId(
