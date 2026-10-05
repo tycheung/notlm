@@ -349,7 +349,6 @@ CLI never auto-merges into `pack/` without an explicit accept path. That is inte
 [ ] Host: field inputs annotated for prefill / explain flash
 [ ] Host: list rows annotated (`guideIdTemplate`) when using lookups
 [ ] controls.userFill: guide ids the coach cannot type — sequential 3× blink tour on step launch
-[ ] notlmCLI annotate checklist  # merges host DoD into checklist.json
 [ ] notlmCLI intents check green
 [ ] Manual chat/palette smoke on the happy path
 ```

@@ -1,21 +1,21 @@
-# Verify gate — Laya-backed NotLM (pre-commit)
+# Verify gate — Laya-backed NotLM
 
-Date: 2026-09-25
+Historical snapshot: **2026-09-25**. Re-run `npm test` in `notlm/` for current test counts.
 
 | Goal | Status | Evidence |
 |------|--------|----------|
-| Decision fallback (Laya-shaped), no LLM required in unit tests | PASS | `fallbackLlm.test.ts`, BE `test_notlm_fallback.py` degrade path |
+| Decision fallback (Laya-shaped), no LLM in unit tests | PASS | `fallbackLlm.test.ts` |
 | Session phrase LRU hit/miss/promote/evict | PASS | `phraseLru.test.ts` |
-| Subgraphs load + scoped NLU + parent completion | PASS | `loadFolder` loads `subgraphs.json`; `dispatch` uses `activeFlowSteps`; `queueAdvance` + `maybeCompleteParentSubgraph` |
-| Mixed + pure OOD canned with entities | PASS | `oodReply.test.ts` muffins + create event + recipe |
+| Subgraphs load + scoped NLU + parent completion | PASS | `loadFolder`, dispatch + queue advance |
+| Mixed + pure OOD canned with entities | PASS | `oodReply.test.ts` |
 | Thinking… show/replace/clear | PASS | `NotLMContext` thinking bubble on fallback |
 | LabelProvider + Laya labeler + convert/train CLI | PASS | `@notlm-training/laya-train`, `layaLabeler.test.ts`, `convert.test.ts` |
-| Install scaffold + Celery option | PASS | `@notlm/ops`, `notlmCLI laya install` / `celery setup`, `ops/src/index.test.ts` |
-| Ranker = cache retrain; nightly ≠ Laya weight tune | PASS | Docs in ops templates + BE `notlm_promote.py` |
-| Sidecar + degrade + VB proxy | PASS | `@notlm/ops` templates → `backend/notlm_laya`, `notlm_fallback.py`, 7 unit tests |
-| Full notlm `npm test` | PASS | 259 tests |
-| notlm-training laya unit tests | PASS | 5 tests |
+| Install scaffold + Celery option | PASS | `@notlm/ops`, `notlmCLI laya install` / `celery setup` |
+| Ranker = cache retrain; nightly ≠ Laya weight tune | PASS | ops templates + host promote docs |
+| Sidecar + degrade + host proxy | PASS | ops templates; host wires `/notlm/fallback` |
+| Full notlm `npm test` | PASS | 322 tests (re-run to confirm) |
+| notlm-training laya unit tests | PASS | laya-train package tests |
 
-Wiring audit: miss → Thinking… → `invokeLlmFallback` → host `/notlm/fallback` → Laya sidecar `/decide` → replace bubble; dispatch → LRU → parse → packed OOD; training `laya convert` → JSONL → dry-run train.
+Wiring audit: miss → Thinking… → host fallback → Laya `/decide` → replace bubble; dispatch → LRU → parse → packed OOD; training `laya convert` → JSONL → dry-run train.
 
-**Blockers for full local weight fine-tune:** GPU/`laya` package optional; ship gate uses dry-run + convert fixture. Checkpoint artifact shipped separately when trained.
+**Blockers for full local weight fine-tune:** GPU/`laya` package optional; ship gate uses dry-run + convert fixture. Checkpoint artifact ships separately when trained.

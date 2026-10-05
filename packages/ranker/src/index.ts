@@ -1,5 +1,5 @@
 export type { RankerModelJson, RankerInferResult, RankerIntentScore, RankerSlotScore } from './types.js';
-export { featurizeUtterance, hashToken } from './features.js';
+export { featurizeUtterance } from './features.js';
 export {
   inferRankerJson,
   subsetIntentDistribution,

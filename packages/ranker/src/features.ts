@@ -3,7 +3,7 @@ import { normalizeUtterance } from '@notlm/core';
 const FNV_OFFSET = 2166136261;
 
 /** Stable FNV-1a hash → bucket in [0, dim). */
-export function hashToken(token: string, dim: number): number {
+function hashToken(token: string, dim: number): number {
   let h = FNV_OFFSET;
   for (let i = 0; i < token.length; i += 1) {
     h ^= token.charCodeAt(i);

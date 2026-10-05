@@ -11,10 +11,6 @@ import { escapeRegExp } from './fuzzyText.js';
 
 export type { NormalizeConfig, NormalizePhrasePair };
 
-export function emptyNormalizeConfig(): NormalizeConfig {
-  return {};
-}
-
 function phraseBoundaryRe(phrase: string, flags = 'gi'): RegExp {
   const parts = phrase.trim().split(/\s+/).map(escapeRegExp);
   return new RegExp(`\\b${parts.join('\\s+')}\\b`, flags);
