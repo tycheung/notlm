@@ -27,6 +27,13 @@ async function main(): Promise<void> {
       case 'validate':
         await cmdValidate(sub);
         break;
+      case 'pack':
+        if (sub === 'validate') await cmdValidate(rest[0]);
+        else {
+          usage();
+          process.exitCode = 1;
+        }
+        break;
       case 'intents':
         if (sub === 'check') await cmdIntentsCheck(rest[0]);
         else {
@@ -77,6 +84,7 @@ function usage(): void {
   console.log(`Usage:
   notlmCLI init [dir]
   notlmCLI validate [dir]
+  notlmCLI pack validate [dir]
   notlmCLI intents check [dir]
   notlmCLI ranker check [dir] [--min-hit-rate=0.75] [--min-prob=0.35]
   notlmCLI laya install [dir] [--with-celery] [--disabled]
