@@ -1,6 +1,6 @@
 {
   "name": "@notlm/core",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "NotLM portable runtime — pack NLU, dispatch, miss/conversation logging, decision fallback",
   "type": "module",
   "license": "MIT",
@@ -29,7 +29,12 @@
       "import": "./dist/internal.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "publishConfig": {
     "access": "public"
   },

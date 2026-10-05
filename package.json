@@ -29,7 +29,8 @@
     "notlmCLI": "node packages/cli/dist/cli.js",
     "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo",
     "changeset": "changeset",
-    "publish:dry-run": "node scripts/ci/publish_dry_run.mjs"
+    "publish:dry-run": "node scripts/ci/publish_dry_run.mjs",
+    "check:npm": "node scripts/ci/check_npm_publish_ready.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.11",
@@ -45,6 +46,7 @@
     "vitest": "^2.1.8"
   },
   "overrides": {
-    "vite": "^5.4.21"
+    "vite": "^5.4.21",
+    "human-id": "4.1.3"
   }
 }

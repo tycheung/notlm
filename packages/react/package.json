@@ -1,6 +1,6 @@
 {
   "name": "@notlm/react",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "NotLM React host — provider, chat chrome, palette, checklist, spotlight",
   "type": "module",
   "license": "MIT",
@@ -29,7 +29,12 @@
       "import": "./dist/styles.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -37,10 +42,10 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18",
-    "@notlm/core": "^0.1.0"
+    "@notlm/core": "^1.0.0"
   },
   "dependencies": {
-    "@notlm/core": "0.1.0"
+    "@notlm/core": "1.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

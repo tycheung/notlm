@@ -32,7 +32,10 @@ docs/PROGRESS.md
 docs/SLICE_BACKLOG.md
 docs/PLAN.md
 docs/PLAN_GAP.md
-docs/adr/
+# Curated product ADRs only (ignore the rest of the local adr tree)
+docs/adr/*
+!docs/adr/008-gate-policy-and-conversational-maturity.md
+!docs/adr/009-runtime-vs-training-llm-fallback.md
 
 # Sandbox reference app — local agent/planning noise
 sandboxes/**/.cursor/

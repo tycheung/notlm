@@ -1,8 +1,11 @@
 # @notlm/react
 
-React host chrome for NotLM: provider, FAB chat, command palette, checklist, spotlight, and optional headless entry.
+React host chrome for NotLM: provider, FAB chat, command palette, checklist,
+spotlight, and optional headless entry.
 
-Pack NLU stays the default (sync replies). When you wire `fallbackLlm`, the UI supports thinking / streaming / threads (see hybrid docs).
+Pack NLU stays the default (sync replies). When you wire `fallbackLlm`, the UI
+supports thinking / streaming / threads — see the
+[React guide](https://github.com/tycheung/notlm/blob/main/docs/REACT_GUIDE.md).
 
 ## Install
 

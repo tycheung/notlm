@@ -1,6 +1,6 @@
 {
   "name": "@notlm/ranker",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "NotLM hybrid / ONNX ranker inference",
   "type": "module",
   "license": "MIT",
@@ -21,21 +21,30 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
   "sideEffects": false,
   "dependencies": {
-    "@notlm/core": "0.1.0"
+    "@notlm/core": "1.0.0"
   },
   "peerDependencies": {
     "onnxruntime-node": ">=1.17.0",
     "onnxruntime-web": ">=1.17.0"
   },
   "peerDependenciesMeta": {
-    "onnxruntime-node": { "optional": true },
-    "onnxruntime-web": { "optional": true }
+    "onnxruntime-node": {
+      "optional": true
+    },
+    "onnxruntime-web": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsc -b"

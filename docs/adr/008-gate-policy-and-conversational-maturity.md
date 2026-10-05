@@ -10,7 +10,8 @@ multi-step utterances, and queue auto-resume also launch steps. Without an
 explicit policy, hosts see inconsistent “why didn’t it ask?” behavior.
 
 Separately, the coach should feel more LLM-like (repair, discourse, confidence,
-telemetry) while remaining **deterministic at runtime** (ADR-001).
+telemetry) while remaining **deterministic at runtime** (pack NLU first; no
+runtime LLM on the hot path).
 
 ## Decision
 
@@ -42,8 +43,8 @@ conversational. Proactive Yes is already a soft confirm.
 
 ### Non-goals (unchanged)
 
-- No runtime LLM NLU (ADR-001).
-- No host product API writes (ADR-003).
+- No runtime LLM NLU on the pack hot path.
+- No host product API writes from the assistant (UI actions / navigate / spotlight only).
 - Firefox remains type-only (no Web Speech).
 
 ## Consequences

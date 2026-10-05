@@ -1,6 +1,6 @@
 {
   "name": "@notlm/ops",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "NotLM ops templates — Laya sidecar and Celery nightly promote scaffolds",
   "type": "module",
   "license": "MIT",
@@ -21,7 +21,13 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "templates", "LICENSE"],
+  "files": [
+    "dist",
+    "templates",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "publishConfig": {
     "access": "public"
   },

@@ -1,6 +1,7 @@
 # @notlm/core
 
-Portable NotLM runtime: pack types, utterance dispatch, FAQ/catalog NLU, miss/conversation logging, and optional Laya/LLM decision fallback.
+Portable NotLM runtime: pack types, utterance dispatch, FAQ/catalog NLU,
+miss/conversation logging, and optional Laya/LLM decision fallback.
 
 ## Install
 
@@ -14,7 +15,7 @@ npm install @notlm/core
 |--------|----------|
 | `@notlm/core` | Browser / SPA runtime (dispatch, types, miss log, fallback helpers) |
 | `@notlm/core/loadFolder` | Node-only FS loader for `.notlm/` homes |
-| `@notlm/core/internal` | Advanced shards (dispatchParsed, heuristicsDefaults) — prefer not to depend on these from hosts |
+| `@notlm/core/internal` | Advanced shards — prefer not to depend on these from hosts |
 
 ## Quick start
 
@@ -33,7 +34,8 @@ dispatchUserUtterance({
 });
 ```
 
-Pack JSON is host-owned. See the repo [`docs/PACK_COOKBOOK.md`](../../docs/PACK_COOKBOOK.md).
+Pack JSON is **host-owned**. For React chrome, use [`@notlm/react`](https://www.npmjs.com/package/@notlm/react).
+Pack authoring guide (repo): [PACK_COOKBOOK.md](https://github.com/tycheung/notlm/blob/main/docs/PACK_COOKBOOK.md).
 
 ## License
 

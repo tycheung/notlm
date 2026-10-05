@@ -12,10 +12,12 @@ Wire into Celery beat on the worker that has Node + `.notlm`:
     def notlm_nightly_promote_task():
         return notlm_nightly_promote()
 
-Then replace the body with subprocess calls, e.g.:
+Then replace the body with host offline tooling that:
 
-    npx notlm-training feedback pull --url …
-    npx notlm-training auto ranker <APP_DIR>
+  1. Pulls MissExchange / conversation logs from the host API
+  2. Folds confidence-gated aliases / scenarios / FAQ drafts into `.notlm/`
+  3. Runs `npx notlmCLI intents check <APP_DIR>`
+  4. Retrains CPU `ranker.json` (not Laya weight fine-tunes)
 """
 from __future__ import annotations
 
@@ -25,10 +27,10 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 PROMOTE_STEPS = (
-    "feedback pull exchanges",
+    "pull MissExchange / conversation logs",
     "confidence-gated fold aliases/scenarios/faq",
-    "intents check",
-    "auto ranker (CPU ranker.json only; not 13-lane auto growth)",
+    "notlmCLI intents check",
+    "retrain CPU ranker.json (not Laya weights)",
 )
 
 
@@ -37,7 +39,7 @@ def notlm_nightly_promote() -> dict[str, Any]:
     Log the promote pipeline steps and return a host wiring hint.
 
     This module does not shell out — hosts decorate with @app.task and call
-    `npx notlm-training feedback pull` / `auto ranker` beside their checkout.
+    their offline pack-promote tooling beside the checkout that owns `.notlm`.
     """
     for i, step in enumerate(PROMOTE_STEPS, start=1):
         line = f"[notlm nightly promote] {i}/{len(PROMOTE_STEPS)}: {step}"
@@ -45,8 +47,8 @@ def notlm_nightly_promote() -> dict[str, Any]:
         print(line)
 
     message = (
-        "NotLM nightly promote stub: wire Celery to run "
-        "`npx notlm-training feedback pull` and `npx notlm-training auto ranker` "
+        "NotLM nightly promote scaffold: wire Celery to pull misses, fold "
+        "drafts, run `npx notlmCLI intents check`, and retrain CPU ranker.json "
         "on the host checkout with `.notlm`."
     )
     logger.info(message)

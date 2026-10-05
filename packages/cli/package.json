@@ -1,6 +1,6 @@
 {
   "name": "@notlm/cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "NotLM thin operating CLI — validate, intents check, ranker check, laya/celery install",
   "type": "module",
   "license": "MIT",
@@ -20,15 +20,20 @@
   "exports": {
     ".": "./dist/cli.js"
   },
-  "files": ["dist", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
-    "@notlm/core": "0.1.0",
-    "@notlm/ops": "0.1.0",
-    "@notlm/ranker": "0.1.0",
-    "@notlm/schema": "0.1.0"
+    "@notlm/core": "1.0.0",
+    "@notlm/ops": "1.0.0",
+    "@notlm/ranker": "1.0.0",
+    "@notlm/schema": "1.0.0"
   },
   "scripts": {
     "build": "tsc -b"
