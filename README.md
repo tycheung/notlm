@@ -62,24 +62,36 @@ This repo is the **runtime**: `@notlm/core`, `@notlm/react`, `@notlm/schema`,
 `ranker check`). Pack JSON and optional ranker artifacts are **host-owned**.
 
 ```tsx
-import { NotLMProvider, NotLMHost } from '@notlm/react';
+import { NotLMHost, NOTLM_CSS } from '@notlm/react';
 
-<NotLMProvider
+// Inject chrome CSS once (or import tokens via @notlm/react/styles).
+if (typeof document !== 'undefined' && !document.getElementById('notlm-css')) {
+  const el = document.createElement('style');
+  el.id = 'notlm-css';
+  el.textContent = NOTLM_CSS;
+  document.head.appendChild(el);
+}
+
+<NotLMHost
   pack={pack}
   getContext={getContext}
   navigate={navigate}
   features={{ chat: true, palette: true, spotlight: true, voice: true }}
 >
   <App />
-  <NotLMHost />
-</NotLMProvider>
+</NotLMHost>
 ```
 
-**Status:** in progress (not published). Packages: `@notlm/*`. CLI: `notlmCLI`.
+`NotLMHost` already wraps `NotLMProvider` and mounts FAB/palette/checklist — do not nest both.
+
+**Status:** public-ready (`0.1.0`); live npm publish gated. Packages: `@notlm/*`. CLI: `notlmCLI`.
 
 | Doc | |
 |-----|--|
 | Pack cookbook | [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md) |
+| React host guide | [`docs/REACT_GUIDE.md`](docs/REACT_GUIDE.md) |
+| Core API tiers | [`docs/CORE_API_TIERS.md`](docs/CORE_API_TIERS.md) |
+| Publish gate | [`docs/PUBLISH_GATE.md`](docs/PUBLISH_GATE.md) |
 | Architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Security | [`SECURITY.md`](SECURITY.md) |

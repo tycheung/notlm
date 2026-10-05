@@ -27,9 +27,12 @@
     "ci:dx": "node scripts/ci/ci_check.mjs --with-dx",
     "check:host-bleed": "node scripts/ci/host_bleed_check.mjs",
     "notlmCLI": "node packages/cli/dist/cli.js",
-    "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo"
+    "check:demo": "node packages/cli/dist/cli.js intents check packs/demo-todo",
+    "changeset": "changeset",
+    "publish:dry-run": "node scripts/ci/publish_dry_run.mjs"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.11",
     "@playwright/test": "^1.51.0",
     "@types/node": "^22.10.0",
     "@vitejs/plugin-react": "^4.3.4",

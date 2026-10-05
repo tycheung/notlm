@@ -1,0 +1,35 @@
+name: Publish dry-run
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/**/package.json'
+      - '.changeset/**'
+      - 'scripts/ci/publish_dry_run.mjs'
+
+concurrency:
+  group: publish-dry-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Changeset status
+        run: npx changeset status --since=main || npx changeset status
+
+      - name: Pack + npm publish --dry-run
+        run: node scripts/ci/publish_dry_run.mjs

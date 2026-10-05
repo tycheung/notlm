@@ -1,28 +1,52 @@
 {
   "name": "@notlm/react",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "NotLM React host — provider, chat chrome, palette, checklist, spotlight",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tycheung/notlm.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://github.com/tycheung/notlm/tree/main/packages/react",
+  "bugs": {
+    "url": "https://github.com/tycheung/notlm/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./headless": {
+      "types": "./dist/headless.d.ts",
+      "import": "./dist/headless.js"
+    },
+    "./styles": {
+      "types": "./dist/styles.d.ts",
+      "import": "./dist/styles.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
   "peerDependencies": {
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "@notlm/core": "^0.1.0"
+  },
+  "dependencies": {
+    "@notlm/core": "0.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
-  },
-  "dependencies": {
-    "@notlm/core": "*"
   },
   "scripts": {
     "build": "tsc -b"

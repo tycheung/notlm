@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "@notlm/core",
+      "@notlm/react",
+      "@notlm/schema",
+      "@notlm/ranker",
+      "@notlm/cli",
+      "@notlm/ops"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@notlm/demo-todo",
+    "@notlm/demo-crm",
+    "@notlm/demo"
+  ]
+}

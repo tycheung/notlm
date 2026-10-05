@@ -1,7 +1,18 @@
 {
   "name": "@notlm/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "NotLM portable runtime — pack NLU, dispatch, miss/conversation logging, decision fallback",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tycheung/notlm.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/tycheung/notlm/tree/main/packages/core",
+  "bugs": {
+    "url": "https://github.com/tycheung/notlm/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -18,7 +29,11 @@
       "import": "./dist/internal.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
   "scripts": {
     "build": "tsc -b"
   }

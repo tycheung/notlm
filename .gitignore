@@ -10,6 +10,7 @@ test-results
 .DS_Store
 *.tsbuildinfo
 .pytest_cache
+*.tgz
 
 # Saturation / author drafts generated locally (keep pack/ committed)
 **/.notlm/saturation/
