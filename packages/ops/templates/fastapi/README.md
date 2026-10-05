@@ -11,6 +11,7 @@ Canonical NotLM API routes for hosts. Copy into your backend and wire auth.
 ```bash
 # from notlm/
 cp packages/ops/templates/fastapi/notlm_fallback.py ../backend/routes/notlm_fallback.py
+cp packages/ops/templates/shared/refuse_copy.py ../backend/routes/refuse_copy.py
 ```
 
 Then set host-specific pieces:

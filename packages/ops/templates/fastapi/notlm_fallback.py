@@ -19,9 +19,11 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
 import uuid
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Literal, Optional
 
 import httpx
@@ -34,6 +36,15 @@ from core.database import get_session
 from models.user import User
 from services.system_settings import get_setting_by_key
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# refuse_copy.py beside this file (host) or templates/shared (monorepo SoT).
+_here = Path(__file__).resolve().parent
+for _cand in (_here, _here.parent / "shared"):
+    if (_cand / "refuse_copy.py").is_file():
+        if str(_cand) not in sys.path:
+            sys.path.insert(0, str(_cand))
+        break
+from refuse_copy import expand_capability_faq, refuse_reply  # noqa: E402
 
 router = APIRouter()
 
@@ -134,84 +145,8 @@ def _product_role() -> str:
     return role or _DEFAULT_PRODUCT_ROLE
 
 
-_DISFLUENCY = re.compile(
-    r"^(?:uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please)(?:\s+|$)",
-    re.I,
-)
-_QUESTION_FRAME = re.compile(
-    r"^(?:what(?:'s|s| are| is)|how(?: do| does| can| to)?|where(?: do| can)?|"
-    r"why(?: do| is)?|tell me(?: about)?|help(?: me)?(?: with| understand)?|explain)\s+",
-    re.I,
-)
-_STOP = {
-    "a",
-    "an",
-    "the",
-    "and",
-    "or",
-    "for",
-    "to",
-    "of",
-    "me",
-    "my",
-    "you",
-    "i",
-    "please",
-    "can",
-    "could",
-    "would",
-    "should",
-    "will",
-    "make",
-    "create",
-    "open",
-    "show",
-    "get",
-    "help",
-    "with",
-    "about",
-    "what",
-    "whats",
-    "how's",
-    "how",
-    "why",
-    "when",
-    "where",
-    "who",
-    "which",
-    "is",
-    "are",
-    "do",
-    "does",
-    "did",
-    "tell",
-}
-
-
-def _extract_entity_label(utterance: str) -> str:
-    cleaned = re.sub(r"[?!.,;:]+", " ", utterance or "")
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    if not cleaned:
-        return "that"
-    for _ in range(3):
-        nxt = _DISFLUENCY.sub("", cleaned).strip()
-        if nxt == cleaned:
-            break
-        cleaned = nxt
-    cleaned = _QUESTION_FRAME.sub("", cleaned).strip()
-    tokens = [t for t in cleaned.split() if len(t) > 1 and t.lower() not in _STOP]
-    if not tokens:
-        return "that"
-    phrase = " ".join(tokens[:4])
-    return phrase[:48] if phrase else "that"
-
-
 def _canned_refuse_reply(utterance: str) -> str:
-    entities = _extract_entity_label(utterance)
-    return (
-        f"No — I am {_product_role()}, and I do not have the ability to help "
-        f"with {entities}."
-    )
+    return refuse_reply(utterance, _product_role())
 
 
 def _degraded_laya_response(body: FallbackRequest) -> FallbackResponse:
@@ -307,17 +242,8 @@ def reset_rate_limits_for_tests() -> None:
 
 
 def _expand_capability_faq_id(faq_id: str) -> Optional[FallbackProposed]:
-    for prefix, field, ptype in (
-        ("query:", "queryId", "query"),
-        ("mutation:", "mutationId", "mutation"),
-        ("tour:", "tourId", "tour"),
-        ("search:", "searchId", "search"),
-    ):
-        if faq_id.startswith(prefix):
-            cid = faq_id[len(prefix) :].strip()
-            if cid:
-                return FallbackProposed(type=ptype, **{field: cid})  # type: ignore[arg-type]
-    return None
+    raw = expand_capability_faq(faq_id)
+    return FallbackProposed(**raw) if raw else None
 
 
 def _parse_laya_response(data: dict[str, Any]) -> FallbackResponse:

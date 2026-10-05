@@ -9,6 +9,7 @@ describe('@notlm/ops install', () => {
     const dir = mkdtempSync(join(tmpdir(), 'notlm-ops-'));
     const { sidecarDir, files } = installLayaSidecar({ targetDir: dir });
     expect(existsSync(join(sidecarDir, 'app.py'))).toBe(true);
+    expect(existsSync(join(sidecarDir, 'refuse_copy.py'))).toBe(true);
     expect(files.length).toBeGreaterThan(3);
     const env = readFileSync(join(sidecarDir, '.env.example'), 'utf8');
     expect(env).toMatch(/NOTLM_LAYA_ENABLED=1/);

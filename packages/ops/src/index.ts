@@ -54,6 +54,7 @@ export function installLayaSidecar(opts: LayaInstallOpts): {
   };
 
   copy('laya/sidecar_app.py', join(sidecarDir, 'app.py'));
+  copy('shared/refuse_copy.py', join(sidecarDir, 'refuse_copy.py'));
   copy('laya/requirements-laya.txt', join(sidecarDir, 'requirements-laya.txt'));
   copy('laya/notlm-laya.service', join(sidecarDir, 'notlm-laya.service'));
   copy('laya/README.md', join(sidecarDir, 'README.md'));

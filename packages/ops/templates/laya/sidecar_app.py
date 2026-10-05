@@ -9,12 +9,22 @@ Hosts scaffold with: notlmCLI laya install <backend-dir>
 from __future__ import annotations
 
 import os
-import re
+import sys
 import uuid
+from pathlib import Path
 from typing import Any, Literal, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+# refuse_copy.py ships beside app.py (install) or under templates/shared (monorepo).
+_here = Path(__file__).resolve().parent
+for _cand in (_here, _here.parent / "shared"):
+    if (_cand / "refuse_copy.py").is_file():
+        if str(_cand) not in sys.path:
+            sys.path.insert(0, str(_cand))
+        break
+from refuse_copy import expand_capability_faq, refuse_reply  # noqa: E402
 
 MissKind = Literal["unknown", "ambiguous", "low_confidence"]
 ProposedType = Literal[
@@ -27,85 +37,6 @@ _AGENT = None
 _CHECKPOINT = os.getenv("NOTLM_LAYA_CHECKPOINT", "").strip()
 _PRODUCT_ROLE = os.getenv("NOTLM_LAYA_PRODUCT_ROLE", "a product assistant").strip()
 _ENABLED = os.getenv("NOTLM_LAYA_ENABLED", "1").strip() not in ("0", "false", "False")
-
-_DISFLUENCY = re.compile(
-    r"^(?:uhh?|umm?|er|ah|like|so|well|okay|ok|hey|yo|pls|please)(?:\s+|$)",
-    re.I,
-)
-_QUESTION_FRAME = re.compile(
-    r"^(?:what(?:'s|s| are| is)|how(?: do| does| can| to)?|where(?: do| can)?|"
-    r"why(?: do| is)?|tell me(?: about)?|help(?: me)?(?: with| understand)?|explain)\s+",
-    re.I,
-)
-_STOP = {
-    "a",
-    "an",
-    "the",
-    "and",
-    "or",
-    "for",
-    "to",
-    "of",
-    "me",
-    "my",
-    "you",
-    "i",
-    "please",
-    "can",
-    "could",
-    "would",
-    "should",
-    "will",
-    "make",
-    "create",
-    "open",
-    "show",
-    "get",
-    "help",
-    "with",
-    "about",
-    "what",
-    "whats",
-    "how's",
-    "how",
-    "why",
-    "when",
-    "where",
-    "who",
-    "which",
-    "is",
-    "are",
-    "do",
-    "does",
-    "did",
-    "tell",
-}
-
-
-def _entity_label(utterance: str) -> str:
-    cleaned = re.sub(r"[?!.,;:]+", " ", utterance or "")
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    if not cleaned:
-        return "that"
-    for _ in range(3):
-        nxt = _DISFLUENCY.sub("", cleaned).strip()
-        if nxt == cleaned:
-            break
-        cleaned = nxt
-    cleaned = _QUESTION_FRAME.sub("", cleaned).strip()
-    tokens = [t for t in cleaned.split() if len(t) > 1 and t.lower() not in _STOP]
-    if not tokens:
-        return "that"
-    phrase = " ".join(tokens[:4])
-    return phrase[:48] if phrase else "that"
-
-
-def _refuse_reply(utterance: str) -> str:
-    entities = _entity_label(utterance)
-    return (
-        f"No — I am {_PRODUCT_ROLE}, and I do not have the ability to help "
-        f"with {entities}."
-    )
 
 
 class DecideRequest(BaseModel):
@@ -134,18 +65,12 @@ class Proposed(BaseModel):
 
 
 def _expand_capability_faq(faq_choice: str) -> Optional[Proposed]:
-    """Map query:/mutation:/tour:/search: FAQ-head choices to proposed types."""
-    for prefix, field, ptype in (
-        ("query:", "queryId", "query"),
-        ("mutation:", "mutationId", "mutation"),
-        ("tour:", "tourId", "tour"),
-        ("search:", "searchId", "search"),
-    ):
-        if faq_choice.startswith(prefix):
-            cid = faq_choice[len(prefix) :].strip()
-            if cid:
-                return Proposed(type=ptype, **{field: cid})  # type: ignore[arg-type]
-    return None
+    raw = expand_capability_faq(faq_choice)
+    return Proposed(**raw) if raw else None
+
+
+def _refuse_reply(utterance: str) -> str:
+    return refuse_reply(utterance, _PRODUCT_ROLE)
 
 
 class DecideResponse(BaseModel):
