@@ -15,12 +15,8 @@ import {
   DEFAULT_HEURISTICS,
   type CompiledHeuristics,
 } from './heuristics.js';
-import { hasTokenBoundaryMatch } from './fuzzyText.js';
+import { escapeRegExp, hasTokenBoundaryMatch } from './fuzzyText.js';
 import type { AssistantFeatures } from './types.js';
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 /** Loose nav-verb sniff from pack heuristics (first token of each nav verb). */
 function looksLikeNavSniff(
@@ -36,7 +32,7 @@ function looksLikeNavSniff(
     ),
   ];
   if (!roots.length) return false;
-  return new RegExp(`\\b(${roots.map(escapeRe).join('|')})\\b`, 'i').test(userText);
+  return new RegExp(`\\b(${roots.map(escapeRegExp).join('|')})\\b`, 'i').test(userText);
 }
 
 export type LlmFallbackRequest = {

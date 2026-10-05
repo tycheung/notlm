@@ -19,7 +19,8 @@ export function editDistance(a: string, b: string): number {
   return row[b.length] ?? b.length;
 }
 
-function escapeRegExp(s: string): string {
+/** Escape a string for safe embedding in a RegExp source. */
+export function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 

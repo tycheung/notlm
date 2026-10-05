@@ -344,8 +344,8 @@ export type AssistantFeatures = {
    */
   conversationLog?: boolean;
   /**
-   * Learning Mode: on miss, call host `fallbackLlm` and log MissExchange.
-   * Prefer `layaDecisionFallback` (default on when host wires fallback).
+   * @deprecated Prefer `layaDecisionFallback` + host `fallbackLlm`.
+   * Kept for pack JSON compatibility; runtime does not read this flag.
    */
   learningMode?: boolean;
   /**

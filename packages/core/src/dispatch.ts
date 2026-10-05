@@ -5,7 +5,7 @@ import { matchMetaIntent, parseUtterance } from './intents.js';
 import { biasStepByPageContext } from './pageContext.js';
 import { applyQueueRewrite, detectQueueRewrite } from './queueRewrite.js';
 import { handlePendingUtterance } from './dispatchTalk.js';
-import { resolveGoBackStep, stepTitle } from './dispatchResolve.js';
+import { pushFaqHit, resolveGoBackStep, stepTitle } from './dispatchResolve.js';
 import { pickReply } from './replies.js';
 import { goBackToStep } from './slots.js';
 import { runDraftCompiler } from './draftCompiler.js';
@@ -165,26 +165,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
       !helpOverridesWeakFaq &&
       !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)
     ) {
-      const offer = faqHit.stepId
-        ? ` If you want, I can take you to “${stepTitle(live.pack, faqHit.stepId)}”.`
-        : '';
-      const links =
-        faqHit.href || faqHit.action
-          ? [
-              {
-                label: faqHit.label ?? 'Learn more',
-                href: faqHit.href,
-                action: faqHit.action,
-              },
-            ]
-          : undefined;
-      live.pushAssistant(`${faqHit.text}${offer}`, {
-        choices: faqHit.stepId
-          ? [{ id: faqHit.stepId, label: stepTitle(live.pack, faqHit.stepId) }]
-          : undefined,
-        links,
-        intentKey: faqHit.id,
-      });
+      pushFaqHit(live.pack, faqHit, live.pushAssistant);
       return;
     }
   }

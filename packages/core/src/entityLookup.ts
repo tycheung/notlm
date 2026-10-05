@@ -1,4 +1,4 @@
-import { editDistance } from './fuzzyText.js';
+import { editDistance, escapeRegExp } from './fuzzyText.js';
 import { normalizeUtterance, stripSurfaceNoise } from './normalizeConfig.js';
 import type {
   LookupDef,
@@ -51,23 +51,19 @@ function looksLikeLookup(normalized: string, def: LookupDef): boolean {
   return hasHint && hasEntity;
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function stripConfiguredNoise(rest: string, normalize?: NormalizeConfig | null): string {
   let t = stripSurfaceNoise(rest, normalize);
   const fillers = normalize?.trailingFillers ?? [];
   const leading = normalize?.leadingPoliteness ?? [];
   for (const p of [...fillers].sort((a, b) => b.length - a.length)) {
     if (!p.trim()) continue;
-    const parts = p.trim().split(/\s+/).map(escapeRe);
+    const parts = p.trim().split(/\s+/).map(escapeRegExp);
     t = t.replace(new RegExp(`\\b${parts.join('\\s+')}\\b`, 'gi'), ' ');
   }
   for (const p of [...leading].sort((a, b) => b.length - a.length)) {
     if (!p.trim()) continue;
     t = t.replace(
-      new RegExp(`^(?:${escapeRe(p).replace(/\s+/g, '\\s+')})\\s+`, 'i'),
+      new RegExp(`^(?:${escapeRegExp(p).replace(/\s+/g, '\\s+')})\\s+`, 'i'),
       ''
     );
   }
@@ -100,7 +96,7 @@ export function extractLookupName(
   rest = rest.replace(/^(the|a|an)\s+/i, '').trim();
   const entityWords = [...(def.entityWords ?? [])].sort((a, b) => b.length - a.length);
   for (const word of entityWords) {
-    const re = new RegExp(`\\b${escapeRe(word)}\\b`, 'gi');
+    const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
     rest = rest.replace(re, ' ').replace(/\s+/g, ' ').trim();
   }
   rest = stripConfiguredNoise(rest, normalize);

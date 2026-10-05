@@ -21,6 +21,7 @@ import {
 import {
   disambiguationPrompt,
   lowConfidencePrompt,
+  pushFaqHit,
   resolveGoBackStep,
   resolveKeywordCollision,
   stepChoices,
@@ -77,24 +78,7 @@ export function dispatchParsed(
       (pack.faq ?? []).find((e) => e.id === parsed.faqId) ??
       matchFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
-      const offer = faqHit.stepId
-        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
-        : '';
-      const links =
-        faqHit.href || faqHit.action
-          ? [
-              {
-                label: faqHit.label ?? 'Learn more',
-                href: faqHit.href,
-                action: faqHit.action,
-              },
-            ]
-          : undefined;
-      pushAssistant(`${faqHit.text}${offer}`, {
-        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
-        links,
-        intentKey: faqHit.id,
-      });
+      pushFaqHit(pack, faqHit, pushAssistant);
       return;
     }
   }
@@ -306,13 +290,7 @@ export function dispatchParsed(
     }
     const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
-      const offer = faqHit.stepId
-        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
-        : '';
-      pushAssistant(`${faqHit.text}${offer}`, {
-        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
-        intentKey: faqHit.id,
-      });
+      pushFaqHit(pack, faqHit, pushAssistant);
       return;
     }
     emitCoachEvent(deps, {
@@ -401,26 +379,7 @@ export function dispatchParsed(
   {
     const faqHitEarly = matchFaqEntry(pack.faq ?? [], trimmed);
     if (faqHitEarly && !looksLikeNavCommand(trimmed, pack.compiledHeuristics)) {
-      const offer = faqHitEarly.stepId
-        ? ` If you want, I can take you to “${stepTitle(pack, faqHitEarly.stepId)}”.`
-        : '';
-      const links =
-        faqHitEarly.href || faqHitEarly.action
-          ? [
-              {
-                label: faqHitEarly.label ?? 'Learn more',
-                href: faqHitEarly.href,
-                action: faqHitEarly.action,
-              },
-            ]
-          : undefined;
-      pushAssistant(`${faqHitEarly.text}${offer}`, {
-        choices: faqHitEarly.stepId
-          ? stepChoices(pack, [faqHitEarly.stepId])
-          : undefined,
-        links,
-        intentKey: faqHitEarly.id,
-      });
+      pushFaqHit(pack, faqHitEarly, pushAssistant);
       return;
     }
   }
@@ -468,24 +427,7 @@ export function dispatchParsed(
     }
     const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
-      const offer = faqHit.stepId
-        ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
-        : '';
-      const links =
-        faqHit.href || faqHit.action
-          ? [
-              {
-                label: faqHit.label ?? 'Learn more',
-                href: faqHit.href,
-                action: faqHit.action,
-              },
-            ]
-          : undefined;
-      pushAssistant(`${faqHit.text}${offer}`, {
-        choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
-        links,
-        intentKey: faqHit.id,
-      });
+      pushFaqHit(pack, faqHit, pushAssistant);
       return;
     }
     const options = suggestNextStepOptions(pack, ctx, session);

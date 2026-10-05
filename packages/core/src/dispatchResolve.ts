@@ -2,9 +2,26 @@ import { pickReply } from './replies.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { filterCandidatesByContext } from './candidateTree.js';
 import { pathMatchesStep } from './pageContext.js';
-import type { LoadedPack, SessionSlots, StepId, StepStatus } from './types.js';
+import type {
+  ChatChoice,
+  ChatMessageLink,
+  FaqEntry,
+  LoadedPack,
+  SessionSlots,
+  StepId,
+  StepStatus,
+} from './types.js';
 
 export const MAX_SUGGESTED_NEXT = 4;
+
+type PushAssistantFn = (
+  text: string,
+  opts?: {
+    choices?: ChatChoice[];
+    links?: ChatMessageLink[];
+    intentKey?: string;
+  }
+) => void;
 
 export function stepTitle(pack: LoadedPack, stepId: StepId): string {
   return pack.steps.find((s) => s.id === stepId)?.title ?? stepId;
@@ -12,6 +29,32 @@ export function stepTitle(pack: LoadedPack, stepId: StepId): string {
 
 export function stepChoices(pack: LoadedPack, stepIds: StepId[]) {
   return stepIds.map((id) => ({ id, label: stepTitle(pack, id) }));
+}
+
+/** Render a FAQ catalog hit into chat (text + optional step chip + link). */
+export function pushFaqHit(
+  pack: LoadedPack,
+  faqHit: FaqEntry,
+  pushAssistant: PushAssistantFn
+): void {
+  const offer = faqHit.stepId
+    ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
+    : '';
+  const links =
+    faqHit.href || faqHit.action
+      ? [
+          {
+            label: faqHit.label ?? 'Learn more',
+            href: faqHit.href,
+            action: faqHit.action,
+          },
+        ]
+      : undefined;
+  pushAssistant(`${faqHit.text}${offer}`, {
+    choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
+    links,
+    intentKey: faqHit.id,
+  });
 }
 
 export function resolveGoBackStep(session: SessionSlots): StepId | null {

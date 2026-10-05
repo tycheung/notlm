@@ -2,8 +2,9 @@
  * Compile pack `heuristics.json` (+ platform defaults) into RegExp once at load.
  * Engines stay in TS; words/phrases/regex source strings live in pack JSON.
  */
-import { PLATFORM_HEURISTICS } from './heuristicsDefaults.js';
 import type { HeuristicsConfig, NormalizeConfig, SlotExtractorDef } from './types.js';
+import { escapeRegExp } from './fuzzyText.js';
+import { PLATFORM_HEURISTICS } from './heuristicsDefaults.js';
 
 export type CompiledSlotExtractor = {
   id: string;
@@ -70,10 +71,6 @@ function uniqStrings(lists: Array<readonly string[] | undefined | null>): string
   return out;
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function compileOne(src: string | undefined | null, flags = 'i'): RegExp | null {
   const s = String(src ?? '').trim();
   if (!s) return null;
@@ -96,7 +93,7 @@ function compileMany(srcs: readonly string[] | undefined | null, flags = 'i'): R
 
 function altJoin(words: readonly string[]): string {
   return words
-    .map((w) => escapeRe(w.trim()))
+    .map((w) => escapeRegExp(w.trim()))
     .filter(Boolean)
     .sort((a, b) => b.length - a.length)
     .join('|');
@@ -253,7 +250,7 @@ export function compileHeuristics(
               t
                 .trim()
                 .split(/\s+/)
-                .map(escapeRe)
+                .map(escapeRegExp)
                 .join('\\s+')
             )
             .filter(Boolean)
@@ -263,8 +260,8 @@ export function compileHeuristics(
         )
       : null;
 
-  const yes = (cfg.confirmYes ?? []).map(escapeRe).filter(Boolean);
-  const no = (cfg.confirmNo ?? []).map(escapeRe).filter(Boolean);
+  const yes = (cfg.confirmYes ?? []).map(escapeRegExp).filter(Boolean);
+  const no = (cfg.confirmNo ?? []).map(escapeRegExp).filter(Boolean);
   const nav = cfg.navCommandVerbs ?? [];
 
   return {

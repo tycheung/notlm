@@ -1,4 +1,5 @@
 import { looksLikeFaqQuestion } from './glossary.js';
+import { escapeRegExp } from './fuzzyText.js';
 import { normalizeAsk } from './askNormalize.js';
 import {
   anyReTest,
@@ -25,10 +26,7 @@ export function isConceptualQuestion(
   const n = normalizeAsk(t, heuristics);
   return faqDomainTokens.some((tok) => {
     const w = normalizeAsk(tok, heuristics);
-    return Boolean(w) && new RegExp(`\\b${escapeRe(w)}\\b`, 'i').test(n);
+    return Boolean(w) && new RegExp(`\\b${escapeRegExp(w)}\\b`, 'i').test(n);
   });
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

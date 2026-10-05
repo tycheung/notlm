@@ -7,6 +7,7 @@
  * is not collapsed to “next step”).
  */
 import type { NormalizeConfig, NormalizePhrasePair } from './types.js';
+import { escapeRegExp } from './fuzzyText.js';
 
 export type { NormalizeConfig, NormalizePhrasePair };
 
@@ -14,12 +15,8 @@ export function emptyNormalizeConfig(): NormalizeConfig {
   return {};
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function phraseBoundaryRe(phrase: string, flags = 'gi'): RegExp {
-  const parts = phrase.trim().split(/\s+/).map(escapeRe);
+  const parts = phrase.trim().split(/\s+/).map(escapeRegExp);
   return new RegExp(`\\b${parts.join('\\s+')}\\b`, flags);
 }
 
@@ -40,7 +37,7 @@ function stripTrailingPhrases(text: string, phrases: string[] | undefined): stri
   const sorted = [...phrases].sort((a, b) => b.length - a.length);
   for (const p of sorted) {
     if (!p.trim()) continue;
-    const re = new RegExp(`(?:\\s+${escapeRe(p).replace(/\s+/g, '\\s+')})+$`, 'i');
+    const re = new RegExp(`(?:\\s+${escapeRegExp(p).replace(/\s+/g, '\\s+')})+$`, 'i');
     t = t.replace(re, '');
   }
   return t;
@@ -63,7 +60,7 @@ function stripLeadingPhrases(text: string, phrases: string[] | undefined): strin
   const sorted = [...phrases].sort((a, b) => b.length - a.length);
   for (const p of sorted) {
     if (!p.trim()) continue;
-    const re = new RegExp(`^(?:${escapeRe(p).replace(/\s+/g, '\\s+')})\\s+`, 'i');
+    const re = new RegExp(`^(?:${escapeRegExp(p).replace(/\s+/g, '\\s+')})\\s+`, 'i');
     t = t.replace(re, '');
   }
   return t;
@@ -108,7 +105,7 @@ export function stripOpenVerbPrefix(
   const sorted = [...prefixes].sort((a, b) => b.length - a.length);
   for (const p of sorted) {
     const re = new RegExp(
-      `^(?:${escapeRe(p).replace(/\s+/g, '\\s+')})\\s+(?:the\\s+)?`,
+      `^(?:${escapeRegExp(p).replace(/\s+/g, '\\s+')})\\s+(?:the\\s+)?`,
       'i'
     );
     if (re.test(haystack)) {
@@ -125,7 +122,7 @@ export function looksLikeSurfaceAsk(
 ): boolean {
   const surfaces = config?.surfaceWords ?? [];
   if (surfaces.length) {
-    const alt = surfaces.map(escapeRe).join('|');
+    const alt = surfaces.map(escapeRegExp).join('|');
     const re = new RegExp(
       `\\b(?:what|which|where(?:'s| is)|whose)?\\s*(?:the\\s+)?(?:${alt})\\b`,
       'i'
