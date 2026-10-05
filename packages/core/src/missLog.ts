@@ -1,4 +1,5 @@
 import type { CoachEvent } from './types.js';
+import { fireAndForget } from './fireAndForget.js';
 
 export type MissKind = 'unknown' | 'ambiguous' | 'low_confidence';
 
@@ -285,9 +286,7 @@ export function createMissLogPipeline(opts: MissLogPipelineOpts): MissLogPipelin
         if (event.rawIntent !== undefined) record.rawIntent = event.rawIntent;
         if (event.confidence) record.confidence = event.confidence;
 
-        void Promise.resolve(opts.transport.log(record)).catch(() => {
-          /* host transport failures must not break chat */
-        });
+        fireAndForget(Promise.resolve(opts.transport.log(record)), 'missLog.transport');
       } catch {
         /* pipeline must never break dispatch */
       }

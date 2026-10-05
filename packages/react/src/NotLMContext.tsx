@@ -73,6 +73,7 @@ import {
 } from './guideInteract.js';
 import { appearanceToCssVars } from './notlm.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
+import { logExchangeSafe, swallowDispatchError } from './hostTelemetry.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
 /** Host opens a pack-declared modal key (UI-actions only — no product APIs). */
@@ -547,7 +548,7 @@ export function NotLMProvider({
         }
         const exchangeTransport = missLog?.exchangeTransport;
         if (exchangeTransport) {
-          void Promise.resolve(
+          logExchangeSafe(
             exchangeTransport.logExchange({
               text,
               kind: missKind,
@@ -560,10 +561,9 @@ export function NotLMProvider({
               proposed: result.proposed,
               provider: result.provider,
               exchangeId: result.exchangeId,
-            })
-          ).catch(() => {
-            /* host failures must not break chat */
-          });
+            }),
+            'missExchange.logExchange'
+          );
         }
       })();
     };
@@ -834,11 +834,7 @@ export function NotLMProvider({
           openSearchHit,
           resolveContextAsk,
         });
-        if (result && typeof (result as Promise<unknown>).then === 'function') {
-          void (result as Promise<void>).catch(() => {
-            pushAssistant('Something went wrong parsing that — try again in a moment.');
-          });
-        }
+        swallowDispatchError(result, pushAssistant);
       };
 
       // Always clear stuck numbered-match traps (or consume a valid pick) first.

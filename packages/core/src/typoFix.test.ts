@@ -4,16 +4,16 @@ import type { FlowStepDef, IntentParsePack } from './types.js';
 
 const steps: FlowStepDef[] = [
   {
-    id: 'create_tournament',
-    title: 'Create tournament',
-    keywords: ['create tournament', 'new tournament'],
+    id: 'create_record',
+    title: 'Create record',
+    keywords: ['create record', 'new record'],
     kind: 'hard',
     requires: [],
   },
   {
-    id: 'enter_scores',
-    title: 'Enter scores',
-    keywords: ['enter scores', 'scoring'],
+    id: 'enter_metrics',
+    title: 'Enter metrics',
+    keywords: ['enter metrics', 'metrics'],
     kind: 'hard',
     requires: [],
   },
@@ -22,26 +22,26 @@ const steps: FlowStepDef[] = [
 const pack: IntentParsePack = {
   steps,
   aliases: {
-    create_tournament: ['start a tourney', 'sweepers tournament'],
-    enter_scores: ['game scoring'],
+    create_record: ['start a record', 'sample record workspace'],
+    enter_metrics: ['game metrics'],
   },
   lexicon: [
     'widget',
     'catalog',
-    'squad',
-    'squads',
+    'group',
+    'groups',
     'assign',
-    'lane',
-    'lanes',
+    'view',
+    'views',
   ],
 };
 
 describe('buildTypoLexicon', () => {
   it('includes builtins and pack tokens', () => {
     const lex = buildTypoLexicon(pack);
-    expect(lex.has('tournament')).toBe(true);
-    expect(lex.has('scoring')).toBe(true);
-    expect(lex.has('sweepers')).toBe(true);
+    expect(lex.has('record')).toBe(true);
+    expect(lex.has('metrics')).toBe(true);
+    expect(lex.has('sample')).toBe(true);
     expect(lex.has('widget')).toBe(true);
     expect(lex.has('the')).toBe(false);
   });
@@ -50,7 +50,7 @@ describe('buildTypoLexicon', () => {
     const lex = buildTypoLexicon(null);
     expect(lex.has('create')).toBe(true);
     expect(lex.has('help')).toBe(true);
-    expect(lex.has('squad')).toBe(false);
+    expect(lex.has('group')).toBe(false);
     expect(lex.has('widget')).toBe(false);
   });
 });
@@ -59,13 +59,13 @@ describe('correctTypos', () => {
   const lex = buildTypoLexicon(pack);
 
   it('fixes single-character typos against the lexicon', () => {
-    expect(correctTypos('create tornament', lex)).toBe('create tournament');
+    expect(correctTypos('create recors', lex)).toBe('create record');
     expect(correctTypos('wdget catalog', lex)).toBe('widget catalog');
-    expect(correctTypos('assgn squads', lex)).toBe('assign squads');
+    expect(correctTypos('assgn groups', lex)).toBe('assign groups');
   });
 
   it('leaves stopwords and known words alone', () => {
-    expect(correctTypos('create the tournament', lex)).toBe('create the tournament');
+    expect(correctTypos('create the record', lex)).toBe('create the record');
   });
 
   it('does not rewrite greetings into alias typos like hellp', () => {
@@ -73,7 +73,7 @@ describe('correctTypos', () => {
       ...pack,
       aliases: {
         ...pack.aliases,
-        enter_scores: ['hellp me open house lane map do thing', 'help me start lanes'],
+        enter_metrics: ['hellp me open house map view do thing', 'help me start views'],
       },
     });
     expect(dirty.has('hellp')).toBe(false);
@@ -88,14 +88,14 @@ describe('correctTypos', () => {
 
   it('returns empty / unchanged input as-is', () => {
     expect(correctTypos('', lex)).toBe('');
-    expect(correctTypos('create tournament', lex)).toBe('create tournament');
+    expect(correctTypos('create record', lex)).toBe('create record');
   });
 
   it('splits missing-space glues into known tokens', () => {
     expect(correctTypos('what can youdo', lex)).toBe('what can you do');
     expect(correctTypos('what canyou do', lex)).toBe('what can you do');
     expect(correctTypos('widgetcatalog', lex)).toBe('widget catalog');
-    expect(correctTypos('createsquad', lex)).toBe('create squad');
+    expect(correctTypos('creategroup', lex)).toBe('create group');
   });
 
   it('does not invent ambiguous glue splits', () => {

@@ -12,6 +12,10 @@
     "./loadFolder": {
       "types": "./dist/loadFolder.d.ts",
       "import": "./dist/loadFolder.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
     }
   },
   "files": ["dist"],

@@ -15,9 +15,9 @@ const pack = loadPackFromJson({
   manifest: { id: 'cap-demo' },
   flow: [
     {
-      id: 'create_tournament',
-      title: 'Create tournament',
-      keywords: ['create tournament'],
+      id: 'create_record',
+      title: 'Create record',
+      keywords: ['create record'],
       kind: 'hard',
       requires: [],
     },
@@ -27,9 +27,9 @@ const pack = loadPackFromJson({
   binders: {},
   queries: [
     {
-      id: 'td.next_tournament',
-      title: 'Next tournament',
-      aliases: ['when is my next tournament'],
+      id: 'assistant.next_item',
+      title: 'Next item',
+      aliases: ['when is my next item'],
     },
     {
       id: 'desk_handoff',
@@ -44,14 +44,14 @@ const pack = loadPackFromJson({
       aliases: ['Assign badge'],
       risk: 'high',
       confirmPrompt: 'Confirm assign?',
-      stepId: 'create_tournament',
+      stepId: 'create_record',
     },
     {
       id: 'crm.prefill_low',
       title: 'Prefill create',
       aliases: ['prefill create form'],
       risk: 'low',
-      stepId: 'create_tournament',
+      stepId: 'create_record',
     },
   ],
   tours: [
@@ -59,17 +59,17 @@ const pack = loadPackFromJson({
       id: 'tour_onboard',
       title: 'Onboarding',
       aliases: ['show me around'],
-      steps: ['create_tournament'],
+      steps: ['create_record'],
       lines: ['Starting onboarding walkthrough.'],
     },
   ],
   search: [
     {
-      id: 'search_centers',
-      title: 'Centers',
-      aliases: ['find centers'],
-      path: '/centers',
-      stepId: 'create_tournament',
+      id: 'search_workspaces',
+      title: 'Workspaces',
+      aliases: ['find workspaces'],
+      path: '/workspaces',
+      stepId: 'create_record',
     },
   ],
   heuristics: {
@@ -99,7 +99,7 @@ function makeDeps(overrides: Partial<DispatchDeps> = {}): DispatchDeps & {
     get session() {
       return session;
     },
-    ctx: { pathname: '/director', data: {} },
+    ctx: { pathname: '/workspace', data: {} },
     pushAssistant: (msg) => {
       assistant.push(msg);
     },
@@ -119,15 +119,15 @@ describe('capability dispatch', () => {
   it('answers matched data queries via resolveQuery', async () => {
     const deps = makeDeps({
       resolveQuery: async () => ({
-        text: 'Your next tournament is Sweepers at Lane 1.',
+        text: 'Your next item is Sample Event at Sample Venue.',
       }),
     });
     const handled = await tryDispatchCapabilityCatalog(
       deps,
-      'when is my next tournament'
+      'when is my next item'
     );
     expect(handled).toBe(true);
-    expect(deps.assistant[0]).toMatch(/Sweepers/);
+    expect(deps.assistant[0]).toMatch(/Sample Event/);
   });
 
   it('requires confirm before high-risk mutation execute', async () => {
@@ -181,14 +181,14 @@ describe('capability dispatch', () => {
     expect(tryHandleContextAsk(fallback, "what's missing on this form")).toBe(
       true
     );
-    expect(fallback.assistant[0]).toMatch(/\/director/);
+    expect(fallback.assistant[0]).toMatch(/\/workspace/);
   });
 
   it('explains last coach action', async () => {
     const deps = makeDeps({
-      resolveQuery: async () => ({ text: 'Next is Sweepers.' }),
+      resolveQuery: async () => ({ text: 'Next is Sample Event.' }),
     });
-    await tryDispatchCapabilityCatalog(deps, 'when is my next tournament');
+    await tryDispatchCapabilityCatalog(deps, 'when is my next item');
     expect(tryHandleExplainLast(deps, 'what did you just open')).toBe(true);
     expect(deps.assistant.at(-1)).toMatch(/Last action/);
   });
@@ -203,7 +203,7 @@ describe('capability dispatch', () => {
     const deps = makeDeps();
     const handled = await tryDispatchCapabilityCatalog(
       deps,
-      'when is my next tournament'
+      'when is my next item'
     );
     expect(handled).toBe(true);
   });
@@ -212,7 +212,7 @@ describe('capability dispatch', () => {
     const deps = makeDeps();
     const handled = await tryDispatchCapabilityCatalog(deps, 'Assign badge');
     expect(handled).toBe(true);
-    expect(deps.executed).toContain('create_tournament');
+    expect(deps.executed).toContain('create_record');
   });
 
   it('executes low-risk mutation preview without confirm', async () => {
@@ -221,7 +221,7 @@ describe('capability dispatch', () => {
         text: 'Prefill ready.',
         needsConfirm: false,
         navigatePath: '/create',
-        stepId: 'create_tournament',
+        stepId: 'create_record',
       }),
       navigate: vi.fn(),
     });
@@ -243,13 +243,13 @@ describe('capability dispatch', () => {
       openSearchHit: async () => ({ text: 'Search open.' }),
       navigate: vi.fn(),
     });
-    expect(await tryDispatchCapabilityCatalog(searchDeps, 'find centers')).toBe(
+    expect(await tryDispatchCapabilityCatalog(searchDeps, 'find workspaces')).toBe(
       true
     );
     expect(searchDeps.assistant[0]).toMatch(/Search open/);
 
     const searchFallback = makeDeps({ navigate: vi.fn() });
-    expect(await tryDispatchCapabilityCatalog(searchFallback, 'find centers')).toBe(
+    expect(await tryDispatchCapabilityCatalog(searchFallback, 'find workspaces')).toBe(
       true
     );
     expect(searchFallback.assistant[0]).toMatch(/Opening/);
@@ -275,7 +275,7 @@ describe('capability dispatch', () => {
     });
     expect(
       await tryDispatchCapabilityCatalog(deps, 'anything', {
-        queryId: 'td.next_tournament',
+        queryId: 'assistant.next_item',
       })
     ).toBe(true);
     expect(
@@ -285,7 +285,7 @@ describe('capability dispatch', () => {
     ).toBe(true);
     expect(
       await tryDispatchCapabilityCatalog(deps, 'anything', {
-        searchId: 'search_centers',
+        searchId: 'search_workspaces',
       })
     ).toBe(true);
   });

@@ -48,7 +48,7 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     const dialog = page.getByRole('dialog', { name: 'Assistant' });
     await expect(
       dialog.locator('.notlm-chat-bubble-assistant').filter({
-        hasText: /UI coach|annotated workflows|what can you do/i,
+        hasText: /assistant|annotated workflows|what can you do/i,
       })
     ).toBeVisible();
   });

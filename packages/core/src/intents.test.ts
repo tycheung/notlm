@@ -103,7 +103,7 @@ describe('parseUtterance', () => {
       stepId: null,
     });
     expect(parseUtterance("what's next", pack).rawIntent).toBe('whats_next');
-    expect(parseUtterance('explain tournament name', pack).rawIntent).toBe('explain_field');
+    expect(parseUtterance('explain record name', pack).rawIntent).toBe('explain_field');
     expect(parseUtterance('what can you do', pack).rawIntent).toBe('help');
     expect(parseUtterance('help', pack).rawIntent).toBe('help');
   });
@@ -181,11 +181,11 @@ describe('parseUtterance', () => {
       ...pack,
       aliases: {
         ...pack.aliases,
-        create_list: [...(pack.aliases.create_list ?? []), 'create tournament list'],
+        create_list: [...(pack.aliases.create_list ?? []), 'create record list'],
       },
     };
-    // "tornament" → "tournament" via lexicon, then matches the multi-word alias.
-    expect(parseUtterance('create tornament list', typed).stepId).toBe('create_list');
+    // "recors" → "record" via lexicon, then matches the multi-word alias.
+    expect(parseUtterance('create recors list', typed).stepId).toBe('create_list');
   });
 
   it('splits glued capability asks (what can youdo)', () => {

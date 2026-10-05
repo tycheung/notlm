@@ -6,7 +6,7 @@ import {
 import type { NormalizeConfig } from './types.js';
 
 const cfg: NormalizeConfig = {
-  replacements: [{ from: 'tourney', to: 'tournament' }],
+  replacements: [{ from: 'recrod', to: 'record' }],
   surfaceWords: ['form', 'page', 'wizard', 'screen'],
   trailingFillers: ['for me', 'please', 'now'],
   leadingPoliteness: ['can you', 'could you'],
@@ -16,14 +16,14 @@ const cfg: NormalizeConfig = {
 
 describe('normalizeUtterance', () => {
   it('applies replacements and open-verb aliases without stripping surfaces', () => {
-    expect(normalizeUtterance('pull up the create tourney wizard', cfg)).toBe(
-      'open the create tournament wizard'
+    expect(normalizeUtterance('pull up the create recrod wizard', cfg)).toBe(
+      'open the create record wizard'
     );
   });
 
   it('maps create-verb paraphrases after open verbs', () => {
-    expect(normalizeUtterance('spin up a tournament named midnight', cfg)).toBe(
-      'create a tournament named midnight'
+    expect(normalizeUtterance('spin up a record named midnight', cfg)).toBe(
+      'create a record named midnight'
     );
     // open first, then create — "launch event" can become create via pack create aliases
     const launchCfg: NormalizeConfig = {
@@ -37,14 +37,14 @@ describe('normalizeUtterance', () => {
   });
 
   it('strips trailing fillers only at the end', () => {
-    expect(normalizeUtterance('open create tournament form for me', cfg)).toBe(
-      'open create tournament form'
+    expect(normalizeUtterance('open create record form for me', cfg)).toBe(
+      'open create record form'
     );
     expect(normalizeUtterance('what now should i do', cfg)).toBe('what now should i do');
   });
 
   it('expands path-style hyphens and underscores into spaces', () => {
-    expect(normalizeUtterance('open enter-scores', cfg)).toBe('open enter scores');
+    expect(normalizeUtterance('open enter-metrics', cfg)).toBe('open enter metrics');
     expect(normalizeUtterance('show actions-needed queue', cfg)).toBe(
       'show actions needed queue'
     );
@@ -52,6 +52,6 @@ describe('normalizeUtterance', () => {
   });
 
   it('stripSurfaceNoise drops UI nouns for lookup/step variants', () => {
-    expect(stripSurfaceNoise('create tournament form', cfg)).toBe('create tournament');
+    expect(stripSurfaceNoise('create record form', cfg)).toBe('create record');
   });
 });

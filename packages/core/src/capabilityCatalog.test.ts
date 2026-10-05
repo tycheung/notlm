@@ -110,17 +110,17 @@ describe('askNormalize / FAQ compare', () => {
   it('matches compare FAQ with paraphrase coverage', () => {
     const faq = [
       {
-        id: 'sa_vs_full',
-        aliases: ['SA only vs full tournament', 'compare SA only and full tournament'],
-        text: 'Use a full tournament when…',
+        id: 'plan_a_vs_full',
+        aliases: ['Plan A vs full plan', 'compare Plan A and full plan'],
+        text: 'Use the full plan when…',
       },
     ];
-    expect(looksLikeFaqQuestion('compare SA only and full tournament')).toBe(true);
-    expect(matchFaqEntry(faq, 'compare SA only and full tournament')?.id).toBe(
-      'sa_vs_full'
+    expect(looksLikeFaqQuestion('compare Plan A and full plan')).toBe(true);
+    expect(matchFaqEntry(faq, 'compare Plan A and full plan')?.id).toBe(
+      'plan_a_vs_full'
     );
-    expect(matchFaqEntry(faq, 'should I run SA only or a full tournament')?.id).toBe(
-      'sa_vs_full'
+    expect(matchFaqEntry(faq, 'should I run Plan A or the full plan')?.id).toBe(
+      'plan_a_vs_full'
     );
   });
 });

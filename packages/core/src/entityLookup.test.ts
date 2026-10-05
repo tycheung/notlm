@@ -24,10 +24,10 @@ describe('extractLookupName', () => {
   it('strips UI surface synonyms and politeness fillers', () => {
     expect(
       extractLookupName(
-        'open the create tournament form for me',
+        'open the create record form for me',
         {
           ...listsLookup,
-          entityWords: ['tournament', 'tournaments'],
+          entityWords: ['record', 'records'],
         },
         {
           surfaceWords: ['form', 'page'],
@@ -77,20 +77,20 @@ describe('matchEntityLookup', () => {
   });
 
   it('does not treat create-step asks as entity misses', () => {
-    const tournamentLookup = {
-      id: 'tournaments',
-      dataPath: 'tournaments',
+    const recordLookup = {
+      id: 'records',
+      dataPath: 'records',
       nameKey: 'name',
       idKey: 'id',
       utteranceHints: ['show me', 'open', 'find', 'go to'],
-      entityWords: ['tournament', 'tournaments'],
+      entityWords: ['record', 'records'],
     };
     const result = matchEntityLookup(
-      'open the create tournament form for me',
-      [tournamentLookup],
+      'open the create record form for me',
+      [recordLookup],
       {
         pathname: '/',
-        data: { tournaments: [{ id: '1', name: 'E2E Open' }] },
+        data: { records: [{ id: '1', name: 'Sample Alpha' }] },
       },
       {
         surfaceWords: ['form'],

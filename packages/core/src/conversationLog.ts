@@ -1,5 +1,6 @@
 import type { CoachEvent } from './types.js';
 import { sanitizeMissText, DEFAULT_MISS_TEXT_CAP, DEFAULT_MISS_REPLY_CAP } from './missLog.js';
+import { fireAndForget } from './fireAndForget.js';
 
 export type ConversationRole = 'user' | 'assistant';
 
@@ -338,9 +339,7 @@ export function createConversationLogPipeline(
     if (key === lastKey && t - lastAt < dedupeMs) return;
     lastKey = key;
     lastAt = t;
-    void Promise.resolve(opts.transport.logTurn(turn)).catch(() => {
-      /* host transport failures must not break chat */
-    });
+    fireAndForget(Promise.resolve(opts.transport.logTurn(turn)), 'conversationLog.transport');
   };
 
   const baseMeta = (): Pick<ConversationTurn, 'pathname' | 'packId'> => {

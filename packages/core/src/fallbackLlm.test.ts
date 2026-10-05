@@ -291,19 +291,19 @@ describe('invokeChainedDecisionFallback', () => {
     const result = await invokeChainedDecisionFallback({
       primary: async () => ({
         reply:
-          'No — I am a product assistant, and I do not have the ability to help with tournaments events.',
+          'No — I am a product assistant, and I do not have the ability to help with records events.',
         proposed: { type: 'meta' },
         provider: { id: 'laya', model: 'ckpt' },
       }),
       secondary: async () => ({
-        reply: 'Tournaments contain events.',
+        reply: 'Records contain events.',
         proposed: { type: 'meta' },
         provider: { id: 'ollama', model: 'llama' },
       }),
       secondaryEnabled: true,
-      request: { text: 'how do tournaments relate to events', kind: 'unknown' },
+      request: { text: 'how do records relate to events', kind: 'unknown' },
     });
-    expect(result?.reply).toContain('Tournaments contain events');
+    expect(result?.reply).toContain('Records contain events');
     expect(result?.provider).toMatchObject({ chain: 'laya_then_llm' });
   });
 

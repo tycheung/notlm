@@ -24,12 +24,12 @@ const flow: FlowStepDef[] = [
     hideWhen: ['hideSecret'],
   },
   {
-    id: 'sa_only',
-    title: 'SA only',
-    keywords: ['sa'],
+    id: 'plan_a',
+    title: 'Plan A only',
+    keywords: ['plan a'],
     kind: 'soft',
     requires: [],
-    showWhen: [{ path: 'data.saOnlyMode', op: 'truthy' }],
+    showWhen: [{ path: 'data.planAMode', op: 'truthy' }],
   },
   {
     id: 'apply_format',
@@ -86,22 +86,22 @@ describe('visibility + wrapPack', () => {
       isStepVisible(flow[1]!, { pathname: '/', data: { hideSecret: true } })
     ).toBe(false);
     expect(
-      isStepVisible(flow[2]!, { pathname: '/', data: { saOnlyMode: false } })
+      isStepVisible(flow[2]!, { pathname: '/', data: { planAMode: false } })
     ).toBe(false);
     expect(
-      isStepVisible(flow[2]!, { pathname: '/', data: { saOnlyMode: true } })
+      isStepVisible(flow[2]!, { pathname: '/', data: { planAMode: true } })
     ).toBe(true);
   });
 
   it('evaluateFlowStatuses honors showWhen', () => {
     const pack = basePack();
     const hidden = evaluateFlowStatuses(pack, { pathname: '/', data: {} });
-    expect(hidden.find((s) => s.id === 'sa_only')).toBeUndefined();
+    expect(hidden.find((s) => s.id === 'plan_a')).toBeUndefined();
     const shown = evaluateFlowStatuses(pack, {
       pathname: '/',
-      data: { saOnlyMode: true },
+      data: { planAMode: true },
     });
-    expect(shown.find((s) => s.id === 'sa_only')).toBeTruthy();
+    expect(shown.find((s) => s.id === 'plan_a')).toBeTruthy();
   });
 
   it('wrapPack overlays resolveNav', () => {

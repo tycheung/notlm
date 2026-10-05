@@ -67,14 +67,14 @@ describe('matchFaqEntry', () => {
 
 describe('looksLikeFaqQuestion', () => {
   it('detects question leads and rejects direct commands', () => {
-    expect(looksLikeFaqQuestion('how do I create a tournament')).toBe(true);
+    expect(looksLikeFaqQuestion('how do I create a record')).toBe(true);
     expect(looksLikeFaqQuestion('what is a contact card')).toBe(true);
-    expect(looksLikeFaqQuestion('why cant i score')).toBe(true);
-    expect(looksLikeFaqQuestion('tournament vs event')).toBe(true);
-    expect(looksLikeFaqQuestion('SA vs full')).toBe(true);
-    expect(looksLikeFaqQuestion('create a tournament')).toBe(false);
+    expect(looksLikeFaqQuestion('why cant i save')).toBe(true);
+    expect(looksLikeFaqQuestion('record vs event')).toBe(true);
+    expect(looksLikeFaqQuestion('Plan A vs full')).toBe(true);
+    expect(looksLikeFaqQuestion('create a record')).toBe(false);
     expect(looksLikeFaqQuestion('take me to billing')).toBe(false);
-    expect(looksLikeFaqQuestion('open squads')).toBe(false);
+    expect(looksLikeFaqQuestion('open tasks')).toBe(false);
   });
 });
 

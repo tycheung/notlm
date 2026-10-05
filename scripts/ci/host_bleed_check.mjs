@@ -19,6 +19,10 @@ const FORBIDDEN = [
   'for td',
   'side action',
   'usbc',
+  'create_tournament',
+  'sa_only',
+  'sweeper',
+  'sweepers',
 ];
 
 const TEXT_EXT = new Set([

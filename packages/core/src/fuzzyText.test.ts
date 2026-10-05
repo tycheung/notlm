@@ -3,7 +3,7 @@ import { editDistance } from './fuzzyText.js';
 
 describe('editDistance', () => {
   it('returns 0 for identical strings', () => {
-    expect(editDistance('tournament', 'tournament')).toBe(0);
+    expect(editDistance('record', 'record')).toBe(0);
   });
 
   it('scores single-character typos', () => {

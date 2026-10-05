@@ -12,7 +12,7 @@ import type { FlowStepDef, LookupDef, NormalizeConfig, SessionSlots } from './ty
 
 const TEST_NORMALIZE: NormalizeConfig = {
   replacements: [
-    { from: 'tourney', to: 'tournament' },
+    { from: 'recrod', to: 'record' },
     { from: 'creat', to: 'create' },
   ],
   surfaceWords: [
@@ -68,9 +68,9 @@ const TEST_NORMALIZE: NormalizeConfig = {
 
 const flow: FlowStepDef[] = [
   {
-    id: 'create_tournament',
-    title: 'Create tournament',
-    keywords: ['create tournament', 'new tournament', 'tournament'],
+    id: 'create_record',
+    title: 'Create record',
+    keywords: ['create record', 'new record', 'record'],
     kind: 'hard',
     requires: [],
   },
@@ -79,7 +79,7 @@ const flow: FlowStepDef[] = [
     title: 'Create event',
     keywords: ['create event', 'new event', 'add event'],
     kind: 'hard',
-    requires: ['create_tournament'],
+    requires: ['create_record'],
   },
   {
     id: 'apply_format',
@@ -97,13 +97,13 @@ const flow: FlowStepDef[] = [
   },
 ];
 
-const tournamentLookup: LookupDef = {
-  id: 'tournaments',
-  dataPath: 'tournaments',
+const recordLookup: LookupDef = {
+  id: 'records',
+  dataPath: 'records',
   nameKey: 'name',
   idKey: 'id',
   utteranceHints: ['show me', 'open', 'find', 'go to', 'where is', 'pull up', 'bring up'],
-  entityWords: ['tournament', 'tournaments'],
+  entityWords: ['record', 'records'],
 };
 
 const eventLookup: LookupDef = {
@@ -119,18 +119,18 @@ const pack = loadPackFromJson({
   manifest: { id: 'synonym-regression' },
   flow,
   controls: [
-    { id: 'nav-t', stepId: 'create_tournament', path: '/tournaments/new' },
+    { id: 'nav-t', stepId: 'create_record', path: '/records/new' },
     { id: 'nav-e', stepId: 'create_event', path: '/events/new' },
     { id: 'nav-f', stepId: 'apply_format', path: '/format' },
     { id: 'nav-c', stepId: 'office_center', path: '/centers' },
   ],
   intents: {
     aliases: {
-      create_tournament: [
-        'create tournament',
-        'make a tournament',
-        'start a tournament',
-        'new tournament',
+      create_record: [
+        'create record',
+        'make a record',
+        'start a record',
+        'new record',
       ],
       create_event: ['create event', 'add event', 'make an event'],
       apply_format: ['event format', 'apply format', 'set up format'],
@@ -139,12 +139,12 @@ const pack = loadPackFromJson({
     meta: ['go_back', 'whats_next', 'help'],
   },
   binders: {
-    create_tournament: { path: 'data.hasTournament', op: 'eq', value: true },
+    create_record: { path: 'data.hasRecord', op: 'eq', value: true },
     create_event: { path: 'data.hasEvent', op: 'eq', value: true },
     apply_format: { path: 'data.hasFormat', op: 'eq', value: true },
     office_center: { path: 'data.hasCenter', op: 'eq', value: true },
   },
-  lookups: [tournamentLookup, eventLookup],
+  lookups: [recordLookup, eventLookup],
   normalize: TEST_NORMALIZE,
 });
 
@@ -186,9 +186,9 @@ function runDispatch(
   text: string,
   session: SessionSlots = emptySession(),
   data: Record<string, unknown> = {
-    tournaments: [{ id: 't1', name: 'E2E Open' }],
-    events: [{ id: 'e1', name: 'Baker Doubles' }],
-    hasTournament: false,
+    records: [{ id: 'r1', name: 'Sample Alpha' }],
+    events: [{ id: 'e1', name: 'Sample Beta' }],
+    hasRecord: false,
     hasEvent: false,
     hasFormat: false,
     hasCenter: false,
@@ -218,13 +218,13 @@ function runDispatch(
 }
 
 describe('synonym / surface regression', () => {
-  it('create-tournament + every UI surface still parses to the step', () => {
+  it('create-record + every UI surface still parses to the step', () => {
     const fails: string[] = [];
     for (const surface of SURFACES) {
       for (const verb of ['open the', 'show me the', 'pull up the']) {
-        const u = `${verb} create tournament ${surface}`;
+        const u = `${verb} create record ${surface}`;
         const parsed = parseUtterance(u, pack);
-        if (parsed.stepId !== 'create_tournament') {
+        if (parsed.stepId !== 'create_record') {
           fails.push(`${u} => ${parsed.stepId}/${parsed.rawIntent}`);
         }
       }
@@ -232,17 +232,17 @@ describe('synonym / surface regression', () => {
     expect(fails, fails.slice(0, 20).join('\n')).toEqual([]);
   });
 
-  it('create-tournament + surfaces never become entity-lookup misses', () => {
+  it('create-record + surfaces never become entity-lookup misses', () => {
     const fails: string[] = [];
     for (const surface of SURFACES) {
       for (const verb of OPEN_VERBS) {
-        const u = `${verb} create tournament ${surface}`;
+        const u = `${verb} create record ${surface}`;
         const lookup = matchEntityLookup(
           u,
           pack.lookups,
           {
             pathname: '/',
-            data: { tournaments: [{ id: 't1', name: 'E2E Open' }] },
+            data: { records: [{ id: 'r1', name: 'Sample Alpha' }] },
           },
           TEST_NORMALIZE
         );
@@ -253,7 +253,7 @@ describe('synonym / surface regression', () => {
         if (calls.assistant.some((m) => /couldn.t find/i.test(m))) {
           fails.push(`${u} => assistant miss`);
         }
-        if (!calls.executed.includes('create_tournament')) {
+        if (!calls.executed.includes('create_record')) {
           fails.push(`${u} => executed ${calls.executed.join(',') || 'none'}`);
         }
       }
@@ -263,9 +263,9 @@ describe('synonym / surface regression', () => {
 
   it('create-event and apply-format surface phrasing opens the right step', () => {
     const unlocked = {
-      tournaments: [{ id: 't1', name: 'E2E Open' }],
-      events: [{ id: 'e1', name: 'Baker Doubles' }],
-      hasTournament: true,
+      records: [{ id: 'r1', name: 'Sample Alpha' }],
+      events: [{ id: 'e1', name: 'Sample Beta' }],
+      hasRecord: true,
       hasEvent: true,
       hasFormat: false,
       hasCenter: false,
@@ -277,12 +277,12 @@ describe('synonym / surface regression', () => {
       { u: 'open the format page', step: 'apply_format' },
       { u: 'take me to the apply format screen', step: 'apply_format' },
       { u: 'bring up create event modal for me', step: 'create_event' },
-      { u: 'can you open the create tournament tab please', step: 'create_tournament' },
-      { u: 'launch the new tournament wizard', step: 'create_tournament' },
-      { u: 'hop into the create tournament sheet', step: 'create_tournament' },
-      { u: 'fire up the create tournament popup', step: 'create_tournament' },
+      { u: 'can you open the create record tab please', step: 'create_record' },
+      { u: 'launch the new record wizard', step: 'create_record' },
+      { u: 'hop into the create record sheet', step: 'create_record' },
+      { u: 'fire up the create record popup', step: 'create_record' },
       { u: 'open create event overlay', step: 'create_event' },
-      { u: 'go to the create tournament menu', step: 'create_tournament' },
+      { u: 'go to the create record menu', step: 'create_record' },
     ];
     const fails: string[] = [];
     for (const c of cases) {
@@ -302,10 +302,10 @@ describe('synonym / surface regression', () => {
 
   it('real named entity opens still hit lookup (not create step)', () => {
     const cases = [
-      'open the E2E Open tournament',
-      'show me E2E Open tournament',
-      'go to tournament E2E Open',
-      'pull up the Baker Doubles event',
+      'open the Sample Alpha record',
+      'show me Sample Alpha record',
+      'go to record Sample Alpha',
+      'pull up the Sample Beta event',
     ];
     const fails: string[] = [];
     for (const u of cases) {
@@ -315,8 +315,8 @@ describe('synonym / surface regression', () => {
         {
           pathname: '/',
           data: {
-            tournaments: [{ id: 't1', name: 'E2E Open' }],
-            events: [{ id: 'e1', name: 'Baker Doubles' }],
+            records: [{ id: 'r1', name: 'Sample Alpha' }],
+            events: [{ id: 'e1', name: 'Sample Beta' }],
           },
         },
         TEST_NORMALIZE
@@ -349,10 +349,10 @@ describe('synonym / surface regression', () => {
     for (const ask of asks) {
       const session: SessionSlots = {
         ...emptySession(),
-        actionQueue: [{ stepId: 'create_tournament', slots: {} }],
+        actionQueue: [{ stepId: 'create_record', slots: {} }],
       };
       const calls = runDispatch(ask, session);
-      if (!calls.executed.includes('create_tournament')) {
+      if (!calls.executed.includes('create_record')) {
         fails.push(`${ask} => ${calls.executed.join(',') || 'none'} / ${calls.assistant[0]}`);
       }
     }
@@ -362,8 +362,8 @@ describe('synonym / surface regression', () => {
   it('extractLookupName drops surface + politeness noise', () => {
     for (const polite of POLITE) {
       const q = extractLookupName(
-        `${polite}open the create tournament form for me`.trim(),
-        tournamentLookup,
+        `${polite}open the create record form for me`.trim(),
+        recordLookup,
         TEST_NORMALIZE
       );
       expect(looksLikeStepActionQuery(q ?? ''), String(q)).toBe(true);

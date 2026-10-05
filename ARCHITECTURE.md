@@ -21,10 +21,16 @@ host-app/
 
 npm: @notlm/react  → UI Host (depends on core)
 npm: @notlm/core   → pure TS runtime; loads/evaluates pack JSON
+npm: @notlm/core/internal → dispatch shards / intentsCheck / heuristicsDefaults (advanced)
 npm: @notlm/schema → JSON Schema for the folder format + miss/exchange wire
 npm: @notlm/ranker → optional ONNX/hybrid infer (prebuilt artifacts only)
+npm: @notlm/ops    → Laya / Celery / FastAPI host templates (`notlmCLI laya install`)
 CLI: init / validate / intents check / ranker check (thin gates only)
 ```
+
+**Platform OOD defaults** (`heuristicsDefaults.ts`, via `@notlm/core/internal`) are a large English
+keyword/phrase list for refuse/OOD — not pack-authored. Prefer pack `heuristics.json` overrides
+for product-specific Policy; do not put host brand into the sealed defaults.
 
 
 ### Import rules
