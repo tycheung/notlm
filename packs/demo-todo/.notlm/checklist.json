@@ -3,8 +3,8 @@
     {
       "id": "binders-review",
       "kind": "binders",
-      "message": "Review structured-draft steps and add binders.json entries",
-      "checked": false
+      "message": "binders.json populated for structured-draft steps (review complete)",
+      "checked": true
     }
   ]
 }

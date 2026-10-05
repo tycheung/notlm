@@ -7,12 +7,7 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  NOTLM_DIRNAME,
-  resolveNotlmHome as resolveNotlmHomeCore,
-} from '@notlm/core/loadFolder';
-
-export { NOTLM_DIRNAME };
+import { resolveNotlmHome as resolveNotlmHomeCore } from '@notlm/core/loadFolder';
 
 export type NotlmHome = {
   /** Directory containing `.notlm` (or that is the home itself). */
@@ -90,5 +85,3 @@ export function copyTemplateFile(src: string, dest: string): void {
   ensureDir(dirname(dest));
   copyFileSync(src, dest);
 }
-
-export { join, resolve, existsSync };
