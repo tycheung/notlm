@@ -37,6 +37,12 @@ export type NotLMChromeLabels = {
   paletteSearchAriaLabel?: string;
   /** Shown while decision fallback (Laya) is in flight. */
   thinking?: string;
+  composerPlaceholder?: string;
+  sendLabel?: string;
+  cancelLabel?: string;
+  checklistTitle?: string;
+  regenerateLabel?: string;
+  copyLabel?: string;
 };
 
 export type NotLMChromeConfig = {

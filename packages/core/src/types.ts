@@ -166,8 +166,8 @@ export type ChatMessage = {
   choices?: ChatChoice[];
   links?: ChatMessageLink[];
   intentKey?: string;
-  /** Pending decision-fallback bubble (e.g. Thinking…). */
-  status?: 'thinking' | 'final';
+  /** Pending decision-fallback bubble / stream / terminal state. */
+  status?: 'thinking' | 'streaming' | 'final' | 'error';
 };
 
 /** Optional pack glossary for explain_field. */
@@ -371,6 +371,10 @@ export type AssistantFeatures = {
    * secondary LLM when true and the host wires `visionFallbackLlm`.
    */
   visionFallback?: boolean;
+  /**
+   * Show thread list / new-chat in chrome. **Default on** when unset.
+   */
+  threads?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;

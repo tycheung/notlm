@@ -14,7 +14,10 @@ export function ChecklistPanel() {
     executeStep,
     hostRootClassName,
     hostRootStyle,
+    chrome,
   } = useNotLM();
+
+  const title = chrome.labels?.checklistTitle ?? 'Checklist';
 
   useEffect(() => {
     if (!checklistOpen) return;
@@ -45,10 +48,11 @@ export function ChecklistPanel() {
       <div
         className="notlm-checklist-panel"
         role="dialog"
-        aria-label="Event checklist"
+        aria-modal="true"
+        aria-label={title}
       >
         <div className="notlm-checklist-header">
-          <strong>Event checklist</strong>
+          <strong>{title}</strong>
           <button
             type="button"
             className="notlm-checklist-close"

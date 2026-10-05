@@ -69,6 +69,24 @@ export const NOTLM_CSS = `
 .notlm-chat-bubble { border-radius: var(--notlm-radius-sm); padding: 0.375rem 0.625rem; max-width: 95%; white-space: pre-wrap; font-size: 0.8125rem; margin-bottom: 0.5rem; }
 .notlm-chat-bubble-user { margin-left: auto; background: var(--notlm-accent); color: var(--notlm-on-accent); }
 .notlm-chat-bubble-assistant { margin-right: auto; background: var(--notlm-surface-hover); color: var(--notlm-text); border: 1px solid var(--notlm-border-muted); }
+.notlm-chat-bubble-thinking { opacity: 0.92; font-style: italic; }
+.notlm-chat-bubble-streaming { border-color: var(--notlm-accent-soft); }
+.notlm-chat-bubble-error { border-color: var(--notlm-danger-text); background: var(--notlm-danger-bg); color: var(--notlm-danger-text); }
+.notlm-chat-thinking { display: inline-flex; align-items: center; gap: 0.4rem; }
+.notlm-chat-spinner { width: 0.75rem; height: 0.75rem; border: 2px solid var(--notlm-border-muted); border-top-color: var(--notlm-accent); border-radius: 50%; animation: notlm-spin 0.7s linear infinite; }
+.notlm-chat-cursor { display: inline-block; margin-left: 0.1rem; animation: notlm-blink 1s step-end infinite; color: var(--notlm-accent); }
+.notlm-chat-md-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; background: var(--notlm-surface-muted); padding: 0.05rem 0.25rem; border-radius: 0.2rem; }
+.notlm-chat-md-link { color: var(--notlm-accent); text-decoration: underline; }
+.notlm-chat-actions { display: flex; gap: 0.35rem; margin: 0.15rem 0 0.25rem; }
+.notlm-chat-action { border: 0; background: transparent; color: var(--notlm-text-muted); font-size: 0.7rem; cursor: pointer; padding: 0.15rem 0.25rem; }
+.notlm-chat-action:hover { color: var(--notlm-accent); }
+.notlm-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.notlm-thread-list { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--notlm-border-muted); max-height: 6rem; overflow-y: auto; background: var(--notlm-surface-muted); }
+.notlm-thread-item { text-align: left; border: 0; background: transparent; color: var(--notlm-text-muted); font-size: 0.7rem; cursor: pointer; padding: 0.2rem 0.35rem; border-radius: var(--notlm-radius-sm); }
+.notlm-thread-item-active { background: var(--notlm-surface-hover); color: var(--notlm-text); font-weight: 600; }
+.notlm-thread-new { align-self: flex-start; border: 1px solid var(--notlm-border); background: var(--notlm-surface); color: var(--notlm-text); font-size: 0.7rem; border-radius: var(--notlm-radius-sm); padding: 0.15rem 0.4rem; cursor: pointer; }
+@keyframes notlm-spin { to { transform: rotate(360deg); } }
+@keyframes notlm-blink { 50% { opacity: 0; } }
 .notlm-chat-turn { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 0.5rem; width: 100%; }
 .notlm-chat-turn .notlm-chat-bubble { margin-bottom: 0.25rem; }
 .notlm-chat-turn .notlm-chat-bubble-user { align-self: flex-end; }
@@ -114,6 +132,8 @@ export { DEFAULT_FLASH_CLASS };
 
 /** Optional chrome theme overrides. Unset fields keep host-inherited CSS defaults. */
 export type NotLMAppearance = {
+  /** Prefer dark token set when `dark` or when `auto` and OS prefers dark. */
+  scheme?: 'light' | 'dark' | 'auto';
   accent?: string;
   accentSoft?: string;
   onAccent?: string;
@@ -134,6 +154,32 @@ export type NotLMAppearance = {
   fabOffsetRight?: string;
 };
 
+const DARK_DEFAULTS: Partial<NotLMAppearance> = {
+  accent: '#60a5fa',
+  accentSoft: '#1e3a5f',
+  onAccent: '#0b1220',
+  surface: '#111827',
+  surfaceMuted: '#1f2937',
+  surfaceHover: '#374151',
+  border: '#4b5563',
+  borderMuted: '#374151',
+  text: '#f9fafb',
+  textMuted: '#9ca3af',
+  dangerBg: '#7f1d1d',
+  dangerText: '#fecaca',
+};
+
+function resolveScheme(scheme?: NotLMAppearance['scheme']): 'light' | 'dark' {
+  if (scheme === 'dark') return 'dark';
+  if (scheme === 'light') return 'light';
+  if (scheme === 'auto' && typeof window !== 'undefined') {
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  }
+  return 'light';
+}
+
 export type NotLMChromeSlot =
   | 'root'
   | 'fabRoot'
@@ -149,25 +195,28 @@ export function appearanceToCssVars(
   appearance?: NotLMAppearance
 ): Record<string, string> {
   if (!appearance) return {};
+  const scheme = resolveScheme(appearance.scheme);
+  const base =
+    scheme === 'dark' ? { ...DARK_DEFAULTS, ...appearance } : appearance;
   const map: Record<string, string | undefined> = {
-    '--notlm-accent': appearance.accent,
-    '--notlm-accent-soft': appearance.accentSoft,
-    '--notlm-on-accent': appearance.onAccent,
-    '--notlm-surface': appearance.surface,
-    '--notlm-surface-muted': appearance.surfaceMuted,
-    '--notlm-surface-hover': appearance.surfaceHover,
-    '--notlm-border': appearance.border,
-    '--notlm-border-muted': appearance.borderMuted,
-    '--notlm-text': appearance.text,
-    '--notlm-text-muted': appearance.textMuted,
-    '--notlm-danger-bg': appearance.dangerBg,
-    '--notlm-danger-text': appearance.dangerText,
-    '--notlm-radius': appearance.radius,
-    '--notlm-radius-sm': appearance.radiusSm,
-    '--notlm-font': appearance.font,
-    '--notlm-font-size': appearance.fontSize,
-    '--notlm-fab-offset-bottom': appearance.fabOffsetBottom,
-    '--notlm-fab-offset-right': appearance.fabOffsetRight,
+    '--notlm-accent': base.accent,
+    '--notlm-accent-soft': base.accentSoft,
+    '--notlm-on-accent': base.onAccent,
+    '--notlm-surface': base.surface,
+    '--notlm-surface-muted': base.surfaceMuted,
+    '--notlm-surface-hover': base.surfaceHover,
+    '--notlm-border': base.border,
+    '--notlm-border-muted': base.borderMuted,
+    '--notlm-text': base.text,
+    '--notlm-text-muted': base.textMuted,
+    '--notlm-danger-bg': base.dangerBg,
+    '--notlm-danger-text': base.dangerText,
+    '--notlm-radius': base.radius,
+    '--notlm-radius-sm': base.radiusSm,
+    '--notlm-font': base.font,
+    '--notlm-font-size': base.fontSize,
+    '--notlm-fab-offset-bottom': base.fabOffsetBottom,
+    '--notlm-fab-offset-right': base.fabOffsetRight,
   };
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(map)) {
