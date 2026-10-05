@@ -7,17 +7,8 @@ import {
   emptySession,
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
-  invokeChainedDecisionFallback,
-  isAutoExecuteTrustedGotoEnabled,
-  isAutoExecutableTrustedGoto,
   isDecisionFallbackEnabled,
-  isDecisionFallbackMissKind,
   isSecondaryLlmFallbackEnabled,
-  isTrustedGoto,
-  defaultOodRefuseReply,
-  looksLikeClearOod,
-  mismatchedGotoClarifyReply,
-  shouldSurfaceTrustedGoto,
   listMissingRequires,
   markActiveStep,
   utteranceMatchesTypedCatalog,
@@ -49,7 +40,6 @@ import {
   type ExecuteMutationFn,
   type RunTourFn,
   type OpenSearchHitFn,
-  tryDispatchCapabilityCatalog,
 } from '@notlm/core';
 import {
   createContext,
@@ -62,6 +52,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { NotLMChromeConfig } from './chromeTypes.js';
+import { createDecisionFallbackHandler } from './decisionFallbackHandler.js';
 import { DEFAULT_GUIDE_ATTR, flashGuideField, flashGuideFieldsSequential } from './fieldFlash.js';
 import { applyPrefill } from './fieldPrefill.js';
 import { clickGuide } from './clickGuide.js';
@@ -73,7 +64,7 @@ import {
 } from './guideInteract.js';
 import { appearanceToCssVars } from './notlm.css.js';
 import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
-import { logExchangeSafe, swallowDispatchError } from './hostTelemetry.js';
+import { swallowDispatchError } from './hostTelemetry.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
 /** Host opens a pack-declared modal key (UI-actions only — no product APIs). */
@@ -285,13 +276,6 @@ export function NotLMProvider({
     newMessage('assistant', 'How can I help? Ask for a workflow step or open the command palette.'),
   ]);
 
-  const pushAssistantRef = useRef<
-    (
-      text: string,
-      opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
-    ) => void
-  >(() => {});
-
   const defaultPathname = useCallback(() => {
     try {
       return getContext().pathname;
@@ -323,258 +307,26 @@ export function NotLMProvider({
       : null;
     conversationPipelineRef.current = convPipeline;
 
-    const fallbackEnabled =
-      Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
-    const secondaryEnabled =
-      Boolean(secondaryFallbackLlm) && isSecondaryLlmFallbackEnabled(features);
-    const includeLowConfidenceFallback = secondaryEnabled;
-
-    const knownStepIds = new Set(pack.steps.map((s) => s.id));
-    const stepIdList = pack.steps.map((s) => s.id).slice(0, 50);
-    const faqIdList = (pack.faq ?? []).map((f) => f.id).slice(0, 50);
-    const queryIdList = (pack.queries ?? []).map((q) => q.id).slice(0, 50);
-    const mutationIdList = (pack.mutations ?? []).map((m) => m.id).slice(0, 50);
-    const tourIdList = (pack.tours ?? []).map((t) => t.id).slice(0, 50);
-    const searchIdList = (pack.search ?? []).map((s) => s.id).slice(0, 50);
-    const knownQueryIds = new Set(queryIdList);
-    const knownMutationIds = new Set(mutationIdList);
-    const knownTourIds = new Set(tourIdList);
-    const knownSearchIds = new Set(searchIdList);
-    const stepCatalogDigest = pack.steps
-      .slice(0, 50)
-      .map((s) => `${s.id}:${s.title}`)
-      .join('|')
-      .slice(0, 1800);
-    const thinkingLabel = labels?.thinking ?? 'Thinking…';
-    const autoNav = isAutoExecuteTrustedGotoEnabled(features);
-
-    const onFallbackMiss = (event: CoachEvent) => {
-      if (!fallbackEnabled || !fallbackLlm) return;
-      if (event.type !== 'repair') return;
-      if (
-        !isDecisionFallbackMissKind(event.kind, {
-          includeLowConfidence: includeLowConfidenceFallback,
-        })
-      ) {
-        return;
-      }
-      const missKind = event.kind;
-      const text = (event.text ?? '').trim();
-      if (!text) return;
-      const thinkingId = `thinking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: thinkingId,
-          role: 'assistant' as const,
-          text: thinkingLabel,
-          at: Date.now(),
-          status: 'thinking' as const,
-        },
-      ]);
-      void (async () => {
-        let pathname: string | undefined;
-        try {
-          pathname =
-            missLog?.getPathname?.() ??
-            conversationLog?.getPathname?.() ??
-            getContext().pathname;
-        } catch {
-          pathname = undefined;
-        }
-        const contextDigest = [pathname ? `path=${pathname}` : '', stepCatalogDigest]
-          .filter(Boolean)
-          .join(';')
-          .slice(0, 2000);
-        const result = await invokeChainedDecisionFallback({
-          primary: fallbackLlm,
-          secondary: secondaryFallbackLlm,
-          secondaryEnabled,
-          request: {
-            text,
-            kind: missKind,
-            packId: missLog?.packId ?? conversationLog?.packId ?? pack.id,
-            pathname,
-            contextDigest: contextDigest || undefined,
-            stepIds: stepIdList,
-            faqIds: faqIdList.length ? faqIdList : undefined,
-            queryIds: queryIdList.length ? queryIdList : undefined,
-            mutationIds: mutationIdList.length ? mutationIdList : undefined,
-            tourIds: tourIdList.length ? tourIdList : undefined,
-            searchIds: searchIdList.length ? searchIdList : undefined,
-          },
-          opts: {
-            knownStepIds,
-            knownQueryIds,
-            knownMutationIds,
-            knownTourIds,
-            knownSearchIds,
-          },
-        });
-        const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
-          setMessages((prev) => {
-            const without = prev.filter((m) => m.id !== thinkingId);
-            return [
-              ...without,
-              {
-                id: `a-${Date.now()}`,
-                role: 'assistant' as const,
-                text: reply,
-                at: Date.now(),
-                choices,
-                status: 'final' as const,
-              },
-            ];
-          });
-        };
-        if (!result) {
-          setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
-          return;
-        }
-        const proposed = result.proposed;
-        if (
-          proposed &&
-          (proposed.type === 'query' ||
-            proposed.type === 'mutation' ||
-            proposed.type === 'tour' ||
-            proposed.type === 'search')
-        ) {
-          const capDeps = {
-            text,
-            pack: asLoadedPack(pack),
-            session: sessionRef.current,
-            ctx: getContext(),
-            pushAssistant: (
-              reply: string,
-              opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[] }
-            ) => {
-              setMessages((prev) => {
-                const without = prev.filter((m) => m.id !== thinkingId);
-                return [
-                  ...without,
-                  {
-                    id: `a-${Date.now()}`,
-                    role: 'assistant' as const,
-                    text: reply,
-                    at: Date.now(),
-                    choices: opts?.choices,
-                    links: opts?.links,
-                    status: 'final' as const,
-                  },
-                ];
-              });
-            },
-            executeStep: executeStepRef.current,
-            setSession: (updater: (s: SessionSlots) => SessionSlots) => {
-              setSession((prev) => {
-                const next = updater(prev);
-                sessionRef.current = next;
-                return next;
-              });
-            },
-            navigate: (path: string) => navigate(path),
-            resolveQuery,
-            previewMutation,
-            executeMutation,
-            runTour,
-            openSearchHit,
-          };
-          const cap = tryDispatchCapabilityCatalog(capDeps, text, {
-            queryId: proposed.queryId,
-            mutationId: proposed.mutationId,
-            tourId: proposed.tourId,
-            searchId: proposed.searchId,
-          });
-          const handled =
-            cap && typeof (cap as Promise<unknown>).then === 'function'
-              ? await (cap as Promise<boolean>)
-              : cap === true;
-          if (!handled) {
-            replaceThinking(result.reply);
-          } else {
-            setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
-          }
-        } else {
-          const domainTokens =
-            pack.gotoDomainTokens ?? pack.normalize?.gotoDomainTokens;
-          const trusted =
-            autoNav &&
-            isAutoExecutableTrustedGoto(
-              result.proposed,
-              knownStepIds,
-              result.reply,
-              text,
-              domainTokens
-            )
-              ? result.proposed!.stepId
-              : undefined;
-          if (trusted) {
-            replaceThinking(result.reply);
-            queueMicrotask(() => {
-              executeStepRef.current(trusted, { skipCoach: true });
-              setSession((s) => ({
-                ...s,
-                discourse: {
-                  ...(s.discourse ?? {}),
-                  lastStepId: trusted,
-                  lastCoachAction: {
-                    kind: 'goto',
-                    id: trusted,
-                    summary: `Opened “${trusted}”.`,
-                  },
-                },
-              }));
-            });
-          } else if (
-            shouldSurfaceTrustedGoto(
-              result.proposed,
-              knownStepIds,
-              result.reply,
-              text,
-              domainTokens
-            )
-          ) {
-            const stepId = result.proposed!.stepId!;
-            replaceThinking(result.reply, [
-              { id: stepId, label: stepId },
-            ]);
-          } else if (
-            looksLikeClearOod(text) ||
-            (/i can take you to/i.test(result.reply) &&
-              !/\b(go|open|take|navigate|show|find)\b/i.test(text))
-          ) {
-            replaceThinking(defaultOodRefuseReply(text, pack.productRole));
-          } else if (
-            isTrustedGoto(result.proposed, knownStepIds) &&
-            /i can take you to/i.test(result.reply)
-          ) {
-            // Domain mismatch (e.g. "go to scoring" → billing_ready): clarify.
-            replaceThinking(mismatchedGotoClarifyReply(text));
-          } else {
-            replaceThinking(result.reply);
-          }
-        }
-        const exchangeTransport = missLog?.exchangeTransport;
-        if (exchangeTransport) {
-          logExchangeSafe(
-            exchangeTransport.logExchange({
-              text,
-              kind: missKind,
-              packId: missLog?.packId ?? pack.id,
-              pathname,
-              rawIntent: event.rawIntent,
-              confidence: event.confidence,
-              at: new Date().toISOString(),
-              llmReply: result.reply,
-              proposed: result.proposed,
-              provider: result.provider,
-              exchangeId: result.exchangeId,
-            }),
-            'missExchange.logExchange'
-          );
-        }
-      })();
-    };
+    const onFallbackMiss = createDecisionFallbackHandler({
+      pack: asLoadedPack(pack),
+      features,
+      fallbackLlm,
+      secondaryFallbackLlm,
+      missLog,
+      conversationLog,
+      getContext,
+      thinkingLabel: labels?.thinking ?? 'Thinking…',
+      setMessages,
+      setSession,
+      sessionRef,
+      executeStepRef,
+      navigate,
+      resolveQuery,
+      previewMutation,
+      executeMutation,
+      runTour,
+      openSearchHit,
+    });
 
     return composeCoachEventHandlers(
       pipeline?.onCoachEvent,
@@ -591,13 +343,7 @@ export function NotLMProvider({
     getContext,
     missLog,
     onCoachEvent,
-    pack.id,
-    pack.steps,
-    pack.faq,
-    pack.queries,
-    pack.mutations,
-    pack.tours,
-    pack.search,
+    pack,
     labels?.thinking,
     navigate,
     resolveQuery,
@@ -648,7 +394,6 @@ export function NotLMProvider({
     },
     []
   );
-  pushAssistantRef.current = pushAssistant;
 
   const executeStep = useCallback(
     (stepId: StepId, opts?: ExecuteStepOpts) => {
