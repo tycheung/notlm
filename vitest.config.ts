@@ -11,6 +11,7 @@ export default defineConfig({
       exclude: [
         '**/*.test.ts',
         '**/index.ts',
+        '**/internal.ts',
         '**/loadFolder.ts',
         '**/types.ts',
         '**/dispatchDeps.ts',

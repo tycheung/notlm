@@ -62,3 +62,20 @@ export function bindersToCompleteness(
   }
   return out;
 }
+
+/** Normalize on-disk binders (array of `{ stepId, … }` or object map) → record. */
+export function normalizeBindersMap(raw: unknown): Record<string, BinderPredicate> {
+  if (raw == null) return {};
+  if (!Array.isArray(raw)) {
+    if (typeof raw === 'object') return raw as Record<string, BinderPredicate>;
+    return {};
+  }
+  const out: Record<string, BinderPredicate> = {};
+  for (const entry of raw) {
+    if (entry == null || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const { stepId, ...rest } = entry as { stepId?: unknown } & Record<string, unknown>;
+    if (typeof stepId !== 'string' || !stepId) continue;
+    out[stepId] = rest as BinderPredicate;
+  }
+  return out;
+}

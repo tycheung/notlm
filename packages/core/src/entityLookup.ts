@@ -228,11 +228,3 @@ export function matchEntityLookup(
 
   return { kind: 'none' };
 }
-
-export function resolveOpenPath(
-  template: string | undefined,
-  id: string
-): string | undefined {
-  if (!template) return undefined;
-  return template.replace(/\{\{\s*id\s*\}\}/gi, id);
-}

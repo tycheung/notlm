@@ -1,10 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { bindersToCompleteness, evaluateBinder } from './binders.js';
+import { bindersToCompleteness, evaluateBinder, normalizeBindersMap } from './binders.js';
 import type { BinderPredicate, RuntimeContextBase } from './types.js';
 
 const ctx = (data: Record<string, unknown>): RuntimeContextBase => ({
   pathname: '/demo',
   data,
+});
+
+describe('normalizeBindersMap', () => {
+  it('converts array binders to a stepId record', () => {
+    expect(
+      normalizeBindersMap([
+        { stepId: 'a', path: 'data.x', op: 'truthy' },
+        { stepId: 'b', path: 'data.y', op: 'gte', value: 1 },
+      ])
+    ).toEqual({
+      a: { path: 'data.x', op: 'truthy' },
+      b: { path: 'data.y', op: 'gte', value: 1 },
+    });
+  });
+
+  it('passes through object maps', () => {
+    const obj = { a: { path: 'data.x', op: 'truthy' as const } };
+    expect(normalizeBindersMap(obj)).toEqual(obj);
+  });
 });
 
 describe('evaluateBinder', () => {

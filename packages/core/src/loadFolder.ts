@@ -4,10 +4,10 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { normalizeBindersMap } from './binders.js';
 import { mergeFaqEntries } from './glossary.js';
 import { loadPackFromJson } from './loadPack.js';
 import type {
-  BinderPredicate,
   FaqEntry,
   HeuristicsConfig,
   LoadedPack,
@@ -16,6 +16,8 @@ import type {
   PackJsonInput,
   ReplyBank,
 } from './types.js';
+
+export { normalizeBindersMap } from './binders.js';
 
 export const NOTLM_DIRNAME = '.notlm';
 
@@ -44,23 +46,6 @@ export function resolveNotlmHomeDir(dir: string): { projectRoot: string; home: s
 
 function readJsonFile(path: string): unknown {
   return JSON.parse(readFileSync(path, 'utf8')) as unknown;
-}
-
-/** Normalize on-disk binders (array of `{ stepId, … }` or object map) → PackJsonInput.binders. */
-export function normalizeBindersMap(raw: unknown): Record<string, BinderPredicate> {
-  if (raw == null) return {};
-  if (!Array.isArray(raw)) {
-    if (typeof raw === 'object') return raw as Record<string, BinderPredicate>;
-    return {};
-  }
-  const out: Record<string, BinderPredicate> = {};
-  for (const entry of raw) {
-    if (entry == null || typeof entry !== 'object' || Array.isArray(entry)) continue;
-    const { stepId, ...rest } = entry as { stepId?: unknown } & Record<string, unknown>;
-    if (typeof stepId !== 'string' || !stepId) continue;
-    out[stepId] = rest as BinderPredicate;
-  }
-  return out;
 }
 
 /** Walk up from `start` looking for `packs/_base-en/faq.json`, or use NOTLM_BASE_FAQ. */

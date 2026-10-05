@@ -439,7 +439,6 @@ export function NotLMProvider({
             proposed.type === 'tour' ||
             proposed.type === 'search')
         ) {
-          setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
           const capDeps = {
             text,
             pack: asLoadedPack(pack),
@@ -449,18 +448,21 @@ export function NotLMProvider({
               reply: string,
               opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[] }
             ) => {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: `a-${Date.now()}`,
-                  role: 'assistant' as const,
-                  text: reply,
-                  at: Date.now(),
-                  choices: opts?.choices,
-                  links: opts?.links,
-                  status: 'final' as const,
-                },
-              ]);
+              setMessages((prev) => {
+                const without = prev.filter((m) => m.id !== thinkingId);
+                return [
+                  ...without,
+                  {
+                    id: `a-${Date.now()}`,
+                    role: 'assistant' as const,
+                    text: reply,
+                    at: Date.now(),
+                    choices: opts?.choices,
+                    links: opts?.links,
+                    status: 'final' as const,
+                  },
+                ];
+              });
             },
             executeStep: executeStepRef.current,
             setSession: (updater: (s: SessionSlots) => SessionSlots) => {
@@ -483,8 +485,14 @@ export function NotLMProvider({
             tourId: proposed.tourId,
             searchId: proposed.searchId,
           });
-          if (cap && typeof (cap as Promise<unknown>).then === 'function') {
-            void (cap as Promise<boolean>);
+          const handled =
+            cap && typeof (cap as Promise<unknown>).then === 'function'
+              ? await (cap as Promise<boolean>)
+              : cap === true;
+          if (!handled) {
+            replaceThinking(result.reply);
+          } else {
+            setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
           }
         } else {
           const domainTokens =
