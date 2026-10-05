@@ -1,6 +1,5 @@
 /**
  * Internal / CLI / advanced APIs — prefer `@notlm/core` for host integration.
- * Importing from here couples you to dispatch refactor churn.
  */
 export * from './dispatchParsed.js';
 export * from './dispatchLaunch.js';

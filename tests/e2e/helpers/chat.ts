@@ -1,6 +1,5 @@
 import { expect, type Page } from '@playwright/test';
 
-/** Open the NotLM chat FAB dialog. */
 export async function openChat(page: Page) {
   await page.getByTestId('notlm-fab').click();
   await expect(page.getByRole('dialog', { name: 'Assistant' })).toBeVisible();
@@ -12,7 +11,6 @@ export async function sendUtterance(page: Page, text: string) {
   await page.getByTestId('notlm-chat-send').click();
 }
 
-/** Answer a pending slot ask (e.g. list/contact name). */
 export async function answerSlotAsk(
   page: Page,
   prompt: RegExp,
@@ -23,7 +21,6 @@ export async function answerSlotAsk(
   await sendUtterance(page, answer);
 }
 
-/** Dismiss a proactive next-step offer when present. */
 export async function dismissProactive(page: Page) {
   const notNow = page.getByTestId('notlm-choice-__no__');
   if (await notNow.isVisible().catch(() => false)) {
@@ -31,17 +28,12 @@ export async function dismissProactive(page: Page) {
   }
 }
 
-/** Confirm a pending confirm prompt via Yes chip or typed yes. */
 export async function confirmYes(page: Page) {
   const yesChip = page.getByTestId('notlm-choice-__yes__');
   await expect(yesChip).toBeVisible({ timeout: 10_000 });
   await yesChip.click();
 }
 
-/**
- * Create-list flow with required name slot.
- * Optional: dismiss proactive next-step offer with "Not now".
- */
 export async function coachCreateList(
   page: Page,
   name = 'Shopping',
@@ -57,13 +49,11 @@ export async function coachCreateList(
   }
 }
 
-/** Add-contact flow with required name slot. */
 export async function coachAddContact(page: Page, name = 'Alex Rivera') {
   await sendUtterance(page, 'add contact');
   await answerSlotAsk(page, /contact.?s name|contact’s name|contact's name/i, name);
 }
 
-/** Save-contact flow with confirm gate. */
 export async function coachSaveContact(page: Page) {
   await sendUtterance(page, 'save contact');
   await confirmYes(page);

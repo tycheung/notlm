@@ -17,7 +17,7 @@
 
 - **Out of scope for this repo.** Never in runtime `core` / Host dispatch / thin `notlmCLI`.
 - Host **learnings/config** live under `.notlm/` (JSON). Do not store API keys there.
-- Host BYO Learning Mode proxies must keep provider credentials server-side.
+- Host BYO decision-fallback proxies must keep provider credentials server-side.
 
 ## Reporting
 

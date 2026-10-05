@@ -1,44 +1,43 @@
 # Architecture
 
-## Ownership (sealed runtime)
+## Ownership
 
 | Lives here | Examples |
 |------------|----------|
-| **This repo (`notlm`)** | `@notlm/core` / `react` / `ranker` / `schema`; demo packs only |
+| **This repo (`notlm`)** | `@notlm/core`, `react`, `ranker`, `schema`, `ops`; demo packs only |
 | **Host app** | `.notlm/pack/*.json` (product words, aliases, `productRole`, heuristics) |
-| **Offline training** (separate repo) | Miss→draft→accept; product-pack workshop writing into a host `.notlm/` |
+| **Offline training** | Separate tooling: miss→draft→accept; workshop writing into a host `.notlm/` |
 
-This repo must contain **zero** host-brand product packs or sandboxes. Demo packs
+This repo must not contain host-brand product packs. Demo packs
 (`demo-todo`, `demo-crm`, `demo-hello`, `_base-en`, `_template`) are the only
-first-class pack trees.
+first-class pack trees here.
 
 ## Layers
 
 ```text
 host-app/
-  .notlm/     → ALL config + scan/author learnings (JSON only)
-  src/…                    → getContext, data-guide-id, notifyStepCompleted
+  .notlm/     → config + pack JSON
+  src/…       → getContext, data-guide-id, notifyStepCompleted
 
 npm: @notlm/react  → UI Host (depends on core)
-npm: @notlm/core   → pure TS runtime; loads/evaluates pack JSON
-npm: @notlm/core/internal → dispatch shards / intentsCheck / heuristicsDefaults (advanced)
-npm: @notlm/schema → JSON Schema for the folder format + miss/exchange wire
-npm: @notlm/ranker → optional ONNX/hybrid infer (prebuilt artifacts only)
-npm: @notlm/ops    → Laya / Celery / FastAPI host templates (`notlmCLI laya install`)
-CLI: init / validate / intents check / ranker check (thin gates only)
+npm: @notlm/core   → pack NLU + dispatch
+npm: @notlm/core/loadFolder → Node FS loader
+npm: @notlm/core/internal → advanced shards (prefer not to depend from hosts)
+npm: @notlm/schema → pack + miss/exchange schemas
+npm: @notlm/ranker → optional hybrid / ONNX infer
+npm: @notlm/ops    → Laya / Celery / FastAPI templates (`notlmCLI laya install`)
+CLI: init / validate / intents check / ranker check
 ```
 
-**Platform OOD defaults** (`heuristicsDefaults.ts`, via `@notlm/core/internal`) are a large English
-keyword/phrase list for refuse/OOD — not pack-authored. Prefer pack `heuristics.json` overrides
-for product-specific Policy; do not put host brand into the sealed defaults.
-
+Platform OOD defaults (`heuristicsDefaults`) are generic English refuse/OOD lists.
+Override with pack `heuristics.json`. Never put host brand tokens in platform defaults.
 
 ### Import rules
 
-- `core` must not import `react`, `mapper`, `author`, `@notlm/llm`, or host app code.
-- `react` may import `core` only — **never** `author`, `mapper`, or `@notlm/llm`.
-- Offline tooling may write **files** under `.notlm/`, not TS into host `src/` — that tooling is out of scope for this repo.
-- Host BYO `fallbackLlm` is a host-owned HTTP proxy — **not** a provider SDK in the browser (or in the operating runtime packages).
+- `core` must not import `react` or host app code.
+- `react` may import `core` only.
+- Offline tooling may write **files** under `.notlm/`, not TypeScript into host `src/`.
+- Host BYO `fallbackLlm` is a host-owned HTTP proxy — not a provider SDK in the browser.
 - Default unit CI must not require a live LLM.
 
 ## Size budgets
@@ -47,31 +46,29 @@ for product-specific Policy; do not put host brand into the sealed defaults.
 |------|------|
 | ~400 LOC / module | 1000 LOC / module (CI fail) |
 
-Prefer extract/split over growing god files.
-
-## Runtime data flow (smart cache → Laya → LLM)
+## Runtime data flow
 
 ```text
 User utterance / palette pick
   → react Host
-  → core.dispatch(packJson, session, ctx, utterance)   # pack smart cache
-  → on miss: host fallbackLlm → Laya /decide → optional LLM
-  → nav resolve from controls.json (optional coaching pattern)
+  → core.dispatch (pack smart cache)
+  → on miss: host fallbackLlm → Laya /decide → optional secondary LLM
+  → nav resolve from controls.json
   → host.navigate + optional spotlight/flash
   → host save → notifyStepCompleted → queue advance
 ```
 
-NotLM is a **generic SPA chatbot frontline**, not a “product coach” product.
-Coaching (`data-guide-id`, spotlight, `coachMessage`) is one optional pack pattern.
-Domain words and `productRole` live in host pack JSON only.
+NotLM is a **generic SPA chatbot frontline**. Coaching (`data-guide-id`, spotlight,
+`coachMessage`) is an optional pack pattern. Domain words and `productRole` live
+in host pack JSON only.
 
 ## Host folder
 
 ```text
 .notlm/
   config.json
-  scenarios.json           # labeled utterances for intent tuning
-  saturation/              # candidates, novelty reports, batches
+  scenarios.json
+  saturation/
   inventory.json
   structured-draft.json
   checklist.json
@@ -80,16 +77,17 @@ Domain words and `productRole` live in host pack JSON only.
     flow.json
     controls.json
     intents.json
-    binders.json      # declarative completeness DSL
+    binders.json
     corpus.json
     glossary.json     # optional
-    faq.json          # optional (merged with packs/_base-en)
-    lookups.json      # optional entity name-match vs getContext().data
-  drafts/             # LLM proposals before --accept
-  traces/             # optional record mode
+    faq.json          # optional (+ packs/_base-en merge)
+    lookups.json      # optional
+  drafts/
+  traces/
 ```
 
-**Invariant:** scan / LLM assist / dag generate update **only** this tree (JSON). They do not emit application TypeScript learnings.
+Scan / author / DAG tools update **only** this tree (JSON). They do not emit
+application TypeScript learnings.
 
 ## Binder DSL
 
@@ -105,228 +103,98 @@ Domain words and `productRole` live in host pack JSON only.
 }
 ```
 
-Core evaluates these against `RuntimeContext.data` from the host’s `getContext()`.
+Core evaluates binders against `RuntimeContext.data` from the host’s `getContext()`.
 
-## Coaching pattern (optional DOM / actions)
+## Coaching pattern (optional)
 
-Default attribute: `data-guide-id="<id>"` (set in `config.json` → `guideAttr`).  
-Spotlight and flash **only** query this contract. This is an optional **guide pattern**,
-not the assistant’s defining product surface.
+Default attribute: `data-guide-id="<id>"` (`config.json` → `guideAttr`).
+Spotlight and flash only query this contract.
 
-**UI-actions + host-injected typed reads/writes/tours:** `executeStep` resolves to
-path / modal / spotlight / prefill. Pack `queries` / `mutations` / `tours` / `search`
-are matched in core; hosts inject `resolveQuery` / `previewMutation` / `executeMutation`
-/ `runTour` / `openSearchHit`. The runtime must not import host `*API` clients or issue
-domain HTTP. Playwright demos stub those host deps.
-**click** annotated controls.
+**UI-actions + host-injected catalogs:** `executeStep` resolves to path / modal /
+spotlight / prefill. Pack `queries` / `mutations` / `tours` / `search` are matched
+in core; hosts inject `resolveQuery` / `previewMutation` / `executeMutation` /
+`runTour` / `openSearchHit`. The runtime must not import host API clients.
 
-**Chrome personalization:** Hosts brand FAB/chat/palette via CSS variables
-(`appearance` prop), stable `notlm-*` classes, and optional `components` slots.
-Pack JSON does not store brand colors. Dispatch and guide-id coaching stay unchanged.
+**Chrome:** brand FAB/chat via CSS variables (`appearance`), `notlm-*` classes, and
+optional component slots. Pack JSON does not store brand colors.
 
-Assistant chat may attach **choice chips** (`ChatMessage.choices`) for ambiguous
-utterances and unintelligible next-up offers. Prefill applies to annotated inputs
-via `data-guide-id` (slot key / `guide-*` candidates). Optional `glossary.json`
-powers `explain_field`. Optional `faq.json` answers blurb-led product questions
-before the “didn’t catch that” fallback (merged with portable `packs/_base-en/faq.json`
-greetings). Meta `help` / “what can you do” lists **currently available** flow steps.
-Optional `lookups.json` fuzzy-matches names against host-published arrays on
-`getContext().data` and flashes row `data-guide-id`s (UI-actions only).
-Control `userFill` guide ids trigger a **sequential** scroll + 3× blink tour for
-fields the coach cannot type (e.g. the user’s name).
+Chat may attach **choice chips** for ambiguous utterances. Prefill / glossary /
+FAQ / lookups / `userFill` sequential blink tours work as documented in the pack
+cookbook.
 
-**User-ask / saturation growth** of scenarios and FAQ is done offline (out of scope
-for this repo). Ship updated `scenarios.json` / pack pieces, then run
-`notlmCLI intents check`.
+### Optional ONNX / hybrid ranker
 
-### Optional ONNX intent+slot ranker
+Default NLU is rule-based (`parseUtterance`). Hosts may ship `pack/ranker.json`
+(+ optional `ranker.onnx`) and enable with `features.onnxRanker` or
+`NOTLM_ONNX_RANKER=1`, passing `parseUtteranceFn` from `@notlm/ranker`.
+Missing ONNX Runtime falls back to JSON inference.
 
-Default NLU remains rule-based (`parseUtterance`). Hosts may opt into a
-corpus-trained tiny hashed-ngram ranker:
+### Laya decision fallback
 
-1. Ship `pack/ranker.json` (+ optional `pack/ranker.onnx`) as host artifacts
-2. Enable with `features.onnxRanker: true` or `NOTLM_ONNX_RANKER=1`
-3. Pass `parseUtteranceFn` from `@notlm/ranker` (`createJsonHybridParser` /
-   `createHybridUtteranceParser` with prebuilt ONNX bytes — never synthesized here)
+- **Cold path:** host `fallbackLlm` → backend proxy → one Laya sidecar.
+  Templates: `packages/ops/templates/laya/` (`notlmCLI laya install`).
+  Default on when `features.layaDecisionFallback` is unset.
+- **Secondary LLM** after Laya refuse: wire `secondaryFallbackLlm` and set
+  `features.llmFallbackOnLayaMiss: true` (default off). Chaining lives in
+  `@notlm/core`.
+- **Hot path:** rules + optional `ranker.json` + session phrase LRU.
+- **Mixed / OOD:** packed segments; repair copy with `{{entities}}` /
+  `{{product_role}}`.
+- Laya weight fine-tune is done offline with separate training tooling.
 
-`onnxruntime-node` / `onnxruntime-web` are **optional peers** — missing ORT falls
-back to pure-TS JSON inference. Low-confidence ranker scores fall back to rules.
+### Miss logging
 
-### Laya decision fallback + pack cache (System One)
+Optional `missLog` transport persists portable `MissRecord`s for later tuning.
+Built-ins: memory, `localStorage`, HTTP. NotLM never phones home unless the host
+supplies a transport.
 
-- **Cold path:** host `fallbackLlm` → BE proxy → **one** Laya sidecar.
-  Sidecar **source of truth:** `packages/ops/templates/laya/` (install with
-  `notlmCLI laya install <backend-dir> [--product-role "…"]`).
-  FastAPI fallback route template: `packages/ops/templates/fastapi/`.
-  Local Ollama/tunnel helpers live outside this package:
-  `../scripts/ollama-tunnel/` (workspace root).
-  Default on (`features.layaDecisionFallback` unset = on). Chat shows **Thinking…** while waiting.
-  Optional **secondary LLM** after Laya refuse: wire `secondaryFallbackLlm` and set
-  `features.llmFallbackOnLayaMiss: true` (default off). Chain lives in `@notlm/core`
-  (`invokeChainedDecisionFallback`) — not in the host proxy.
-- **Hot path:** rules + pack `ranker.json` + **session phrase LRU** (not durable learning).
-- **Durable learning:** Celery/nightly promotes MissExchanges → aliases/scenarios → `auto ranker`
-  (CPU ranker.json only — not the 13-lane `auto` pack-growth loop). Does **not** retrain Laya
-  weights on the server.
-- **Mixed / OOD:** packed segments; in-DAG launches; OOD uses `repair.ood_capability` /
-  `repair.partial_ood` with `{{entities}}` / `{{product_role}}`.
-- **Fine-tune:** train Laya checkpoints locally (separate training repo / CLI); see `docs/VERIFY_LAYA_CACHE.md`.
+### MissExchange + decision fallback
 
-### Optional miss logging (intent tuning)
+When `fallbackLlm` is wired, misses can escalate to Laya (then optional LLM) and
+log a `MissExchange`. Invalid `proposed.goto.stepId` values are forced to `refuse`.
 
-When the coach cannot understand an utterance (`unknown` / `ambiguous` /
-`low_confidence`), hosts may persist a portable `MissRecord` for later alias /
-corpus / typo-lexicon tuning:
+Offline promotion of exchanges into pack drafts is out of scope for this repo.
+After pack updates, run `notlmCLI intents check`. Provider SDKs are not part of
+the operating runtime packages.
 
-```tsx
-import { createLocalStorageMissLogTransport } from '@notlm/core';
+## Conversational behavior
 
-missLog={{
-  transport: createLocalStorageMissLogTransport({ key: 'notlm:misses' }),
-  packId: 'demo-todo',
-}}
-```
+Runtime stays deterministic. Conversational feel comes from:
 
-Built-in transports: memory, `localStorage`, `createHttpMissLogTransport({ url })`.
-Offline recalibration of misses / exchanges is **out of scope** for this repo.
-NotLM never phones home unless the host supplies an HTTP transport.
+- Repair banks (`repair.*` in `replies.json`)
+- Confidence tiers on rule parse (`high` / `mid` / `low`)
+- Discourse anaphora + light repair
+- Gate policy — chat launches honor slots/confirm; packed/queue resume skips;
+  proactive Yes skips confirm
+- Optional `onCoachEvent` telemetry (no secrets)
+- Optional miss logging and ranker hybrid
+- Queue algebra and coach-create controls
+- Context-tree shortlisting via pathname + availability
 
-#### HTTP Miss Sink Contract
+## SPA interactables
 
-Hosts that implement an HTTP miss sink **must** use the portable `MissRecord`
-shape on **both** ingest and list/export. SQL column names are a host concern;
-the JSON wire format is not.
+Pack controls declare stable `data-guide-id`s and a `role`. Orchestration fields
+include `beforeOpen`, `openMenu`, `confirmDialog`, `spotlightOnly`, `draftKey`,
+`wizardId` / `wizardPage`, `coachCreate` / `openModal`.
 
-```ts
-type MissRecord = {
-  text: string;                 // capped (~500)
-  kind: 'unknown' | 'ambiguous' | 'low_confidence';
-  packId?: string;
-  pathname?: string;
-  rawIntent?: string | null;
-  confidence?: 'high' | 'mid' | 'low';
-  at: string;                   // ISO timestamp
-};
-```
+| Surface | Role |
+|---------|------|
+| Primary / secondary CTAs | `cta` |
+| Form fields | `field` |
+| Tabs | `tab` |
+| Nav links | `nav` |
+| Table / list rows | `row` |
+| Drawers / sheets | `drawer` |
+| Menus | `menu` |
+| Confirm dialogs | `dialog` |
+| Wizards | `step` |
+| Combobox | `combobox` |
+| File upload | `upload` |
 
-| Direction | Body |
-|-----------|------|
-| `POST` (ingest) | one `MissRecord` |
-| `GET` / export | `MissRecord[]` (JSON) or JSONL of the same |
-
-Host-only admin fields (`id`, `userId`, `consumedAt`, `createdAt`, …) may appear
-as **additional camelCase properties**. Snake_case aliases (`utterance`,
-`pack_id`, `client_at`, …) are **rejected** by `parseMissRecords`
-so corpus tuning stays on-contract.
-Schemas: `@notlm/schema` `missRecordSchema` / `missRecordListSchema`.
-
-#### Conversation logging (hits + misses)
-
-Hosts may also wire a **conversation** transcript sink. One `conversationId` is
-minted per `NotLMProvider` mount; append-only `ConversationTurn`s cover user and
-assistant chat plus structured outcomes (`hit` / `miss` / `blocked` / `confirm` /
-`slot_ask` / `adapter`). Kill switch: `features.conversationLog === false`.
-
-```tsx
-import { createHttpConversationTransport } from '@notlm/core';
-
-conversationLog={{
-  transport: createHttpConversationTransport({ url: '/api/notlm/conversations' }),
-  packId: 'demo-todo',
-}}
-```
-
-```ts
-type ConversationTurn = {
-  conversationId: string;
-  turnId: string;
-  at: string;
-  role: 'user' | 'assistant';
-  text: string;                 // user ~500, assistant ~2000
-  outcome?: 'hit' | 'miss' | 'blocked' | 'confirm' | 'slot_ask' | 'adapter';
-  stepId?: string;
-  missKind?: 'unknown' | 'ambiguous' | 'low_confidence' | 'blocked';
-  rawIntent?: string | null;
-  confidence?: 'high' | 'mid' | 'low';
-  pathname?: string;
-  packId?: string;
-};
-```
-
-| Direction | Body |
-|-----------|------|
-| `POST` (ingest) | one `ConversationTurn` |
-| `GET` / export | `ConversationRecord[]` or flat `ConversationTurn[]` (hosts / offline tooling aggregate by id) |
-
-Snake_case keys are rejected by parse helpers. Offline LLM analysis of conversations
-is **out of scope** for this repo (external pack tooling). Existing `MissRecord` /
-`MissExchange` sinks remain supported.
-
-#### MissExchange + decision fallback (1A)
-
-**Production default:** `layaDecisionFallback` on when unset — hosts wire
-`fallbackLlm` only when a sidecar/proxy is available. Set
-`features.layaDecisionFallback: false` for offline-only NLU (miss → canned repair).
-
-Misses can escalate to Laya → chat reply → **`MissExchange`** log when fallback
-is wired. Invalid `proposed.goto.stepId` values are forced to `refuse` (no fake
-step chips).
-
-Offline promotion of exchanges into pack drafts is **out of scope** for this repo
-(host / external pack tooling). After pack pieces and `scenarios.json` update,
-run `notlmCLI intents check`, then disable fallback when coverage is high enough.
-
-Host coverage API (e.g. VB): `GET …/notlm/misses/metrics` → `fallbackShare`,
-optional `localHitRate`, `recommendFreeze`.
-
-Drafts only → human / `intents check` accept (ADR-009). Then **freeze**: turn
-Learning Mode off; local NLU owns traffic. Provider SDKs are not part of the
-operating runtime packages.
-
-## Conversational maturity (G11 / ADR-008)
-
-Runtime stays deterministic. LLM-*feel* comes from:
-
-- **Repair banks** (`repair.*` in `replies.json`) for blocked / ambiguous / unknown / low-confidence
-- **Confidence tiers** on rule parse (`high` / `mid` / `low`) — low asks before acting
-- **Discourse** anaphora + light repair (“again”, “change the name”, “undo that”)
-- **Gate policy** — chat launches honor slots/confirm; packed/queue/`executeStep` resume skip; proactive Yes skips confirm (ADR-008)
-- **Telemetry** — optional `onCoachEvent` for hosts (intent/pending/blocked/launched; no secrets)
-- **Miss logging** — optional `missLog={{ transport }}` for unknown/ambiguous/low-confidence utterances (memory / localStorage / HTTP)
-- **Optional ranker** — demo-todo may enable JSON/ORT hybrid via `features.onnxRanker` / env
-- **Queue algebra** — head-stable merge, rewrite (clear / skip / cancel X / jump Y), packed prereq expansion
-- **Coach-create** — `controls[].coachCreate` (+ `openModal`) re-opens forms on re-ask; slot elicit + multi-slot salvage
-- **Context-tree NLU** — authoring auto-detects muddy alias clashes and splits saturation
-  batches into reduced focus sets (`.notlm/saturation/context-tree.json`); runtime
-  shortlists via pathname + availability (`shortlistStepIds` / `filterCandidatesByContext`)
-
-## SPA interactables (coach target taxonomy)
-
-Beyond pages + create/edit modals, pack controls declare stable `data-guide-id`s
-and a `role`. Runtime honors orchestration fields on `controls` / `NavResolve`:
-`beforeOpen`, `openMenu`, `confirmDialog`, `spotlightOnly`, `draftKey`,
-`wizardId` / `wizardPage`, `coachCreate` / `openModal` (drawer/sheet).
-
-| Surface | Role | Notes |
-|---------|------|-------|
-| Primary / secondary CTAs | `cta` | Save, submit, continue; `do_it` launches queue head |
-| Form fields | `field` | Prefer `userFill` for PII; draft via `draftKey` + `useDraftBridge` |
-| Tabs / segmented controls | `tab` | `beforeOpen` / path click switches pane before fields |
-| Nav links / sidebars | `nav` | Route via `createGuideNavigate` click — not silent `history.push` |
-| Table / list rows | `row` | Lookup hit flashes + clicks `guideIdTemplate` |
-| Drawers / sheets | `drawer` | Same `openModal` + `useGuideModal` bridge as modals |
-| Menus / popovers | `menu` | `openMenu` then nested item (`beforeOpen` / path) |
-| Dialogs (confirm) | `dialog` | `confirmDialog` guide id — distinct from chat confirm gate |
-| Wizards / steppers | `step` | One flow step per wizard page (`wizardId` + `wizardPage`) |
-| Combobox / typeahead | `combobox` | Spotlight-only by default — no auto-pick |
-| File upload | `upload` | Never auto-upload; `spotlightOnly` |
-| Empty states / gated CTAs | `cta` | Availability via binders + `hideWhen` |
-
-Shared primitives: `clickGuide` / `createGuideNavigate`, `readDraft`/`writeDraft` /
-`useDraftBridge`, `runBeforeOpen`. Non-goals: toasts, skeletons, decorative icons,
-raw canvas ink, iframe internals (host must bridge).
+Shared primitives: `clickGuide` / `createGuideNavigate`, draft bridge,
+`runBeforeOpen`. Non-goals: toasts, skeletons, decorative icons, iframe internals.
 
 ## Voice
 
-`packages/react` Web Speech wrapper only. Product policy: Chrome / Edge / Safari; Firefox type-only; no cloud STT.
-Corpus includes truncated-STT utterances; Playwright Firefox project is type-only smoke.
+Optional Web Speech input when `features.voice` is on and the browser supports it.
+No cloud STT / audio upload in the runtime.

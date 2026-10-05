@@ -1,7 +1,6 @@
 import { evaluateBinder } from './binders.js';
 import type { BinderPredicate, RuntimeContextBase } from './types.js';
 
-/** Legacy string key or binder-style predicate against RuntimeContext. */
 export type VisibilityRule = string | BinderPredicate;
 
 function ruleMatches(rule: VisibilityRule, ctx: RuntimeContextBase): boolean {

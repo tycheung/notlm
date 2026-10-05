@@ -117,7 +117,7 @@ def _laya_enabled() -> bool:
 def resolve_fallback_provider(
     override: Optional[FallbackProvider] = None,
 ) -> FallbackProvider:
-    """Default Laya; explicit ``llm`` keeps legacy BYO LLM path.
+    """Default Laya; explicit ``llm`` selects the BYO LLM path.
 
     Per-request ``override`` wins so sealed notlm can call this route twice
     (primary Laya, secondary LLM) without server-side chaining.

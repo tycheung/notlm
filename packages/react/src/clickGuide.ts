@@ -4,10 +4,7 @@ export type ClickGuideOpts = {
   attr?: string;
 };
 
-/**
- * Click a host control by `data-guide-id` (UI-actions only — no product APIs).
- * Returns true when an element was found and clicked.
- */
+/** Click a host control by `data-guide-id` (UI-actions only — no product APIs). */
 export function clickGuide(guideId: string, opts?: ClickGuideOpts): boolean {
   const attr = opts?.attr ?? DEFAULT_GUIDE_ATTR;
   const id = guideId.trim();

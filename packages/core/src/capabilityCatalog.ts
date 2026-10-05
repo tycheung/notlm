@@ -1,7 +1,3 @@
-/**
- * Typed capability catalogs: queries (reads), mutations (confirm-gated writes),
- * tours, and search surfaces. Hosts execute; core only matches + dispatches.
- */
 import {
   bestAliasContentCoverage,
   contentTokens,
@@ -23,7 +19,6 @@ export type QueryDef = {
   id: string;
   title: string;
   aliases: string[];
-  /** Optional slot keys the host may extract from the utterance. */
   slots?: string[];
   answerHint?: string;
   stepId?: StepId;

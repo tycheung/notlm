@@ -29,11 +29,8 @@ export type DispatchDeps = {
   ) => void;
   executeStep: (stepId: StepId, opts?: Record<string, unknown>) => void;
   setSession: (updater: (session: SessionSlots) => SessionSlots) => void;
-  /** Optional: flash a glossary / row guide id (DOM). */
   flashField?: (guideId: string) => void;
-  /** Optional: click a row/control guide id (DOM). */
   clickField?: (guideId: string) => void;
-  /** Optional: navigate after lookup openPathTemplate. */
   navigate?: (path: string) => void;
   /**
    * Optional utterance parser (e.g. ONNX/JSON ranker hybrid).

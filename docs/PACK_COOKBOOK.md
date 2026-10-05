@@ -436,7 +436,7 @@ Drafts land under `.notlm/drafts/scenarios-pool-*/` with `scenarios.json` plus o
 5. `notlmCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
 6. Optional: ship `pack/ranker.json` (+ `ranker.onnx`) then enable `features.onnxRanker` / `NOTLM_ONNX_RANKER=1` and pass prebuilt `onnxBytes` into `createRankerSession` (JSON infer always available).
 7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'notlm:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Offline recalibration of misses / exchanges is out of scope for this repo.
-8. **Decision fallback (optional train window):** wire host `fallbackLlm` when `features.layaDecisionFallback` is not `false`. See ARCHITECTURE “MissExchange + decision fallback”.
+8. **Decision fallback (optional):** wire host `fallbackLlm` when `features.layaDecisionFallback` is not `false`. See ARCHITECTURE.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
 
@@ -490,9 +490,9 @@ Demo-todo remains the portable offline demo (localStorage misses, no LLM require
 
 ## Gate policy (slots / confirm)
 
-See ADR-008. Chat launches honor `intents.slots` / `confirm`. Packed “A then B”
-and queue auto-resume skip those gates. Proactive **Yes** skips confirm (already
-affirmed); a typed step alias after a proactive offer still runs gates.
+Chat launches honor `intents.slots` / `confirm`. Packed “A then B” and queue
+auto-resume skip those gates. Proactive **Yes** skips confirm (already affirmed);
+a typed step alias after a proactive offer still runs gates.
 
 ## STT-truncated corpus
 
@@ -504,6 +504,6 @@ so `notlmCLI intents check` gates fuzzy / prefix matches used by Web Speech.
 | Doc | Role |
 |-----|------|
 | `ARCHITECTURE.md` | Bundle boundaries, folder contract |
-| `CONTRIBUTING.md` | Setup, `map` / `tune` / `prepare`, saturation |
+| `CONTRIBUTING.md` | Setup and contribution norms |
 | `SECURITY.md` | Secrets, BYO LLM, production checklist |
-| Host playbook (VB) | `react-frontend/docs/director-guide/LEARNING_MODE_PLAYBOOK.md` |
+| `docs/REACT_GUIDE.md` | Host chrome and theming |

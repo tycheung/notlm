@@ -183,11 +183,8 @@ export type FaqEntry = {
   id: string;
   aliases: string[];
   text: string;
-  /** Optional: offer to take the user to this step after answering. */
   stepId?: StepId;
-  /** Optional help link rendered in chat. */
   href?: string;
-  /** Optional chrome action (e.g. open_checklist). */
   action?: string;
   label?: string;
 };
@@ -267,13 +264,9 @@ export type ParseUtteranceResult = {
   decision?: ParseDecisionHeads;
   /** When FAQ matching wins at parse time. */
   faqId?: string;
-  /** Typed data-query catalog id. */
   queryId?: string;
-  /** Typed mutation catalog id. */
   mutationId?: string;
-  /** Tour catalog id. */
   tourId?: string;
-  /** Search surface catalog id. */
   searchId?: string;
 };
 
@@ -401,7 +394,6 @@ export type PackRuntime = {
   heuristics?: HeuristicsConfig;
   /** Compiled heuristics (platform + pack + normalize fillers). */
   compiledHeuristics?: import('./heuristics.js').CompiledHeuristics;
-  /** Typed user/data read catalog (host `resolveQuery`). */
   queries?: import('./capabilityCatalog.js').QueryDef[];
   /** Confirm-gated write catalog (host preview/executeMutation). */
   mutations?: import('./capabilityCatalog.js').MutationDef[];

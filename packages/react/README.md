@@ -49,7 +49,8 @@ import { NOTLM_CSS, appearanceToCssVars } from '@notlm/react/styles';
 // or from '@notlm/react'
 ```
 
-Theming: CSS variables (`--notlm-*`), `appearance` prop, optional `classNames` / `components` slots (ADR-007).
+Theming: CSS variables (`--notlm-*`), `appearance` prop, optional `classNames` /
+`components` slots.
 
 ## License
 

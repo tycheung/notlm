@@ -29,7 +29,6 @@ export type LayaInstallOpts = {
 
 /**
  * Scaffold Laya sidecar + systemd unit + env example into a host backend tree.
- * Default enabled for ease of use (NOTLM_LAYA_ENABLED=1).
  * Sidecar logic source of truth: packages/ops/templates/laya/sidecar_app.py
  */
 export function installLayaSidecar(opts: LayaInstallOpts): {

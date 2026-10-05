@@ -79,22 +79,13 @@ export type LlmFallbackFn = (
 
 export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 12_000;
 
-/**
- * Decision fallback (Laya): **default on** unless explicitly disabled.
- * Hosts should still only pass `fallbackLlm` when a sidecar/proxy is available.
- */
 export function isDecisionFallbackEnabled(features?: AssistantFeatures | null): boolean {
   if (!features) return true;
   if (features.layaDecisionFallback === false) return false;
   if (features.layaDecisionFallback === true) return true;
-  // Unset: default on (ease of use).
   return true;
 }
 
-/**
- * Secondary LLM after Laya refuse: **default off**. Opt in with
- * `features.llmFallbackOnLayaMiss: true` and wire `secondaryFallbackLlm`.
- */
 export function isSecondaryLlmFallbackEnabled(
   features?: AssistantFeatures | null
 ): boolean {
@@ -281,7 +272,6 @@ export function mismatchedGotoClarifyReply(_userText?: string): string {
   return 'Which screen did you mean? Name the step or surface you want to open.';
 }
 
-/** Auto-execute trusted gotos unless the host sets `autoExecuteTrustedGoto: false`. */
 export function isAutoExecuteTrustedGotoEnabled(
   features?: AssistantFeatures | null
 ): boolean {
@@ -467,10 +457,6 @@ export async function invokeChainedDecisionFallback(
   };
 }
 
-/**
- * Compose primary + optional secondary into one `LlmFallbackFn` for hosts that
- * still pass a single prop. Prefer wiring `secondaryFallbackLlm` on the React host.
- */
 /** Alias — same as invokeChainedDecisionFallback (supports stream deltas via opts.onDelta). */
 export const invokeStreamingDecisionFallback = invokeChainedDecisionFallback;
 

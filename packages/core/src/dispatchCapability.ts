@@ -149,10 +149,7 @@ export function tryHandleContextAsk(deps: DispatchDeps, trimmed: string): boolea
   return true;
 }
 
-/**
- * Match pack catalogs and invoke host resolvers.
- * Returns true when handled (including async started).
- */
+/** Match pack catalogs and invoke host resolvers. */
 export function tryDispatchCapabilityCatalog(
   deps: DispatchDeps,
   trimmed: string,

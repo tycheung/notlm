@@ -48,7 +48,6 @@ export function draftsDir(home: string): string {
 /** Absolute path to monorepo `packs/_template` (from this package). */
 export function templateRoot(): string {
   const here = dirname(fileURLToPath(import.meta.url));
-  // dist/ or src/ → packages/cli → assistant root → packs/_template
   return resolve(here, '../../../packs/_template');
 }
 

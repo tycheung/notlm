@@ -84,7 +84,7 @@ if (typeof document !== 'undefined' && !document.getElementById('notlm-css')) {
 
 `NotLMHost` already wraps `NotLMProvider` and mounts FAB/palette/checklist — do not nest both.
 
-**Status:** public-ready (`0.1.0`); live npm publish gated. Packages: `@notlm/*`. CLI: `notlmCLI`.
+**Status:** packages at `0.1.0`; live npm publish is gated. CLI: `notlmCLI`.
 
 | Doc | |
 |-----|--|

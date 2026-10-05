@@ -41,7 +41,6 @@ export type MissProposed = {
   aliases?: string[];
 };
 
-/** MissRecord + LLM reply for training recalibration (1A accept-gated). */
 export type MissExchange = MissRecord & {
   llmReply: string;
   proposed?: MissProposed;

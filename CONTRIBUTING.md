@@ -68,10 +68,10 @@ notlmCLI init ./my-app
 notlmCLI intents check ./my-app
 ```
 
-Then mount the Host and brand the chrome:
+Then mount the host and brand the chrome:
 
-```ts
-<NotLMProvider
+```tsx
+<NotLMHost
   pack={pack}
   getContext={getContext}
   navigate={navigate}
@@ -79,12 +79,11 @@ Then mount the Host and brand the chrome:
   className="my-coach"
 >
   <App />
-  <NotLMHost />
-</NotLMProvider>
+</NotLMHost>
 ```
 
 Layers: (1) override `notlm-*` classes, (2) `appearance` → CSS variables, (3) `components` slots.
-Appearance is **host app** concern — not stored in `.notlm/pack/*.json`.
+Appearance is a **host app** concern — not stored in `.notlm/pack/*.json`.
 
 See `tests/README.md`. Corpus / scenario changes are required when intents change.
 

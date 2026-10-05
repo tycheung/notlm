@@ -146,13 +146,9 @@ export type NotLMProviderProps = {
   pack: PackRuntime;
   getContext: () => RuntimeContextBase;
   navigate: NavigateFn;
-  /** Optional: open host modal by key from controls.json `openModal`. */
   openModal?: OpenModalFn;
-  /** Optional: open host surface by key from controls.json `openSurface`. */
   openSurface?: OpenSurfaceFn;
-  /** Optional: host wizard page switch from controls wizardId/wizardPage. */
   onWizardPage?: OnWizardPageFn;
-  /** Optional: enrich statuses with phase labels for checklist. */
   enrichStatuses?: EnrichStatusesFn;
   /** Host draft compilers keyed by control compilerId. */
   draftCompilers?: Record<string, DraftCompiler>;
@@ -171,7 +167,7 @@ export type NotLMProviderProps = {
   /**
    * Optional miss-log sink for unknown/ambiguous/low-confidence utterances.
    * Disabled when `features.missLog === false`.
-   * When `exchangeTransport` is set, successful Learning Mode fallbacks also POST MissExchange.
+   * When `exchangeTransport` is set, successful decision fallbacks also POST MissExchange.
    */
   missLog?: {
     transport: MissLogTransport;
@@ -182,22 +178,16 @@ export type NotLMProviderProps = {
   };
   /**
    * Optional conversation transcript sink (hits + misses under one conversationId).
-   * Disabled when `features.conversationLog === false`. Default on when transport is wired.
+   * Disabled when `features.conversationLog === false`.
    */
   conversationLog?: {
     transport: ConversationTransport;
     packId?: string;
     getPathname?: () => string | undefined;
   };
-  /**
-   * Host BYO decision fallback (Laya sidecar proxy). Used when
-   * `features.layaDecisionFallback` is not false (default on).
-   */
+  /** Host BYO decision fallback (Laya sidecar proxy). */
   fallbackLlm?: LlmFallbackFn;
-  /**
-   * Optional secondary LLM after Laya refuses. Used only when
-   * `features.llmFallbackOnLayaMiss === true` (default off).
-   */
+  /** Optional secondary LLM after Laya refuses. */
   secondaryFallbackLlm?: LlmFallbackFn;
   /** Host typed capability resolvers (reads / writes / tours / search). */
   resolveQuery?: ResolveQueryFn;

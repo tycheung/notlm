@@ -1,12 +1,12 @@
 # React host guide
 
-## Install (when published)
+## Install
 
 ```bash
 npm install @notlm/react @notlm/core
 ```
 
-Until public publish, consume from this monorepo workspaces / `file:` links.
+In this monorepo, consume via workspaces / `file:` links until packages are published.
 
 ## Host vs Provider
 
@@ -16,7 +16,7 @@ checklist / spotlight. Do not nest both.
 ```tsx
 import { NotLMHost, NOTLM_CSS } from '@notlm/react';
 
-// inject CSS once
+// Inject NOTLM_CSS once at app boot (see package README).
 ```
 
 Headless (no chrome):
@@ -31,13 +31,13 @@ Styles only:
 import { NOTLM_CSS, appearanceToCssVars } from '@notlm/react/styles';
 ```
 
-## Theming (ADR-007)
+## Theming
 
-1. Global CSS overrides on `.notlm-*` classes  
-2. `appearance` / CSS vars (`scheme: 'light' | 'dark' | 'auto'`)  
-3. `classNames` + `components` slots  
+1. Global CSS overrides on `.notlm-*` classes
+2. `appearance` / CSS vars (`scheme: 'light' | 'dark' | 'auto'`)
+3. `classNames` + `components` slots
 
-All chrome copy should go through `labels` (`thinking`, `composerPlaceholder`,
+Route chrome copy through `labels` (`thinking`, `composerPlaceholder`,
 `checklistTitle`, …).
 
 ## Streaming host adapter
@@ -54,11 +54,8 @@ Or return a plain `{ reply, proposed }` for non-stream Laya proxies.
 
 ## a11y checklist
 
-- Chat panel: `role="dialog"` + `aria-modal` + focus trap + Escape closes  
-- Live region announces thinking / streaming / final assistant text  
-- Composer disables Send while `fallbackBusy`; Cancel aborts  
+- Chat panel: `role="dialog"` + `aria-modal` + focus trap + Escape closes
+- Live region announces thinking / streaming / final assistant text
+- Composer disables Send while `fallbackBusy`; Cancel aborts
 
-## Threads
-
-Default on (`features.threads !== false`). `newThread` / `selectThread` swap
-in-memory transcripts keyed by conversation id.
+See also [`PACK_COOKBOOK.md`](PACK_COOKBOOK.md) for pack + host wiring.

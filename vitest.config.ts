@@ -20,7 +20,6 @@ export default defineConfig({
         '**/dispatchDeps.ts',
         '**/chromeTypes.ts',
       ],
-      // Core floors stay high; react starts at a lower floor until Phase 1 tests land.
       thresholds: {
         lines: 40,
         functions: 40,
