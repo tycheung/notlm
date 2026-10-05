@@ -299,8 +299,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     const cached = phraseLruLookup(live.phraseLru, lruKey);
     if (cached) {
       live.text = parseText;
-      dispatchParsed(live, intentPack, applyContextBias(live, cached));
-      return;
+      return dispatchParsed(live, intentPack, applyContextBias(live, cached));
     }
   }
   const parseFn = live.parseUtteranceFn ?? parseUtterance;
@@ -312,7 +311,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     shortlistStepIds: shortlist.length ? shortlist : flowSteps.map((s) => s.id),
     data: live.ctx.data,
   };
-  const finish = (parsed: ParseUtteranceResult) => {
+  const finish = (parsed: ParseUtteranceResult): void | Promise<void> => {
     const biased = applyContextBias(live, parsed);
     if (
       live.phraseLru &&
@@ -321,13 +320,13 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
       phraseLruPromote(live.phraseLru, lruKey, biased);
     }
     live.text = parseText;
-    dispatchParsed(live, intentPack, biased);
+    return dispatchParsed(live, intentPack, biased);
   };
   const parsedOrPromise = parseFn(parseText, intentPack, parseOpts);
   if (parsedOrPromise && typeof (parsedOrPromise as Promise<unknown>).then === 'function') {
     return (parsedOrPromise as Promise<ParseUtteranceResult>).then(finish);
   }
-  finish(parsedOrPromise as ParseUtteranceResult);
+  return finish(parsedOrPromise as ParseUtteranceResult);
 }
 
 function applyContextBias(

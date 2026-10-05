@@ -1,6 +1,13 @@
 import type { CoachEvent } from './types.js';
 import { sanitizeMissText, DEFAULT_MISS_TEXT_CAP, DEFAULT_MISS_REPLY_CAP } from './missLog.js';
 import { fireAndForget } from './fireAndForget.js';
+import {
+  createLocalStorageRing,
+  postJsonTransport,
+  type StorageLike,
+} from './logTransportShared.js';
+
+export type { StorageLike };
 
 export type ConversationRole = 'user' | 'assistant';
 
@@ -510,51 +517,21 @@ export function createMemoryConversationTransport(opts?: {
   };
 }
 
-type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
-
 export function createLocalStorageConversationTransport(opts: {
   key: string;
   limit?: number;
   storage?: StorageLike;
 }): ConversationTransport & { snapshot: () => ConversationTurn[] } {
-  const limit = opts.limit ?? 500;
-  const storage =
-    opts.storage ??
-    (typeof globalThis !== 'undefined' && 'localStorage' in globalThis
-      ? (globalThis as { localStorage: StorageLike }).localStorage
-      : undefined);
-
-  const read = (): ConversationTurn[] => {
-    if (!storage) return [];
-    try {
-      const raw = storage.getItem(opts.key);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as unknown;
-      return Array.isArray(parsed) ? normalizeConversationTurnList(parsed) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const write = (next: ConversationTurn[]) => {
-    if (!storage) return;
-    try {
-      storage.setItem(opts.key, JSON.stringify(next));
-    } catch {
-      /* quota / private mode */
-    }
-  };
-
+  const ring = createLocalStorageRing<ConversationTurn>({
+    key: opts.key,
+    limit: opts.limit ?? 500,
+    storage: opts.storage,
+    normalize: (parsed) =>
+      Array.isArray(parsed) ? normalizeConversationTurnList(parsed) : [],
+  });
   return {
-    logTurn(turn) {
-      const next = [...read(), turn];
-      while (next.length > limit) next.shift();
-      write(next);
-    },
-    snapshot: read,
+    logTurn: (turn) => ring.append(turn),
+    snapshot: ring.snapshot,
   };
 }
 
@@ -563,20 +540,6 @@ export function createHttpConversationTransport(opts: {
   getHeaders?: () => Record<string, string> | Promise<Record<string, string>>;
   fetch?: typeof fetch;
 }): ConversationTransport {
-  const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
-  return {
-    async logTurn(turn) {
-      if (!fetchFn) return;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(opts.getHeaders ? await opts.getHeaders() : {}),
-      };
-      await fetchFn(opts.url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(turn),
-        credentials: 'include',
-      });
-    },
-  };
+  const post = postJsonTransport(opts);
+  return { async logTurn(turn) { await post(turn); } };
 }

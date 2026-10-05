@@ -1,5 +1,12 @@
 import type { CoachEvent } from './types.js';
 import { fireAndForget } from './fireAndForget.js';
+import {
+  createLocalStorageRing,
+  postJsonTransport,
+  type StorageLike,
+} from './logTransportShared.js';
+
+export type { StorageLike };
 
 export type MissKind = 'unknown' | 'ambiguous' | 'low_confidence';
 
@@ -172,6 +179,17 @@ export function normalizeMissRecordList(data: unknown): MissRecord[] {
   return data.map((row, i) => coerceMissRecord(row, i));
 }
 
+const PROPOSED_TYPES = new Set<MissProposedType>([
+  'faq',
+  'goto',
+  'meta',
+  'refuse',
+  'query',
+  'mutation',
+  'tour',
+  'search',
+]);
+
 function coerceProposed(raw: unknown, index: number): MissProposed | undefined {
   if (raw == null) return undefined;
   if (typeof raw !== 'object' || Array.isArray(raw)) {
@@ -179,12 +197,16 @@ function coerceProposed(raw: unknown, index: number): MissProposed | undefined {
   }
   const obj = raw as Record<string, unknown>;
   const type = obj.type;
-  if (type !== 'faq' && type !== 'goto' && type !== 'meta' && type !== 'refuse') {
+  if (typeof type !== 'string' || !PROPOSED_TYPES.has(type as MissProposedType)) {
     throw new Error(`MissExchange[${index}]: proposed.type invalid`);
   }
-  const proposed: MissProposed = { type };
+  const proposed: MissProposed = { type: type as MissProposedType };
   if (typeof obj.stepId === 'string') proposed.stepId = obj.stepId;
   if (typeof obj.faqId === 'string') proposed.faqId = obj.faqId;
+  if (typeof obj.queryId === 'string') proposed.queryId = obj.queryId;
+  if (typeof obj.mutationId === 'string') proposed.mutationId = obj.mutationId;
+  if (typeof obj.tourId === 'string') proposed.tourId = obj.tourId;
+  if (typeof obj.searchId === 'string') proposed.searchId = obj.searchId;
   if (Array.isArray(obj.aliases)) {
     proposed.aliases = obj.aliases.filter((a): a is string => typeof a === 'string');
   }
@@ -316,51 +338,20 @@ export function createMemoryMissLogTransport(opts?: {
   };
 }
 
-type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
-
 export function createLocalStorageMissLogTransport(opts: {
   key: string;
   limit?: number;
   storage?: StorageLike;
 }): MissLogTransport & { snapshot: () => MissRecord[] } {
-  const limit = opts.limit ?? 200;
-  const storage =
-    opts.storage ??
-    (typeof globalThis !== 'undefined' && 'localStorage' in globalThis
-      ? (globalThis as { localStorage: StorageLike }).localStorage
-      : undefined);
-
-  const read = (): MissRecord[] => {
-    if (!storage) return [];
-    try {
-      const raw = storage.getItem(opts.key);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as unknown;
-      return Array.isArray(parsed) ? (parsed as MissRecord[]) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const write = (records: MissRecord[]) => {
-    if (!storage) return;
-    try {
-      storage.setItem(opts.key, JSON.stringify(records));
-    } catch {
-      /* quota / private mode */
-    }
-  };
-
+  const ring = createLocalStorageRing<MissRecord>({
+    key: opts.key,
+    limit: opts.limit ?? 200,
+    storage: opts.storage,
+    normalize: (parsed) => (Array.isArray(parsed) ? (parsed as MissRecord[]) : []),
+  });
   return {
-    log(record) {
-      const next = [...read(), record];
-      while (next.length > limit) next.shift();
-      write(next);
-    },
-    snapshot: read,
+    log: (record) => ring.append(record),
+    snapshot: ring.snapshot,
   };
 }
 
@@ -369,22 +360,8 @@ export function createHttpMissLogTransport(opts: {
   getHeaders?: () => Record<string, string> | Promise<Record<string, string>>;
   fetch?: typeof fetch;
 }): MissLogTransport {
-  const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
-  return {
-    async log(record) {
-      if (!fetchFn) return;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(opts.getHeaders ? await opts.getHeaders() : {}),
-      };
-      await fetchFn(opts.url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(record),
-        credentials: 'include',
-      });
-    },
-  };
+  const post = postJsonTransport(opts);
+  return { async log(record) { await post(record); } };
 }
 
 export function createHttpMissExchangeTransport(opts: {
@@ -392,22 +369,8 @@ export function createHttpMissExchangeTransport(opts: {
   getHeaders?: () => Record<string, string> | Promise<Record<string, string>>;
   fetch?: typeof fetch;
 }): MissExchangeTransport {
-  const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
-  return {
-    async logExchange(exchange) {
-      if (!fetchFn) return;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(opts.getHeaders ? await opts.getHeaders() : {}),
-      };
-      await fetchFn(opts.url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(exchange),
-        credentials: 'include',
-      });
-    },
-  };
+  const post = postJsonTransport(opts);
+  return { async logExchange(exchange) { await post(exchange); } };
 }
 
 /** Compose host telemetry with a miss-log pipeline (both always fire). */

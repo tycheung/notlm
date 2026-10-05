@@ -7,23 +7,10 @@ import {
   isAutoExecutableTrustedGoto,
   isDecisionFallbackEnabled,
   isFallbackRefuse,
-  isLearningModeEnabled,
   isSecondaryLlmFallbackEnabled,
   isTrustedGoto,
   validateProposedAgainstPack,
 } from './fallbackLlm.js';
-
-describe('isLearningModeEnabled', () => {
-  it('defaults off', () => {
-    expect(isLearningModeEnabled(undefined)).toBe(false);
-    expect(isLearningModeEnabled({})).toBe(false);
-  });
-
-  it('respects learningMode only', () => {
-    expect(isLearningModeEnabled({ learningMode: true })).toBe(true);
-    expect(isLearningModeEnabled({ learningMode: false })).toBe(false);
-  });
-});
 
 describe('isDecisionFallbackEnabled', () => {
   it('defaults on', () => {

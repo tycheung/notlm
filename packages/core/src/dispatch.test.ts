@@ -774,4 +774,55 @@ describe('dispatchUserUtterance', () => {
     expect(calls.sessions.at(-1)?.pending?.stepId).toBe('create_list');
     expect(calls.choices[0]?.some((c) => c.id === '__yes__')).toBe(true);
   });
+
+  it('awaits async capability when parse returns queryId', async () => {
+    const capPack = loadPackFromJson({
+      manifest: { id: 'cap' },
+      flow,
+      controls: [],
+      intents: { aliases: {}, meta: [] },
+      binders: {},
+      queries: [
+        {
+          id: 'assistant.next_item',
+          title: 'Next item',
+          aliases: ['next item'],
+        },
+      ],
+    });
+    let resolveQuery!: (value: { text: string }) => void;
+    const queryPromise = new Promise<{ text: string }>((r) => {
+      resolveQuery = r;
+    });
+    const assistant: string[] = [];
+    let session = emptySession();
+    const pending = dispatchUserUtterance({
+      text: 'forced query',
+      pack: capPack,
+      session,
+      ctx: { pathname: '/lists', data: {} },
+      pushAssistant: (msg) => {
+        assistant.push(msg);
+      },
+      executeStep: () => {},
+      setSession: (updater) => {
+        session = updater(session);
+      },
+      parseUtteranceFn: () => ({
+        stepId: null,
+        confidence: 'high',
+        candidates: [],
+        goBack: false,
+        rawIntent: 'data_query',
+        queryId: 'assistant.next_item',
+        slotPatches: {},
+        isCorrection: false,
+      }),
+      resolveQuery: async () => queryPromise,
+    });
+    expect(assistant).toEqual([]);
+    resolveQuery({ text: 'Async answer arrived.' });
+    await pending;
+    expect(assistant[0]).toBe('Async answer arrived.');
+  });
 });

@@ -72,11 +72,7 @@ export type LlmFallbackFn = (
 
 export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 12_000;
 
-/** Learning Mode is opt-in for MissExchange train windows (legacy). */
-export function isLearningModeEnabled(features?: AssistantFeatures | null): boolean {
-  if (!features) return false;
-  return features.learningMode === true;
-}
+/** Learning Mode field remains on AssistantFeatures for host docs; gate unused at runtime. */
 
 /**
  * Decision fallback (Laya): **default on** unless explicitly disabled.

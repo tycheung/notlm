@@ -41,7 +41,7 @@ export function dispatchParsed(
   deps: DispatchDeps,
   intentPack: IntentParsePack,
   parsed: ParseUtteranceResult
-): void {
+): void | Promise<void> {
   const { pack, session, ctx, pushAssistant, executeStep, setSession, flashField, clickField } =
     deps;
   const trimmed = deps.text.trim();
@@ -65,8 +65,9 @@ export function dispatchParsed(
     });
     if (cap === true) return;
     if (cap && typeof (cap as Promise<unknown>).then === 'function') {
-      void (cap as Promise<boolean>);
-      return;
+      return (async () => {
+        await (cap as Promise<boolean>);
+      })();
     }
   }
 
@@ -145,14 +146,12 @@ export function dispatchParsed(
     data: ctx.data,
   });
 
-  if (
-    isConceptualQuestion(
-      trimmed,
-      pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens,
-      pack.compiledHeuristics
-    ) &&
-    (packed.actions.length > 0 || packed.oodSegments.length > 0)
-  ) {
+  const conceptualTokens =
+    pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens;
+  const rejectConceptual = (): boolean => {
+    if (!isConceptualQuestion(trimmed, conceptualTokens, pack.compiledHeuristics)) {
+      return false;
+    }
     emitCoachEvent(deps, {
       type: 'repair',
       kind: 'unknown',
@@ -161,28 +160,20 @@ export function dispatchParsed(
       confidence: parsed.confidence,
     });
     pushRepairAssistant(deps, 'unknown', '');
+    return true;
+  };
+
+  if (
+    (packed.actions.length > 0 || packed.oodSegments.length > 0) &&
+    rejectConceptual()
+  ) {
     return;
   }
 
   // Pure or partial OOD with canned entity-aware refuse.
   if (packed.oodSegments.length > 0) {
     // Conceptual FAQ-style asks must not queue spurious step hits from shared tokens.
-    if (
-      isConceptualQuestion(
-        trimmed,
-        pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens,
-        pack.compiledHeuristics
-      ) &&
-      packed.actions.length > 0
-    ) {
-      emitCoachEvent(deps, {
-        type: 'repair',
-        kind: 'unknown',
-        text: trimmed,
-        rawIntent: 'conceptual_question',
-        confidence: parsed.confidence,
-      });
-      pushRepairAssistant(deps, 'unknown', '');
+    if (packed.actions.length > 0 && rejectConceptual()) {
       return;
     }
     const mixed = composeMixedIntentReply(
@@ -194,21 +185,7 @@ export function dispatchParsed(
       pack.compiledHeuristics
     );
     if (mixed) {
-      if (
-        isConceptualQuestion(
-          trimmed,
-          pack.faqDomainTokens ?? pack.normalize?.faqDomainTokens,
-          pack.compiledHeuristics
-        )
-      ) {
-        emitCoachEvent(deps, {
-          type: 'repair',
-          kind: 'unknown',
-          text: trimmed,
-          rawIntent: 'conceptual_question',
-          confidence: parsed.confidence,
-        });
-        pushRepairAssistant(deps, 'unknown', '');
+      if (rejectConceptual()) {
         return;
       }
       setSession(() => mixed.session);

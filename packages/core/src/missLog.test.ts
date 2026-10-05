@@ -103,6 +103,32 @@ describe('MissExchange parse/normalize', () => {
     });
   });
 
+  it('parses capability proposed types (query/mutation/tour/search)', () => {
+    const rows = parseMissExchanges(
+      JSON.stringify([
+        {
+          text: 'when is my next item',
+          kind: 'unknown',
+          at: '2026-01-01T00:00:00.000Z',
+          llmReply: 'Your next item is Sample.',
+          proposed: { type: 'query', queryId: 'next_item' },
+        },
+        {
+          text: 'assign badge',
+          kind: 'unknown',
+          at: '2026-01-01T00:00:01.000Z',
+          llmReply: 'Confirm assign?',
+          proposed: { type: 'mutation', mutationId: 'assign_badge' },
+        },
+      ])
+    );
+    expect(rows[0]?.proposed).toEqual({ type: 'query', queryId: 'next_item' });
+    expect(rows[1]?.proposed).toEqual({
+      type: 'mutation',
+      mutationId: 'assign_badge',
+    });
+  });
+
   it('parses JSONL exchanges and rejects missing llmReply', () => {
     const line = JSON.stringify({
       text: 'a',
