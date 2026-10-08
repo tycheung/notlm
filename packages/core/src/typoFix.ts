@@ -135,6 +135,13 @@ const PROTECTED_WORDS = new Set([
   'no',
   'ok',
   'okay',
+  // Product plurals that must not collapse into builtin singulars (edits→edit).
+  'edits',
+  'scores',
+  'lanes',
+  'squads',
+  'reports',
+  'centers',
 ]);
 
 function maxDistance(word: string): number {
