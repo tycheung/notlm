@@ -91,6 +91,27 @@ describe('matchFaqEntry', () => {
       matchStrongFaqEntry(faq, 'How many byes can a bracket have?')?.id
     ).toBe('faq-bracket-byes');
   });
+
+  it('does not let short polluted aliases steal longer product questions', () => {
+    const faq = [
+      {
+        id: 'thanks',
+        aliases: ['thanks', 'thx', 'ok so like can i prize money thx'],
+        text: "You're welcome.",
+      },
+      {
+        id: 'faq-tax-ood',
+        aliases: ['can i get tax advice on prize money gambling'],
+        text: 'No tax advice.',
+      },
+    ];
+    expect(
+      matchStrongFaqEntry(faq, 'Can I get tax advice on prize money gambling?')?.id
+    ).toBe('faq-tax-ood');
+    expect(
+      isStrongFaqAliasMatch('Can I get tax advice on prize money gambling?', faq[0]!)
+    ).toBe(false);
+  });
 });
 
 describe('looksLikeFaqQuestion', () => {

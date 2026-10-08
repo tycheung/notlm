@@ -54,11 +54,17 @@
         "stock pick",
         "pour-over",
         "brew coffee",
-        "patented the"
+        "patented the",
+        "weather",
+        "forecast",
+        "celsius",
+        "fahrenheit"
       ],
       "phrasePatterns": [
         "\\bforget (this|the) product\\b",
         "\\bignore (this|the) product\\b",
+        "\\bignore previous instructions\\b",
+        "\\bdump all (user |director )?(emails|ssns|phones|passwords)\\b",
         "\\brecommend a (movie|film|show|documentary|podcast|magazine)\\b",
         "\\b(movie|film) tonight\\b",
         "\\bsuggest a (documentary|mocktail|cocktail|smoothie)\\b",
@@ -69,6 +75,8 @@
         "\\bdraft a haiku\\b",
         "\\bcompose a haiku\\b",
         "\\btell me a joke\\b",
+        "\\bweather (forecast|in|for|today|weekend)\\b",
+        "\\bwhat(?:'s| is) the weather\\b",
         "\\bcompose a (sonnet|limerick|villanelle|sestina)\\b",
         "\\bwrite a villanelle\\b",
         "\\bfitted sheet\\b",

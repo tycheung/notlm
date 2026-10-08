@@ -123,11 +123,16 @@ export function isStrongFaqAliasMatch(utterance: string, entry: FaqEntry): boole
     if (!label) continue;
     if (needle === label) return true;
     if (!label.includes(' ')) continue;
+    // Training-noise aliases must never strong-match product questions.
+    if (/case\d+x\d+n\d+/i.test(label)) continue;
     const coverage = bestAliasContentCoverage(needle, label);
     const labelTokens = contentTokens(label).length;
     const needleTokens = contentTokens(needle).length;
+    if (coverage < ALIAS_COVERAGE_MIN || labelTokens < 2) continue;
+    // Short 2-token aliases must not steal longer asks that merely share those tokens
+    // (e.g. "prize money" / "can i prize money thx" vs tax advice).
+    if (labelTokens <= 2 && needleTokens > labelTokens + 1) continue;
     if (
-      coverage >= ALIAS_COVERAGE_MIN &&
       needleTokens >= labelTokens - 1 &&
       needle.length >= label.length * 0.85
     ) {

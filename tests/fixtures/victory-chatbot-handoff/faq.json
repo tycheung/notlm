@@ -1,0 +1,226 @@
+[
+  {
+    "id": "faq-bracket-byes",
+    "aliases": [
+      "how do bracket byes work",
+      "how many byes can a bracket have",
+      "how many byes can one bracket have",
+      "max byes in a bracket",
+      "bracket bye limit",
+      "what's the bye limit for brackets",
+      "can a bracket have more than one bye"
+    ],
+    "text": "A bracket can never have more than one bye. If the field size needs more than one bye, regenerate with a different size or seating so only a single bye remains."
+  },
+  {
+    "id": "faq-max-300",
+    "aliases": [
+      "does max 300 apply in the stepladder finals too",
+      "does max 300 apply in stepladder",
+      "max 300 in finals",
+      "is max 300 every round",
+      "does the 300 max apply everywhere"
+    ],
+    "text": "Max 300 applies in every round, including stepladder finals. Game scores are capped the same way throughout the event."
+  },
+  {
+    "id": "faq-handicap-truncate",
+    "aliases": [
+      "how is bracket handicap calculated",
+      "do you round the handicap",
+      "do you round up handicap",
+      "is handicap rounded or truncated",
+      "handicap rounding rule"
+    ],
+    "text": "Bracket handicap truncates (floors) — it never rounds up. Use the truncated pins when seating and scoring handicap brackets."
+  },
+  {
+    "id": "faq-no-average-handicap",
+    "aliases": [
+      "if a bowler has no average what handicap do they get",
+      "what handicap does a bowler with no average get",
+      "no average handicap",
+      "missing average handicap bracket",
+      "bowler without average handicap"
+    ],
+    "text": "If a bowler has no average, their handicap is 0. No extra warning is required for that case."
+  },
+  {
+    "id": "faq-cut-tie-td",
+    "aliases": [
+      "my cut is tied and the tiebreaker can't break it",
+      "cut tied tiebreaker can't break",
+      "what happens when a cut is tied",
+      "unbreakable cut tie"
+    ],
+    "text": "If a cut is tied and the configured tiebreaker cannot break it, the desk warns and requires a tournament director decision before you continue."
+  },
+  {
+    "id": "faq-late-bracket-entry",
+    "aliases": [
+      "how do i add a late bracket entry after brackets are generated",
+      "can i add a bracket entry after brackets are generated",
+      "late bracket entry after generate",
+      "add entry after generate brackets"
+    ],
+    "text": "After brackets are generated, a late entry needs a full Regenerate — you cannot safely patch a single seat into an already generated bracket board."
+  },
+  {
+    "id": "faq-stepladder-tie-td",
+    "aliases": [
+      "who decides a tie in the stepladder finals",
+      "who decides a stepladder tie",
+      "stepladder finals tie decision",
+      "ladder tie who decides"
+    ],
+    "text": "The tournament director decides stepladder (ladder) ties. There is no automatic pinfall override for an unresolved ladder tie."
+  },
+  {
+    "id": "faq-sa-only-scoring",
+    "aliases": [
+      "i don't have a squads tab",
+      "it says lock at least one squad but i don't have a squads tab",
+      "how do i start scoring sa only",
+      "how do i enter scores for this sa only event",
+      "sa only scoring without squads",
+      "sa-only event has no squads tab for scoring",
+      "how do i score without a squads tab on sa-only"
+    ],
+    "text": "SA-only events skip the Squads tab. Open Game Scoring — the desk auto-prepares (seats + locks) the sole scoring seat so you can enter scores without a manual Lock squads step."
+  },
+  {
+    "id": "faq-upload-scores-csv",
+    "aliases": [
+      "how do i upload scores with a csv",
+      "upload scores csv",
+      "import scores from csv",
+      "how do i upload a scores csv"
+    ],
+    "text": "On Game Scoring, use Upload scores CSV for the focused event. Map external IDs if needed, then import. Scores land on the locked squad games for that event.",
+    "stepId": "enter_scores"
+  },
+  {
+    "id": "faq-sa-payout-report",
+    "aliases": [
+      "how do i run the side action payout report",
+      "side action payout report",
+      "run pot payout report",
+      "how do i get side action payouts"
+    ],
+    "text": "Open Reports on the event desk and run the side-action / pot payout report after entries and scores are in. Empty boards show waiting on scores until pots have results.",
+    "stepId": "open_reports"
+  },
+  {
+    "id": "faq-standard-vs-baker",
+    "aliases": [
+      "what's the difference between a standard round and a baker round",
+      "standard vs baker round",
+      "what is a baker round",
+      "baker game style vs standard"
+    ],
+    "text": "Standard game style scores each bowler's own games. Baker style shares one team score per game (team TOTAL is the sum of team games, max 300 per game). Set game_style on the round's competition method config."
+  },
+  {
+    "id": "faq-mystery-doubles",
+    "aliases": [
+      "what is mystery doubles",
+      "explain mystery doubles",
+      "how does mystery doubles work"
+    ],
+    "text": "Mystery Doubles is a side-action pot that pairs bowlers by rule after scores are in (partners are not chosen up front). Configure it under Side Actions, take entries, then score and run the pot report.",
+    "stepId": "side_actions"
+  },
+  {
+    "id": "faq-lock-generate-bracket",
+    "aliases": [
+      "what does lock and generate do on a bracket",
+      "what does lock & generate do",
+      "lock and generate brackets meaning"
+    ],
+    "text": "Lock & Generate on a bracket freezes the entry list and builds the bracket board (byes, seats, matchups). After generate, late entries need a full Regenerate."
+  },
+  {
+    "id": "faq-eliminator-sa",
+    "aliases": [
+      "what is an eliminator side action",
+      "explain eliminator pot",
+      "how does eliminator side action work"
+    ],
+    "text": "An Eliminator side action is a pot where bowlers drop as the eliminator rules fire (not the same as a main-event eliminator/qualifier round). Configure type Eliminator under Side Actions, take entries, then score.",
+    "stepId": "side_actions"
+  },
+  {
+    "id": "faq-survivor-sa",
+    "aliases": [
+      "what is a survivor side action",
+      "does victory have survivor pots",
+      "survivor side action type"
+    ],
+    "text": "Victory's side-action types are brackets, high game, eliminator, and related pots (including doubles variants). There is no separate Survivor side-action type — use Eliminator or High Game depending on the pot rules you want.",
+    "stepId": "side_actions"
+  },
+  {
+    "id": "faq-scratch-vs-handicap",
+    "aliases": [
+      "what's the difference between scratch and handicap",
+      "scratch vs handicap",
+      "scratch or handicap event"
+    ],
+    "text": "Scratch uses raw pinfall. Handicap adds truncated pins from average so bowlers compete on adjusted scores. Side-action and bracket pots each have their own scratch/handicap setting."
+  },
+  {
+    "id": "faq-scores-wont-save",
+    "aliases": [
+      "my scores won't save",
+      "scores won't save why",
+      "why won't scores save",
+      "score entry won't save"
+    ],
+    "text": "Scores won't save until the scoring seat is prepared: for full events lock at least one squad (and finish blockers on the checklist); for SA-only events open Game Scoring so the desk can auto-prepare. Then enter scores again.",
+    "stepId": "enter_scores"
+  },
+  {
+    "id": "faq-help",
+    "aliases": [
+      "help",
+      "help please",
+      "i need help",
+      "assistant help"
+    ],
+    "text": "I can answer how-tos, open checklist steps, run desk queries (coming up, pending, subscription), and help build an event format when you explicitly ask to add rounds. Ask a product question, or say what's next."
+  },
+  {
+    "id": "faq-generate-brackets",
+    "aliases": [
+      "generate the brackets",
+      "generate brackets",
+      "regenerate the brackets",
+      "regenerate brackets"
+    ],
+    "text": "To generate brackets, open the bracket side action on this event and use Lock & Generate (or Regenerate after a late entry). This is not Create Event — stay on Side Actions.",
+    "stepId": "side_actions"
+  },
+  {
+    "id": "faq-high-game-sa-setup",
+    "aliases": [
+      "how do i set up a high game side action",
+      "add a high game side action to this event",
+      "add high game side action",
+      "create high game pot"
+    ],
+    "text": "Open Side Actions on the event, choose High Game (not Bracket), set pot rules and handicap, then take entries. Lock entries before scoring when the desk requires it.",
+    "stepId": "side_actions"
+  },
+  {
+    "id": "faq-round-formats",
+    "aliases": [
+      "what round formats are available",
+      "what round formats are available?",
+      "which round formats can i use",
+      "list round formats",
+      "what competition methods are available",
+      "available round types"
+    ],
+    "text": "Rounds support Eliminator/Qualifier (pinfall), Bracket, Stepladder, Round robin, and Pods. Each round also has a game style of Standard or Baker. Build a format only when you explicitly ask to add rounds — questions like this stay in help, not the wizard."
+  }
+]
