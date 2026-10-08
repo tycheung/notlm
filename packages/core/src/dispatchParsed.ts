@@ -3,7 +3,12 @@ import { extractMultiSlotPatches } from './discourse.js';
 import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
-import { looksLikeNavCommand, matchFaqEntry, matchGlossaryEntry } from './glossary.js';
+import {
+  looksLikeNavCommand,
+  matchFaqEntry,
+  matchGlossaryEntry,
+  matchStrongFaqEntry,
+} from './glossary.js';
 import { looksLikeSurfaceAsk } from './normalizeConfig.js';
 import { packedUtteranceSummary, parsePackedUtterance, composeMixedIntentReply } from './packUtterance.js';
 import {
@@ -100,6 +105,7 @@ export function dispatchParsed(
       const cleared = clearActionQueue(s);
       const flags = { ...cleared.flags };
       delete flags.pendingMutation;
+      delete flags.pendingDraftApply;
       return {
         ...cleared,
         flags,
@@ -288,7 +294,7 @@ export function dispatchParsed(
       if (hit.guideId) flashField?.(hit.guideId);
       return;
     }
-    const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
+    const faqHit = matchStrongFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
       pushFaqHit(pack, faqHit, pushAssistant);
       return;
@@ -373,11 +379,9 @@ export function dispatchParsed(
   const targetStep = singleAction?.stepId ?? parsed.stepId;
   const slotPatches = singleAction?.slots ?? parsed.slotPatches;
 
-  // Question-shaped asks: answer product FAQ (with optional step chip) before navigating.
-  // Prefer any FAQ catalog hit over step nav unless this is an explicit nav/create command
-  // (compare asks like "tournament vs event" must not fall through to Laya OOD).
+  // Strong FAQ only before step nav — weak fuzzy must not block Laya.
   {
-    const faqHitEarly = matchFaqEntry(pack.faq ?? [], trimmed);
+    const faqHitEarly = matchStrongFaqEntry(pack.faq ?? [], trimmed);
     if (faqHitEarly && !looksLikeNavCommand(trimmed, pack.compiledHeuristics)) {
       pushFaqHit(pack, faqHitEarly, pushAssistant);
       return;
@@ -425,7 +429,7 @@ export function dispatchParsed(
       });
       return;
     }
-    const faqHit = matchFaqEntry(pack.faq ?? [], trimmed);
+    const faqHit = matchStrongFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
       pushFaqHit(pack, faqHit, pushAssistant);
       return;

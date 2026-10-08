@@ -4,6 +4,7 @@ import {
   looksLikeFaqQuestion,
   matchFaqEntry,
   matchGlossaryEntry,
+  matchStrongFaqEntry,
   mergeFaqEntries,
 } from './glossary.js';
 
@@ -62,6 +63,33 @@ describe('matchFaqEntry', () => {
     expect(matchFaqEntry(faq, 'what can you do for me today')?.id).toBe(
       'hello_capabilities'
     );
+  });
+
+  it('matchStrongFaqEntry drops weak fuzzy hits that would steal Laya', () => {
+    const faq = [
+      {
+        id: 'faq-sa-only-scoring',
+        aliases: [
+          'how do i enter scores for this sa only event',
+          'sa only scoring without squads',
+        ],
+        text: 'SA-only scoring path.',
+      },
+      {
+        id: 'faq-bracket-byes',
+        aliases: ['how many byes can a bracket have'],
+        text: 'Max one bye.',
+      },
+    ];
+    // Partial / follow-up style — must NOT hard-answer.
+    expect(matchStrongFaqEntry(faq, 'how do i enter scores')).toBeNull();
+    expect(
+      matchStrongFaqEntry(faq, 'I did that and it still will not let me score')
+    ).toBeNull();
+    // Exact / near-exact ruling still wins.
+    expect(
+      matchStrongFaqEntry(faq, 'How many byes can a bracket have?')?.id
+    ).toBe('faq-bracket-byes');
   });
 });
 

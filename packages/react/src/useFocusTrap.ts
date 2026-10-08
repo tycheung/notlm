@@ -25,8 +25,14 @@ export function useFocusTrap(
         (el) => !el.hasAttribute('disabled') && el.offsetParent !== null
       );
 
-    const first = focusables()[0];
-    first?.focus();
+    const list = focusables();
+    // Prefer the composer input over the Close button (CB-15).
+    const preferred =
+      list.find((el) => {
+        const tag = el.tagName.toLowerCase();
+        return tag === 'textarea' || (tag === 'input' && el.getAttribute('type') !== 'button');
+      }) ?? list[0];
+    preferred?.focus();
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {

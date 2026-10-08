@@ -45,6 +45,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -69,7 +70,9 @@ import type { ChatThread } from './ThreadList.js';
 import {
   DEFAULT_WELCOME,
   initialThreadState,
+  loadPersistedThreads,
   newChatMessage,
+  persistThreads,
 } from './chatThreadState.js';
 
 type NavigateFn = (path: string, opts?: { search?: string }) => void;
@@ -260,12 +263,37 @@ export function NotLMProvider({
   const [fallbackBusy, setFallbackBusy] = useState(false);
 
   const welcome = DEFAULT_WELCOME;
-  const [activeThreadId, setActiveThreadId] = useState(() => conversationIdRef.current);
-  const initial = initialThreadState(conversationIdRef.current);
-  const [threads, setThreads] = useState<ChatThread[]>(() => initial.threads);
+  const [activeThreadId, setActiveThreadId] = useState(() => {
+    const persisted = loadPersistedThreads(pack.id);
+    if (persisted?.activeThreadId) {
+      conversationIdRef.current = persisted.activeThreadId;
+      return persisted.activeThreadId;
+    }
+    return conversationIdRef.current;
+  });
+  const [threads, setThreads] = useState<ChatThread[]>(() => {
+    const persisted = loadPersistedThreads(pack.id);
+    return persisted?.threads ?? initialThreadState(conversationIdRef.current).threads;
+  });
   const [messagesByThread, setMessagesByThread] = useState<Record<string, ChatMessage[]>>(
-    () => initial.messagesByThread
+    () => {
+      const persisted = loadPersistedThreads(pack.id);
+      return (
+        persisted?.messagesByThread ??
+        initialThreadState(conversationIdRef.current).messagesByThread
+      );
+    }
   );
+  const messagesByThreadRef = useRef(messagesByThread);
+  messagesByThreadRef.current = messagesByThread;
+
+  useEffect(() => {
+    persistThreads(pack.id, {
+      activeThreadId,
+      threads,
+      messagesByThread,
+    });
+  }, [pack.id, activeThreadId, threads, messagesByThread]);
   const messages = messagesByThread[activeThreadId] ?? [];
   const setMessages = useCallback(
     (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
@@ -346,6 +374,15 @@ export function NotLMProvider({
       onBusyChange: setFallbackBusy,
       onFallbackMissText: (t) => {
         lastFallbackTextRef.current = t;
+      },
+      getRecentTurns: () => {
+        const tid = conversationIdRef.current;
+        const msgs = messagesByThreadRef.current[tid] ?? [];
+        return msgs
+          .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .filter((m) => m.status !== 'thinking')
+          .slice(-8)
+          .map((m) => ({ role: m.role, text: m.text }));
       },
     });
 
@@ -633,7 +670,8 @@ export function NotLMProvider({
           onApplyDraft,
           onCoachEvent: coachEventHandler,
           deferDecisionFallbackUi: decisionFallbackOn,
-          deferLowConfidenceToFallback: secondaryOn,
+          // Mid/low step confidence → Laya (then secondary LLM), not Yes/No chips.
+          deferLowConfidenceToFallback: decisionFallbackOn,
           resolveQuery,
           previewMutation,
           executeMutation,

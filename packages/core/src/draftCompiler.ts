@@ -1,3 +1,7 @@
+import {
+  looksLikeDraftFinish,
+  looksLikeInformationalQuestion,
+} from './askNormalize.js';
 import type {
   DraftCompileResult,
   DraftCompiler,
@@ -34,6 +38,13 @@ export function runDraftCompiler(opts: {
     return { handled: false, session };
   }
   const compiler = compilers[compilerId]!;
+  // Questions never build or mutate drafts unless the user is finishing one.
+  if (
+    looksLikeInformationalQuestion(text) &&
+    !looksLikeDraftFinish(text)
+  ) {
+    return { handled: false, session };
+  }
   if (!compiler.match(text)) {
     return { handled: false, session };
   }

@@ -101,6 +101,19 @@ export function matchFaqEntry(faq: FaqEntry[], utterance: string): FaqEntry | nu
   return matchAliasCatalog(faq, normalizeAsk(utterance));
 }
 
+/**
+ * FAQ hit only when the utterance is an exact / near-exact alias match.
+ * Use this for early short-circuits so weak fuzzy FAQ never steals Laya/LLM.
+ */
+export function matchStrongFaqEntry(
+  faq: FaqEntry[],
+  utterance: string
+): FaqEntry | null {
+  const hit = matchFaqEntry(faq, utterance);
+  if (!hit) return null;
+  return isStrongFaqAliasMatch(utterance, hit) ? hit : null;
+}
+
 /** True when the utterance fully matches a FAQ alias (not a short prefix steal). */
 export function isStrongFaqAliasMatch(utterance: string, entry: FaqEntry): boolean {
   const needle = normalizeAsk(utterance);

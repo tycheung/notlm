@@ -37,6 +37,7 @@ export function mergeActionIntoQueue(
 export function clearActionQueue(session: SessionSlots): SessionSlots {
   const flags = { ...session.flags };
   delete flags.pendingMutation;
+  delete flags.pendingDraftApply;
   return {
     ...session,
     actionQueue: [],

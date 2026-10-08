@@ -37,6 +37,9 @@ describe('capabilityCatalog', () => {
     expect(looksLikeContextAsk('what am I missing')).toBe(true);
     expect(looksLikeExplainLast('what did you just open')).toBe(true);
     expect(looksLikeExplainLast('audit that')).toBe(true);
+    expect(
+      looksLikeExplainLast('create a tournament named QA AUDIT 2026-10-08 bot')
+    ).toBe(false);
     expect(looksLikeExplainLast('explain last')).toBe(true);
     expect(looksLikeExplainLast('recount your last action')).toBe(true);
     expect(looksLikeExplainLast('what action did you just take')).toBe(true);

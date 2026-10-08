@@ -16,13 +16,13 @@ import {
   tryDispatchCapabilityCatalog,
   tryHandleContextAsk,
   tryHandleExplainLast,
+  tryHandlePendingDraftApply,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
 import { looksLikeClearOod } from './askNormalize.js';
 import {
-  isStrongFaqAliasMatch,
   looksLikeNavCommand,
-  matchFaqEntry,
+  matchStrongFaqEntry,
 } from './glossary.js';
 import { normalizeUtterance } from './normalizeConfig.js';
 import { assembleOodReply } from './oodReply.js';
@@ -75,8 +75,35 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
       return true;
     }
     if (run.finishRequested && run.draftKey && run.draft) {
-      void live.onApplyDraft?.(run.draftKey, run.draft);
-      live.pushAssistant('Applying your draft now.');
+      const eventLabel =
+        String(
+          live.ctx.data?.eventName ||
+            live.ctx.data?.eventLabel ||
+            (live.ctx.data?.eventId != null
+              ? `event ${live.ctx.data.eventId}`
+              : '')
+        ).trim() || 'the current event';
+      live.setSession((s) => ({
+        ...s,
+        flags: {
+          ...s.flags,
+          pendingDraftApply: {
+            draftKey: run.draftKey,
+            draft: run.draft,
+            text: live.text,
+            eventLabel,
+          },
+        },
+      }));
+      live.pushAssistant(
+        `Ready to save this format and apply it to “${eventLabel}”. This replaces the current rounds, squads, and advancement links on that event. Continue?`,
+        {
+          choices: [
+            { id: 'confirm_yes', label: 'Yes, do it' },
+            { id: 'confirm_no', label: 'Cancel' },
+          ],
+        }
+      );
       return true;
     }
     live.executeStep(id, { prefill: run.draft, skipCoach: true, coachCreate: true });
@@ -87,7 +114,11 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
 
 export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> {
   const trimmed = deps.text.trim();
-  if (!trimmed) return;
+  if (!trimmed) {
+    // Never leave a blank turn — whitespace / empty sends need a visible reply.
+    deps.pushAssistant('Say a product question, a checklist step, or what’s next.');
+    return;
+  }
 
   const live = trackSession(deps);
   emitCoachEvent(live, { type: 'utterance', textLength: trimmed.length });
@@ -112,6 +143,13 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     return;
   }
 
+  const pendingDraft = tryHandlePendingDraftApply(live, trimmed);
+  if (pendingDraft === true) return;
+  if (pendingDraft && typeof (pendingDraft as Promise<unknown>).then === 'function') {
+    return (async () => {
+      await (pendingDraft as Promise<boolean>);
+    })();
+  }
   const pendingMutation = tryHandlePendingMutationConfirm(live, trimmed);
   if (pendingMutation === true) return;
   if (pendingMutation && typeof (pendingMutation as Promise<unknown>).then === 'function') {
@@ -150,21 +188,10 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     return;
   }
 
-  // FAQ before parse/ranker/Laya so compare + product facts never OOD-refuse.
+  // Strong FAQ only — weak fuzzy hits must fall through to parse → Laya/LLM.
   {
-    const faqHit = matchFaqEntry(live.pack.faq ?? [], trimmed);
-    const metaEarly = matchMetaIntent(
-      normalizeUtterance(trimmed, live.pack.normalize),
-      live.pack.meta,
-      live.pack.metaPatterns
-    );
-    const helpOverridesWeakFaq =
-      metaEarly === 'help' && faqHit && !isStrongFaqAliasMatch(trimmed, faqHit);
-    if (
-      faqHit &&
-      !helpOverridesWeakFaq &&
-      !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)
-    ) {
+    const faqHit = matchStrongFaqEntry(live.pack.faq ?? [], trimmed);
+    if (faqHit && !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)) {
       pushFaqHit(live.pack, faqHit, live.pushAssistant);
       return;
     }

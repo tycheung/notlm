@@ -30,7 +30,22 @@ function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
   });
   if (answer.navigatePath) deps.navigate?.(answer.navigatePath);
   // skipCoach: avoid a second bubble from executeStep coach/form nudges.
-  if (answer.stepId) deps.executeStep(answer.stepId, { skipCoach: true });
+  if (answer.stepId) {
+    const forceOpenSurface =
+      typeof answer.slots?.forceOpenSurface === 'string'
+        ? answer.slots.forceOpenSurface
+        : undefined;
+    const prefill = answer.slots
+      ? Object.fromEntries(
+          Object.entries(answer.slots).filter(([k]) => k !== 'forceOpenSurface')
+        )
+      : undefined;
+    deps.executeStep(answer.stepId, {
+      skipCoach: true,
+      ...(prefill && Object.keys(prefill).length ? { prefill } : {}),
+      ...(forceOpenSurface ? { forceOpenSurface } : {}),
+    });
+  }
 }
 
 function recordCoachAction(
@@ -63,6 +78,67 @@ async function settleAnswer(
   if (!answer) return false;
   pushAnswer(deps, answer);
   return true;
+}
+
+export type PendingDraftApply = {
+  draftKey: string;
+  draft: Record<string, unknown>;
+  text?: string;
+  eventLabel?: string;
+};
+
+/** Confirm-gated draft apply (format / structured drafts). */
+export function tryHandlePendingDraftApply(
+  deps: DispatchDeps,
+  trimmed: string
+): boolean | Promise<boolean> {
+  const pending = deps.session.flags.pendingDraftApply as
+    | PendingDraftApply
+    | undefined;
+  if (!pending?.draftKey || !pending.draft) return false;
+
+  if (looksLikeConfirmNo(trimmed, deps.pack.compiledHeuristics)) {
+    deps.setSession((s) => {
+      const flags = { ...s.flags };
+      delete flags.pendingDraftApply;
+      return { ...s, flags };
+    });
+    deps.pushAssistant('Canceled — nothing was changed.');
+    return true;
+  }
+  if (!looksLikeConfirmYes(trimmed, deps.pack.compiledHeuristics)) return false;
+
+  return (async () => {
+    deps.setSession((s) => {
+      const flags = { ...s.flags };
+      delete flags.pendingDraftApply;
+      return { ...s, flags };
+    });
+    if (!deps.onApplyDraft) {
+      deps.pushAssistant('I can’t apply that draft from here.');
+      return true;
+    }
+    try {
+      await Promise.resolve(deps.onApplyDraft(pending.draftKey, pending.draft));
+      deps.pushAssistant(
+        pending.eventLabel
+          ? `Format saved and applied to “${pending.eventLabel}”.`
+          : 'Format saved and applied.'
+      );
+      recordCoachAction(deps, {
+        kind: 'draft_apply',
+        id: pending.draftKey,
+        summary: `Applied draft ${pending.draftKey}`,
+      });
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.message.trim()
+          ? err.message.trim()
+          : 'The server rejected the apply.';
+      deps.pushAssistant(`Could not apply the format: ${msg}`);
+    }
+    return true;
+  })();
 }
 
 /** Handle pending mutation confirm chip / yes-no. */

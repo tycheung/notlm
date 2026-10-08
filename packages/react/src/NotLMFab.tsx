@@ -28,6 +28,7 @@ export function NotLMFab() {
     newThread,
   } = useNotLM();
   const [draft, setDraft] = useState('');
+  const queuedWhileBusy = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const voiceEnabled = features.voice !== false;
@@ -45,12 +46,25 @@ export function NotLMFab() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, panelOpen]);
 
+  useEffect(() => {
+    if (fallbackBusy) return;
+    const queued = queuedWhileBusy.current?.trim();
+    if (!queued) return;
+    queuedWhileBusy.current = null;
+    handleUserUtterance(queued);
+  }, [fallbackBusy, handleUserUtterance]);
+
   const closePanel = useCallback(() => setPanelOpen(false), [setPanelOpen]);
   useFocusTrap(panelOpen, panelRef, closePanel);
 
   const submit = () => {
     const text = draft.trim();
-    if (!text || fallbackBusy) return;
+    if (!text) return;
+    if (fallbackBusy) {
+      queuedWhileBusy.current = text;
+      setDraft('');
+      return;
+    }
     setDraft('');
     handleUserUtterance(text);
   };

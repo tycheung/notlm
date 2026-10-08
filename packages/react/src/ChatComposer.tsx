@@ -49,10 +49,12 @@ export function ChatComposer({
         }}
         rows={2}
         className={cx('notlm-chat-input', inputClassName)}
-        placeholder={placeholder}
+        placeholder={
+          busy ? 'Reply pending — you can type the next question…' : placeholder
+        }
         aria-label="Assistant chat input"
         data-testid="notlm-chat-input"
-        disabled={busy}
+        aria-busy={busy || undefined}
       />
       {voiceEnabled && (
         <button

@@ -127,3 +127,23 @@ export function looksLikeClearOod(
   }
   return false;
 }
+
+/**
+ * Informational questions (what/how/who/… or trailing ?) should not trigger
+ * draft compilers or write paths — only explicit build/finish commands should.
+ */
+export function looksLikeInformationalQuestion(utterance: string): boolean {
+  const t = utterance.trim();
+  if (!t) return false;
+  if (/\?\s*$/.test(t)) return true;
+  return /^(?:what|what's|whats|who|who's|whom|whose|how|why|when|where|which|does|do|did|is|are|was|were|can|could|should|will|would|may)\b/i.test(
+    t
+  );
+}
+
+/** Finish / apply phrases for structured draft compilers. */
+export function looksLikeDraftFinish(utterance: string): boolean {
+  return /\b(?:done|finish|save\s+(?:the\s+)?format|apply\s+(?:the\s+)?format|that's\s+it|thats\s+it)\b/i.test(
+    utterance
+  );
+}

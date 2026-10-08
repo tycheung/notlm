@@ -63,7 +63,9 @@ export function resolveDiscourse(
     return { kind: 'repair_slot', text: raw };
   }
 
-  if (h.choiceIndex) {
+  // Dollar amounts ("$30 pot") must never be read as numbered menu picks.
+  const hasMoneyAmount = /\$\s*\d|\b\d+\s*(?:dollars?|bucks)\b/i.test(raw);
+  if (h.choiceIndex && !hasMoneyAmount) {
     const choiceMatch = text.match(h.choiceIndex) ?? raw.match(h.choiceIndex);
     if (choiceMatch?.[1]) {
       const idx = h.indexWords[choiceMatch[1].toLowerCase()];

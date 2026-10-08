@@ -60,6 +60,8 @@ export type QueryAnswer = {
   links?: ChatMessageLink[];
   navigatePath?: string;
   stepId?: StepId;
+  /** Prefill slots when opening a step (create forms, etc.). */
+  slots?: Record<string, unknown>;
 };
 
 export type MutationPreview = {
@@ -123,20 +125,8 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
       .filter(Boolean);
     for (const label of labels) {
       if (needle === label) return entry;
-      const boundary =
-        hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
-      const looseMulti =
-        label.includes(' ') && (needle.includes(label) || label.includes(needle));
-      const coverage = label.includes(' ')
-        ? bestAliasContentCoverage(needle, label)
-        : 0;
-      // Require ≥2 content tokens so short FAQ aliases ("who are you"→"who")
-      // cannot swallow clear OOD asks like "who won the world series".
+      const needleTokens = contentTokens(needle);
       const labelTokens = contentTokens(label);
-      const covered =
-        coverage >= ALIAS_COVERAGE_MIN &&
-        labelTokens.length >= 2 &&
-        Math.round(coverage * labelTokens.length) >= 2;
       // Mutation / create prefix: "spin up a tournament named X" hits alias "...named".
       const prefixHit =
         label.includes(' ') &&
@@ -144,7 +134,30 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
           needle.startsWith(`${label} `) ||
           (/\b(named|called|titled|labeled|for)\s*$/.test(label) &&
             needle.startsWith(label)));
-      if (boundary || looseMulti || covered || prefixHit) {
+      // One-token needles ("help") must not fuzzy-hit longer aliases ("help me assign usbc").
+      if (needleTokens.length < 2 && labelTokens.length >= 2 && !prefixHit) {
+        continue;
+      }
+      const boundary =
+        hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
+      const coverage = label.includes(' ')
+        ? bestAliasContentCoverage(needle, label)
+        : 0;
+      // Require ≥2 content tokens so short FAQ aliases ("who are you"→"who")
+      // cannot swallow clear OOD asks like "who won the world series".
+      const covered =
+        coverage >= ALIAS_COVERAGE_MIN &&
+        labelTokens.length >= 2 &&
+        Math.round(coverage * labelTokens.length) >= 2;
+      // Allow label⊂needle; only allow needle⊂label when lengths are near-equal
+      // (stops short needles from loose-matching long mutation aliases).
+      const looseMultiSafe =
+        label.includes(' ') &&
+        (needle.includes(label) ||
+          (label.includes(needle) &&
+            needleTokens.length >= labelTokens.length - 1 &&
+            needle.length >= label.length * 0.85));
+      if (boundary || looseMultiSafe || covered || prefixHit) {
         const score =
           label.length +
           (boundary ? 50 : 0) +
@@ -207,6 +220,14 @@ export function looksLikeExplainLast(
 ): boolean {
   const h = resolveH(heuristics);
   const n = normalizeAsk(text, heuristics);
+  // Never treat create/open/delete named-entity commands as explain-last
+  // (e.g. "create a tournament named QA AUDIT …" must not match `\baudit\b`).
+  if (
+    /\b(?:create|start|open|delete|remove|build|make|spin\s+up)\b/.test(n) &&
+    /\b(?:tournament|event|center|centre|format|bracket)\b/.test(n)
+  ) {
+    return false;
+  }
   if (h.explainLastExact.has(n) || anyReTest(h.explainLast, n)) return true;
   return phrasesHit(n, extraPhrases, heuristics);
 }

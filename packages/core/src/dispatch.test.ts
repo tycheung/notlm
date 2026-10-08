@@ -95,6 +95,11 @@ function runDispatch(
 }
 
 describe('dispatchUserUtterance', () => {
+  it('answers whitespace-only turns instead of staying silent', () => {
+    const calls = runDispatch('   ');
+    expect(calls.assistant[0]).toMatch(/product question|what’s next|checklist/i);
+  });
+
   it('handles go_back before other intents', () => {
     const session: SessionSlots = {
       ...emptySession(),

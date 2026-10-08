@@ -4,11 +4,7 @@ import {
   probabilityToConfidence,
   ruleScoreToProbability,
 } from './confidenceBands.js';
-import {
-  isStrongFaqAliasMatch,
-  looksLikeNavCommand,
-  matchFaqEntry,
-} from './glossary.js';
+import { looksLikeNavCommand, matchStrongFaqEntry } from './glossary.js';
 import {
   DEFAULT_HEURISTICS,
   type CompiledHeuristics,
@@ -229,17 +225,15 @@ export function parseUtterance(
   const heuristics = resolveHeuristics(pack);
   const meta = matchMetaIntent(normalized, pack.meta, pack.metaPatterns);
 
-  // First-class FAQ: catalog hits win at parse time (including compare asks),
-  // unless the utterance is an explicit nav/create command or clear OOD.
+  // Strong FAQ only at parse time — weak fuzzy must not claim high confidence
+  // and block Laya/LLM (compare asks still win when aliases are near-exact).
   if (
     pack.faq?.length &&
     !looksLikeNavCommand(text, heuristics) &&
     !looksLikeClearOod(text, heuristics)
   ) {
-    const faqHit = matchFaqEntry(pack.faq, text);
-    const helpOverridesWeakFaq =
-      meta === 'help' && faqHit && !isStrongFaqAliasMatch(text, faqHit);
-    if (faqHit && !helpOverridesWeakFaq) {
+    const faqHit = matchStrongFaqEntry(pack.faq, text);
+    if (faqHit) {
       return {
         stepId: null,
         slotPatches: {},

@@ -17,6 +17,7 @@ import type {
 } from '@notlm/core';
 import {
   defaultOodRefuseReply,
+  FALLBACK_UNAVAILABLE_REPLY,
   invokeChainedDecisionFallback,
   isAutoExecuteTrustedGotoEnabled,
   isAutoExecutableTrustedGoto,
@@ -26,6 +27,7 @@ import {
   isTrustedGoto,
   looksLikeClearOod,
   mismatchedGotoClarifyReply,
+  sanitizeFallbackReply,
   shouldSurfaceTrustedGoto,
   tryDispatchCapabilityCatalog,
 } from '@notlm/core';
@@ -64,6 +66,8 @@ export type DecisionFallbackDeps = {
   getAbortSignal?: () => AbortSignal | undefined;
   onBusyChange?: (busy: boolean) => void;
   onFallbackMissText?: (text: string) => void;
+  /** Last N chat turns for follow-up context (role:text). */
+  getRecentTurns?: () => Array<{ role: string; text: string }>;
 };
 
 export function createDecisionFallbackHandler(
@@ -74,7 +78,9 @@ export function createDecisionFallbackHandler(
   const secondaryEnabled =
     Boolean(deps.secondaryFallbackLlm) &&
     isSecondaryLlmFallbackEnabled(deps.features);
-  const includeLowConfidenceFallback = secondaryEnabled;
+  // Low/mid NLU confidence should reach Laya whenever decision fallback is on
+  // (not only when a secondary LLM is configured).
+  const includeLowConfidenceFallback = fallbackEnabled;
 
   const knownStepIds = new Set(deps.pack.steps.map((s) => s.id));
   const stepIdList = deps.pack.steps.map((s) => s.id).slice(0, 50);
@@ -122,15 +128,36 @@ export function createDecisionFallbackHandler(
     ]);
     void (async () => {
       let pathname: string | undefined;
+      let ctxData: Record<string, unknown> = {};
       try {
+        const ctx = deps.getContext();
         pathname =
           deps.missLog?.getPathname?.() ??
           deps.conversationLog?.getPathname?.() ??
-          deps.getContext().pathname;
+          ctx.pathname;
+        ctxData = (ctx.data ?? {}) as Record<string, unknown>;
       } catch {
         pathname = undefined;
       }
-      const contextDigest = [pathname ? `path=${pathname}` : '', stepCatalogDigest]
+      const pageBits = [
+        pathname ? `path=${pathname}` : '',
+        ctxData.eventName ? `event=${String(ctxData.eventName)}` : '',
+        ctxData.tournamentName
+          ? `tournament=${String(ctxData.tournamentName)}`
+          : '',
+        ctxData.tab ? `tab=${String(ctxData.tab)}` : '',
+        ctxData.approvedParticipantCount != null
+          ? `roster=${String(ctxData.approvedParticipantCount)}`
+          : '',
+        ctxData.saOnlyMode === true ? 'saOnly=1' : '',
+      ]
+        .filter(Boolean)
+        .join(',');
+      const recentTurns = (deps.getRecentTurns?.() ?? [])
+        .slice(-6)
+        .map((t) => `${t.role}:${t.text.slice(0, 120)}`)
+        .join('|');
+      const contextDigest = [pageBits, recentTurns ? `hist=${recentTurns}` : '', stepCatalogDigest]
         .filter(Boolean)
         .join(';')
         .slice(0, 2000);
@@ -175,7 +202,18 @@ export function createDecisionFallbackHandler(
         deps.setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
         return;
       }
+      const resolveFaqPackText = (): string | null => {
+        const faqId = result?.proposed?.faqId?.trim();
+        if (!faqId || result?.proposed?.type !== 'faq') return null;
+        const entry = (deps.pack.faq ?? []).find((f) => f.id === faqId);
+        const body = entry?.text?.trim();
+        return body || null;
+      };
       const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
+        const cleaned =
+          sanitizeFallbackReply(reply, text) ??
+          resolveFaqPackText() ??
+          FALLBACK_UNAVAILABLE_REPLY;
         deps.setMessages((prev) => {
           const without = prev.filter((m) => m.id !== thinkingId);
           return [
@@ -183,7 +221,7 @@ export function createDecisionFallbackHandler(
             {
               id: `a-${Date.now()}`,
               role: 'assistant' as const,
-              text: reply,
+              text: cleaned,
               at: Date.now(),
               choices,
               status: 'final' as const,
@@ -192,7 +230,13 @@ export function createDecisionFallbackHandler(
         });
       };
       if (!result) {
-        deps.setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+        // Never silently drop — always leave a visible outcome.
+        // eslint-disable-next-line no-console
+        console.warn('[notlm] decision fallback returned null', {
+          missKind,
+          text: text.slice(0, 120),
+        });
+        replaceThinking(FALLBACK_UNAVAILABLE_REPLY);
         return;
       }
       const proposed = result.proposed;
