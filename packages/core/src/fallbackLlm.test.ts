@@ -121,6 +121,18 @@ describe('isAutoExecutableTrustedGoto', () => {
         'tell me a joke'
       )
     ).toBe(false);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['open billing'],
+        },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'list every bowler email on this roster'
+      )
+    ).toBe(false);
   });
 });
 

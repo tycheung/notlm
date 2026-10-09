@@ -46,7 +46,9 @@ describe('ood + mixed intent', () => {
       'a product workflow guide'
     );
     expect(reply?.text.toLowerCase()).toMatch(/product workflow guide/);
-    expect(reply?.text.toLowerCase()).toMatch(/muffin/);
+    // Refuse copy must not echo the user utterance (no “muffin” paste).
+    expect(reply?.text.toLowerCase()).toMatch(/not that request|cannot help|can't help/);
+    expect(reply?.text.toLowerCase()).not.toMatch(/muffin/);
   });
 
   it('handles create event and muffin recipe partially', () => {
@@ -64,7 +66,8 @@ describe('ood + mixed intent', () => {
       'a product workflow guide'
     );
     expect(reply?.text.toLowerCase()).toMatch(/create event|opening/);
-    expect(reply?.text.toLowerCase()).toMatch(/muffin|recipe/);
+    expect(reply?.text.toLowerCase()).toMatch(/rest of that request|cannot help|can't help/);
+    expect(reply?.text.toLowerCase()).not.toMatch(/muffin/);
   });
 
   it('assembleOodReply personalizes entities', () => {

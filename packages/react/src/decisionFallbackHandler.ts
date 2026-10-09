@@ -24,10 +24,13 @@ import {
   isDecisionFallbackEnabled,
   isDecisionFallbackMissKind,
   isSecondaryLlmFallbackEnabled,
+  isSemanticRetrieveEnabled,
   isTrustedGoto,
   looksLikeClearOod,
   mismatchedGotoClarifyReply,
+  retrieveSemantic,
   sanitizeFallbackReply,
+  semanticFaqIdHints,
   shouldSurfaceTrustedGoto,
   tryDispatchCapabilityCatalog,
 } from '@notlm/core';
@@ -114,6 +117,38 @@ export function createDecisionFallbackHandler(
     const text = (event.text ?? '').trim();
     if (!text) return;
     deps.onFallbackMissText?.(text);
+
+    // System One semantic retrieve: high-bar accept before Laya; else constrain faqIds.
+    const semEnabled =
+      isSemanticRetrieveEnabled(deps.features) &&
+      Boolean(deps.pack.semanticIndex?.docs?.length);
+    const sem = semEnabled
+      ? retrieveSemantic(text, deps.pack.semanticIndex, {
+          heuristics: deps.pack.compiledHeuristics,
+        })
+      : null;
+    if (sem?.accepted?.kind === 'faq') {
+      const entry = (deps.pack.faq ?? []).find((f) => f.id === sem.accepted!.id);
+      if (entry?.text?.trim()) {
+        deps.setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            role: 'assistant' as const,
+            text: entry.text,
+            at: Date.now(),
+            status: 'final' as const,
+            intentKey: entry.id,
+            choices: entry.stepId
+              ? [{ id: entry.stepId, label: entry.stepId }]
+              : undefined,
+          },
+        ]);
+        return;
+      }
+    }
+    const constrainedFaqIds = sem ? semanticFaqIdHints(sem, 8) : [];
+
     const thinkingId = `thinking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     deps.onBusyChange?.(true);
     deps.setMessages((prev) => [
@@ -173,7 +208,10 @@ export function createDecisionFallbackHandler(
           pathname,
           contextDigest: contextDigest || undefined,
           stepIds: stepIdList,
-          faqIds: faqIdList.length ? faqIdList : undefined,
+          faqIds: (() => {
+            const ids = constrainedFaqIds.length ? constrainedFaqIds : faqIdList;
+            return ids.length ? ids : undefined;
+          })(),
           queryIds: queryIdList.length ? queryIdList : undefined,
           mutationIds: mutationIdList.length ? mutationIdList : undefined,
           tourIds: tourIdList.length ? tourIdList : undefined,
@@ -231,11 +269,6 @@ export function createDecisionFallbackHandler(
       };
       if (!result) {
         // Never silently drop — always leave a visible outcome.
-        // eslint-disable-next-line no-console
-        console.warn('[notlm] decision fallback returned null', {
-          missKind,
-          text: text.slice(0, 120),
-        });
         replaceThinking(FALLBACK_UNAVAILABLE_REPLY);
         return;
       }
@@ -300,7 +333,28 @@ export function createDecisionFallbackHandler(
         if (!handled) {
           replaceThinking(result.reply);
         } else {
-          deps.setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+          // Capability claimed handled — never strip Thinking… into a blank turn.
+          deps.setMessages((prev) => {
+            const without = prev.filter((m) => m.id !== thinkingId);
+            const last = without[without.length - 1];
+            const hasVisible =
+              last?.role === 'assistant' && String(last.text ?? '').trim().length > 0;
+            if (hasVisible) return without;
+            const cleaned =
+              sanitizeFallbackReply(result.reply, text) ??
+              resolveFaqPackText() ??
+              FALLBACK_UNAVAILABLE_REPLY;
+            return [
+              ...without,
+              {
+                id: `a-${Date.now()}`,
+                role: 'assistant' as const,
+                text: cleaned,
+                at: Date.now(),
+                status: 'final' as const,
+              },
+            ];
+          });
         }
       } else {
         const domainTokens =

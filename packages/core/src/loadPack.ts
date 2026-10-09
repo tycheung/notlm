@@ -1,5 +1,6 @@
 import { bindersToCompleteness } from './binders.js';
 import { compileHeuristics } from './heuristics.js';
+import { buildSemanticIndex } from './semanticRetrieve.js';
 import type {
   CompletenessFn,
   LoadedPack,
@@ -27,6 +28,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     tours,
     search,
     heuristics,
+    semanticIndex: precomputedIndex,
   } = input;
   const controlByStep = new Map<StepId, (typeof controls)[number]>();
   for (const control of controls) {
@@ -93,6 +95,12 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,
     search: search?.length ? search : undefined,
+    semanticIndex:
+      precomputedIndex?.docs?.length
+        ? precomputedIndex
+        : faq?.length || queries?.length
+          ? buildSemanticIndex({ faq, queries })
+          : undefined,
   };
 }
 

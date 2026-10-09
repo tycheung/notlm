@@ -1,7 +1,7 @@
 import { emitCoachEvent } from './coachEvents.js';
 import { filterCandidatesByContext, shortlistStepIds } from './candidateTree.js';
 import { resolveDiscourse } from './discourse.js';
-import { matchMetaIntent, parseUtterance } from './intents.js';
+import { parseUtterance } from './intents.js';
 import { biasStepByPageContext } from './pageContext.js';
 import { applyQueueRewrite, detectQueueRewrite } from './queueRewrite.js';
 import { handlePendingUtterance } from './dispatchTalk.js';
@@ -16,6 +16,7 @@ import {
   tryDispatchCapabilityCatalog,
   tryHandleContextAsk,
   tryHandleExplainLast,
+  tryHandleOrphanConfirmNo,
   tryHandlePendingDraftApply,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
@@ -24,9 +25,10 @@ import {
   looksLikeNavCommand,
   matchStrongFaqEntry,
 } from './glossary.js';
-import { normalizeUtterance } from './normalizeConfig.js';
+import { looksLikeDraftFinish } from './askNormalize.js';
 import { assembleOodReply } from './oodReply.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
+import { retrieveSemantic } from './semanticRetrieve.js';
 import { activeFlowSteps } from './subgraph.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 
@@ -71,6 +73,14 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
     if (run.summary) live.pushAssistant(run.summary);
     if (run.missing && run.missing.length > 0) {
       live.pushAssistant(`Still need: ${run.missing.map((m) => m.label).join(', ')}.`);
+      // Finish/apply with gaps: answer only — do not open the wizard unless the
+      // user explicitly asked to build/edit (non-finish path below).
+      if (run.finishRequested) {
+        live.pushAssistant(
+          'Fill those fields (or say “build a format draft …” to keep editing) before I can save and apply.'
+        );
+        return true;
+      }
       live.executeStep(id, { prefill: run.draft, skipCoach: true, coachCreate: true });
       return true;
     }
@@ -157,6 +167,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
       await (pendingMutation as Promise<boolean>);
     })();
   }
+  if (tryHandleOrphanConfirmNo(live, trimmed)) return;
   if (tryHandleExplainLast(live, trimmed)) return;
   // Catalog before context so pack aliases (e.g. billing "why is create greyed out")
   // are not stolen by the context-ask heuristic.
@@ -188,12 +199,43 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     return;
   }
 
+  // Finish/apply format before FAQ so “apply the format…” is not stolen by how-to FAQ.
+  if (looksLikeDraftFinish(trimmed) && tryDraftCompilers(live)) return;
+
   // Strong FAQ only — weak fuzzy hits must fall through to parse → Laya/LLM.
   {
     const faqHit = matchStrongFaqEntry(live.pack.faq ?? [], trimmed);
     if (faqHit && !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)) {
       pushFaqHit(live.pack, faqHit, live.pushAssistant);
       return;
+    }
+  }
+
+  // Semantic retrieve (hashed n-grams): high-bar FAQ/query accept before Laya.
+  if (
+    live.pack.semanticIndex?.docs?.length &&
+    !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)
+  ) {
+    const sem = retrieveSemantic(trimmed, live.pack.semanticIndex, {
+      heuristics: live.pack.compiledHeuristics,
+    });
+    if (sem.accepted?.kind === 'faq') {
+      const entry = (live.pack.faq ?? []).find((f) => f.id === sem.accepted!.id);
+      if (entry) {
+        pushFaqHit(live.pack, entry, live.pushAssistant);
+        return;
+      }
+    }
+    if (sem.accepted?.kind === 'query') {
+      const capSem = tryDispatchCapabilityCatalog(live, trimmed, {
+        queryId: sem.accepted.id,
+      });
+      if (capSem === true) return;
+      if (capSem && typeof (capSem as Promise<unknown>).then === 'function') {
+        return (async () => {
+          await (capSem as Promise<boolean>);
+        })();
+      }
     }
   }
 

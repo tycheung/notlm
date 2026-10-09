@@ -7,7 +7,7 @@ Most in-product asks are predictable ("open billing", "what's this?", "why can't
 Coaching tours and UI spotlights (`data-guide-id`) are one pack-driven pattern, not the whole product. The point is a frontline that understands *your* app.
 
 **Repo:** [github.com/tycheung/notlm](https://github.com/tycheung/notlm)  
-**Offline training / pack growth:** sibling [notlm-training](https://github.com/tycheung/notlm-training) (never ships in the SPA bundle)
+**Offline training / pack growth:** sibling offline-authoring repo (never ships in the SPA bundle)
 
 ---
 

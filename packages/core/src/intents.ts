@@ -4,7 +4,7 @@ import {
   probabilityToConfidence,
   ruleScoreToProbability,
 } from './confidenceBands.js';
-import { looksLikeNavCommand, matchStrongFaqEntry } from './glossary.js';
+import { matchStrongFaqEntry } from './glossary.js';
 import {
   DEFAULT_HEURISTICS,
   type CompiledHeuristics,

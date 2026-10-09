@@ -8,7 +8,6 @@ import {
   evaluateFlowStatuses,
   formatBlockedQueueMessage,
   isDecisionFallbackEnabled,
-  isSecondaryLlmFallbackEnabled,
   listMissingRequires,
   markActiveStep,
   utteranceMatchesTypedCatalog,
@@ -641,8 +640,6 @@ export function NotLMProvider({
       const runCore = () => {
         const decisionFallbackOn =
           Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
-        const secondaryOn =
-          Boolean(secondaryFallbackLlm) && isSecondaryLlmFallbackEnabled(features);
         const result = dispatchUserUtterance({
           text: trimmed,
           pack: asLoadedPack(pack),

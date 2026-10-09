@@ -1,6 +1,7 @@
 export * from './heuristics.js';
 export * from './askNormalize.js';
 export * from './fallbackReplySanitize.js';
+export * from './semanticRetrieve.js';
 export * from './metricsF1.js';
 export * from './capabilityCatalog.js';
 export * from './confidenceBands.js';

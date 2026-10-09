@@ -76,12 +76,12 @@ def entity_label(utterance: str) -> str:
     return phrase[:48] if phrase else "that"
 
 
-def refuse_reply(utterance: str, product_role: str) -> str:
-    entities = entity_label(utterance)
+def refuse_reply(_utterance: str, product_role: str) -> str:
+    # Never echo the user utterance — product refuse copy must stay neutral.
     role = (product_role or "a product assistant").strip() or "a product assistant"
     return (
-        f"No — I am {role}, and I do not have the ability to help "
-        f"with {entities}."
+        f"No — I am {role}. I only cover in-product workflow steps and "
+        "product questions — not that request."
     )
 
 

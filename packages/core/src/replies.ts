@@ -22,12 +22,12 @@ const DEFAULTS: ReplyBank = {
     '{{message}}',
   ],
   'repair.ood_capability': [
-    'No — I am {{product_role}}, and I do not have the ability to help with {{entities}} (or {{capability}}).',
-    'I can’t help with {{entities}}. I am {{product_role}} and only cover this product’s workflow steps.',
+    'No — I am {{product_role}}. I only cover in-product workflow steps and product questions — not that request.',
+    'I can’t help with that request. I am {{product_role}} and only cover this product’s workflow steps.',
   ],
   'repair.partial_ood': [
-    'Okay — {{handled}}. I am {{product_role}} and do not have the ability to help with {{entities}}.',
-    'I’ll handle {{handled}}, but I can’t do {{entities}} — I am {{product_role}}.',
+    'Okay — {{handled}}. I am {{product_role}} and cannot help with the rest of that request.',
+    'I’ll handle {{handled}}, but I can’t do the rest — I am {{product_role}}.',
   ],
 };
 

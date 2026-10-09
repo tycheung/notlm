@@ -28,9 +28,14 @@ function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
     choices: answer.choices,
     links: answer.links,
   });
-  if (answer.navigatePath) deps.navigate?.(answer.navigatePath);
+  // Auto-nav only when the host opts in. Informational queries must omit this
+  // (or set navigatePath without autoNavigate) so answers do not yank the page.
+  if (answer.navigatePath && answer.autoNavigate === true) {
+    deps.navigate?.(answer.navigatePath);
+  }
   // skipCoach: avoid a second bubble from executeStep coach/form nudges.
-  if (answer.stepId) {
+  // Tours / soft handoffs may return stepId as a chip-only offer (autoStartStep: false).
+  if (answer.stepId && answer.autoStartStep !== false) {
     const forceOpenSurface =
       typeof answer.slots?.forceOpenSurface === 'string'
         ? answer.slots.forceOpenSurface
@@ -139,6 +144,25 @@ export function tryHandlePendingDraftApply(
     }
     return true;
   })();
+}
+
+/**
+ * Bare Cancel/No with no pending confirm must not fall through to Laya
+ * (which may invent “cancel this event”).
+ */
+export function tryHandleOrphanConfirmNo(
+  deps: DispatchDeps,
+  trimmed: string
+): boolean {
+  // Chip-like cancels only — bare "no"/"nope" is common NLU noise and must
+  // not short-circuit synonym / discourse suites.
+  const n = trimmed.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!/^(cancel|stop|never mind|nevermind)$/.test(n)) return false;
+  const pendingMut = deps.session.flags.pendingMutation;
+  const pendingDraft = deps.session.flags.pendingDraftApply;
+  if (pendingMut || pendingDraft) return false;
+  deps.pushAssistant('Nothing pending to cancel.');
+  return true;
 }
 
 /** Handle pending mutation confirm chip / yes-no. */
@@ -293,8 +317,20 @@ export function tryDispatchCapabilityCatalog(
     return true;
   }
 
+  // Forced mutationId from Laya/LLM must still match utterance aliases.
+  // Otherwise "generate the brackets" can open Create Event (handoff CB-04).
+  let forcedMutation: MutationDef | undefined;
+  if (opts?.mutationId) {
+    const byId = mutations.find((m) => m.id === opts.mutationId);
+    if (byId) {
+      const textHit =
+        matchMutationEntry(mutations, matchText) ||
+        matchMutationEntry(mutations, trimmed);
+      if (textHit?.id === byId.id) forcedMutation = byId;
+    }
+  }
   const mutationHit =
-    (opts?.mutationId && mutations.find((m) => m.id === opts.mutationId)) ||
+    forcedMutation ||
     matchMutationEntry(mutations, matchText) ||
     matchMutationEntry(mutations, trimmed);
   if (mutationHit) {
@@ -388,9 +424,18 @@ export function tryDispatchCapabilityCatalog(
         }
       }
       const line = tourHit.lines?.[0] ?? `Starting “${tourHit.title}”.`;
-      deps.pushAssistant(line);
       const first = tourHit.steps[0];
-      if (first) deps.executeStep(first, { skipCoach: true });
+      // Offer the first step as a chip — never auto-navigate on “give me a tour”.
+      deps.pushAssistant(
+        first
+          ? `${line} Say the step name or tap below when you want to open it.`
+          : line,
+        first
+          ? {
+              choices: [{ id: first, label: first }],
+            }
+          : undefined
+      );
       recordCoachAction(deps, {
         kind: 'tour',
         id: tourHit.id,

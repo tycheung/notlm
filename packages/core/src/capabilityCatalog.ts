@@ -59,7 +59,17 @@ export type QueryAnswer = {
   choices?: ChatChoice[];
   links?: ChatMessageLink[];
   navigatePath?: string;
+  /**
+   * When true with navigatePath, core navigates immediately.
+   * Default false — informational answers must not yank the page.
+   */
+  autoNavigate?: boolean;
   stepId?: StepId;
+  /**
+   * When false, stepId is for chips / later confirm only — do not executeStep.
+   * Default true when stepId is set.
+   */
+  autoStartStep?: boolean;
   /** Prefill slots when opening a step (create forms, etc.). */
   slots?: Record<string, unknown>;
 };
@@ -134,7 +144,7 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
           needle.startsWith(`${label} `) ||
           (/\b(named|called|titled|labeled|for)\s*$/.test(label) &&
             needle.startsWith(label)));
-      // One-token needles ("help") must not fuzzy-hit longer aliases ("help me assign usbc").
+      // One-token needles ("help") must not fuzzy-hit longer aliases ("help me assign badge").
       if (needleTokens.length < 2 && labelTokens.length >= 2 && !prefixHit) {
         continue;
       }

@@ -358,6 +358,11 @@ export type AssistantFeatures = {
    * Show thread list / new-chat in chrome. **Default on** when unset.
    */
   threads?: boolean;
+  /**
+   * Hashed n-gram semantic retrieve over FAQ/query texts (System One).
+   * **Default on** when unset; set `false` to disable.
+   */
+  semanticRetrieve?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
@@ -401,6 +406,11 @@ export type PackRuntime = {
   tours?: import('./capabilityCatalog.js').TourDef[];
   /** Search / discovery surfaces. */
   search?: import('./capabilityCatalog.js').SearchSurfaceDef[];
+  /**
+   * Optional precomputed semantic index (FAQ/query embeddings).
+   * When omitted, runtime builds one from faq/queries at pack load.
+   */
+  semanticIndex?: import('./semanticRetrieve.js').SemanticIndex;
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -582,6 +592,8 @@ export type PackJsonInput = {
   mutations?: import('./capabilityCatalog.js').MutationDef[];
   tours?: import('./capabilityCatalog.js').TourDef[];
   search?: import('./capabilityCatalog.js').SearchSurfaceDef[];
+  /** Optional precomputed semantic index artifact. */
+  semanticIndex?: import('./semanticRetrieve.js').SemanticIndex;
 };
 
 /** Host-registered NL → draft patch compiler (no domain types in core). */

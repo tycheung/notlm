@@ -3,6 +3,7 @@ import {
   tryDispatchCapabilityCatalog,
   tryHandleContextAsk,
   tryHandleExplainLast,
+  tryHandleOrphanConfirmNo,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
 import { loadPackFromJson } from './loadPack.js';
@@ -169,6 +170,12 @@ describe('capability dispatch', () => {
     expect(deps.session.flags.pendingMutation).toBeUndefined();
   });
 
+  it('orphan Cancel without pending confirm does not fall through', () => {
+    const deps = makeDeps();
+    expect(tryHandleOrphanConfirmNo(deps, 'Cancel')).toBe(true);
+    expect(deps.assistant[0]).toMatch(/Nothing pending to cancel/);
+  });
+
   it('answers contextAsk from host or pathname fallback', () => {
     const withHost = makeDeps({
       resolveContextAsk: () => 'Name is required before you can save.',
@@ -287,5 +294,39 @@ describe('capability dispatch', () => {
         searchId: 'search_workspaces',
       })
     ).toBe(true);
+  });
+
+  it('ignores forced mutationId when utterance aliases do not match', async () => {
+    const previewMutation = vi.fn(async () => ({
+      text: 'Should not run.',
+      needsConfirm: false,
+      stepId: 'create_record',
+    }));
+    const deps = makeDeps({ previewMutation });
+    // Laya proposed create/prefill mutation for an unrelated ask.
+    const handled = await tryDispatchCapabilityCatalog(
+      deps,
+      'generate the brackets',
+      { mutationId: 'crm.prefill_low' }
+    );
+    expect(handled).toBe(false);
+    expect(previewMutation).not.toHaveBeenCalled();
+    expect(deps.executed).toHaveLength(0);
+  });
+
+  it('honors forced mutationId when utterance aliases match', async () => {
+    const previewMutation = vi.fn(async () => ({
+      text: 'Prefill ready.',
+      needsConfirm: false,
+      stepId: 'create_record',
+    }));
+    const deps = makeDeps({ previewMutation });
+    const handled = await tryDispatchCapabilityCatalog(
+      deps,
+      'prefill create form',
+      { mutationId: 'crm.prefill_low' }
+    );
+    expect(handled).toBe(true);
+    expect(previewMutation).toHaveBeenCalled();
   });
 });

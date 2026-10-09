@@ -94,7 +94,8 @@ export function assembleOodReply(
   opts: OodReplyOpts
 ): { text: string; session: SessionSlots; entities: string[] } {
   const entities = extractEntitySpans(utterance, opts.heuristics);
-  const entityStr = entities.length ? entities.join(', ') : 'that';
+  // Prefer a short neutral label so refuse copy never pastes the user utterance.
+  const entityStr = 'that request';
   const productRole = opts.productRole?.trim() || 'a product assistant';
   const capability = opts.capability?.trim() || entityStr;
   const key = opts.partial ? 'repair.partial_ood' : 'repair.ood_capability';

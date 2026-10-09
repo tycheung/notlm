@@ -106,7 +106,8 @@ export function isFallbackRefuse(
 }
 
 /** Canned OOD template from Laya sidecar / degraded proxy — still a miss for chaining. */
-const CANNED_OOD_REFUSE_RE = /\bdo not have the ability to help with\b/i;
+const CANNED_OOD_REFUSE_RE =
+  /\bdo not have the ability to help with\b|\bonly cover in-product workflow steps\b|\bnot that request\b/i;
 
 /**
  * Whether primary (Laya) should trigger secondary LLM — includes canned refuse
@@ -218,6 +219,15 @@ export function isAutoExecutableTrustedGoto(
   const text = (reply ?? '').trim();
   if (text && CANNED_OOD_REFUSE_RE.test(text)) return false;
   if (/\bdo not have the ability\b/i.test(text)) return false;
+  // Never auto-jump to billing/subscription unless the user asked for it.
+  const step = String(proposed.stepId ?? '').toLowerCase();
+  if (
+    /billing|subscription|subscribe/.test(step) &&
+    userText &&
+    !/\b(billing|subscription|subscribe|plan|pass|checkout|cart)\b/i.test(userText)
+  ) {
+    return false;
+  }
   // High-confidence signal from Laya (aliases attached only when conf ≥ 0.85).
   const aliases = proposed.aliases;
   if (!(Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0))) {
@@ -259,12 +269,12 @@ export function shouldSurfaceTrustedGoto(
 
 /** Default System One refuse when Laya would otherwise offer a spurious goto. */
 export function defaultOodRefuseReply(
-  userText?: string,
+  _userText?: string,
   productRole?: string
 ): string {
-  const topic = (userText ?? 'that').trim().slice(0, 48) || 'that';
   const role = productRole?.trim() || 'a product assistant';
-  return `No — I am ${role}, and I do not have the ability to help with ${topic}. Try a workflow step name or product question.`;
+  // Never echo the user utterance — product bar treats that as a refuse failure.
+  return `No — I am ${role}. I only cover in-product workflow steps and product questions — not that request. Try a step name or a product how-to.`;
 }
 
 /** Clarify when Laya proposes a goto that disagrees with the user's domain words. */

@@ -21,6 +21,17 @@ describe('fallbackReplySanitize', () => {
         'Refuse, I am unable to view images. Please describe the image in your request.'
       )
     ).toBe(true);
+    expect(
+      isGarbageFallbackReply(
+        'Refuse, this conversation is off-domain and not mappable to the catalog.'
+      )
+    ).toBe(true);
+    expect(
+      isGarbageFallbackReply(
+        'No — I am a guide, and I do not have the ability to help with Write me a poem about the weather tomorrow.',
+        'Write me a poem about the weather tomorrow'
+      )
+    ).toBe(true);
   });
 
   it('keeps real answers', () => {
