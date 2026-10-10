@@ -58,7 +58,12 @@
         "weather",
         "forecast",
         "celsius",
-        "fahrenheit"
+        "fahrenheit",
+        "rain",
+        "raining",
+        "snow",
+        "snowing",
+        "humidity"
       ],
       "phrasePatterns": [
         "\\bforget (this|the) product\\b",
@@ -83,6 +88,9 @@
         "\\bhaiku about\\b",
         "\\bpoem about the weather\\b",
         "\\bweather tomorrow\\b",
+        "\\bwill it rain\\b",
+        "\\brain tomorrow\\b",
+        "\\bis it (going to |gonna )?rain\\b",
         "\\binvent a limerick\\b",
         "\\bwrite a limerick\\b",
         "\\bdraft a haiku\\b",

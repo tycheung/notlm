@@ -16,29 +16,13 @@ import {
   type AssistantFeatures,
   type ChatChoice,
   type ChatMessage,
-  type CoachEvent,
   type ConversationLogPipeline,
-  type ConversationTransport,
-  type LlmFallbackFn,
   type LoadedPack,
-  type MissExchangeTransport,
-  type MissKind,
-  type MissLogTransport,
   type PackRuntime,
-  type ParseUtteranceFn,
   type PhraseLruStore,
-  type RuntimeContextBase,
   type SessionSlots,
-  type SlotBag,
   type StepId,
-  type StepStatus,
-  type DraftCompiler,
   type ChatMessageLink,
-  type ResolveQueryFn,
-  type PreviewMutationFn,
-  type ExecuteMutationFn,
-  type RunTourFn,
-  type OpenSearchHitFn,
 } from '@notlm/core';
 import {
   createContext,
@@ -49,7 +33,6 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type ReactNode,
 } from 'react';
 import type { NotLMChromeConfig } from './chromeTypes.js';
 import { createDecisionFallbackHandler } from './decisionFallbackHandler.js';
@@ -73,14 +56,9 @@ import {
   persistThreads,
 } from './chatThreadState.js';
 import type {
-  EnrichStatusesFn,
   ExecuteStepOpts,
-  NavigateFn,
   NotLMContextValue,
   NotLMProviderProps,
-  OnWizardPageFn,
-  OpenModalFn,
-  OpenSurfaceFn,
 } from './notlmContextTypes.js';
 
 export type {
@@ -667,14 +645,21 @@ export function NotLMProvider({
   const handleUserUtterance = useCallback(
     (text: string, opts?: { skipUserAppend?: boolean }) => {
       const trimmed = text.trim();
-      if (!trimmed) return;
       if (fallbackBusy || asyncFallbackOwnsPinRef.current) cancelFallback();
       turnThreadIdRef.current = conversationIdRef.current;
       if (!opts?.skipUserAppend) {
-        conversationPipelineRef.current?.logChat('user', trimmed);
-        setMessages((prev) => [...prev, newChatMessage('user', trimmed)]);
+        conversationPipelineRef.current?.logChat('user', trimmed || text);
+        setMessages((prev) => [
+          ...prev,
+          newChatMessage('user', trimmed || text || ' '),
+        ]);
       }
       setPanelOpen(true);
+      if (!trimmed) {
+        // Core also handles empty, but never drop the turn before dispatch.
+        pushAssistant('Say a product question, a checklist step, or what’s next.');
+        return;
+      }
 
       const runCore = () => {
         const turnId = turnThreadIdRef.current ?? conversationIdRef.current;

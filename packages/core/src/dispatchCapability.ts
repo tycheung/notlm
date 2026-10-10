@@ -18,7 +18,6 @@ import {
   type SearchSurfaceDef,
   type TourDef,
 } from './capabilityCatalog.js';
-import { emitCoachEvent } from './coachEvents.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { stepTitle } from './dispatchResolve.js';
 import { normalizeUtterance } from './normalizeConfig.js';

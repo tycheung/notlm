@@ -84,7 +84,11 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
         );
         return true;
       }
-      live.executeStep(id, { prefill: run.draft, skipCoach: true, coachCreate: true });
+      // Draft-in-progress: keep the conversation in chat. Never auto-navigate
+      // (billing / create tournament / wizard) just because prereqs are missing.
+      live.pushAssistant(
+        'Tell me the missing pieces in chat, or say “open event format” when you want the wizard on a focused event.'
+      );
       return true;
     }
     if (run.finishRequested && run.draftKey && run.draft) {
@@ -116,6 +120,21 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
             { id: 'confirm_no', label: 'Cancel' },
           ],
         }
+      );
+      return true;
+    }
+    // Only open the wizard when an event is focused and the step is available.
+    // Otherwise stay in chat — never bounce through billing/create gates.
+    const eventFocused = live.ctx.data?.eventId != null;
+    const unavailable =
+      typeof live.pack.unavailableReason === 'function'
+        ? live.pack.unavailableReason(id, live.ctx)
+        : null;
+    if (!eventFocused || unavailable) {
+      live.pushAssistant(
+        unavailable
+          ? `${unavailable} I can keep drafting the format in chat — say the next round detail, or open a focused event first.`
+          : 'Focus an event desk first, then say “open event format” (or keep giving format details here in chat).'
       );
       return true;
     }

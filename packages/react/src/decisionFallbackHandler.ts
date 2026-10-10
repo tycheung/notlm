@@ -178,10 +178,6 @@ export function createDecisionFallbackHandler(
         : deps.getSession?.()) ?? deps.sessionRef.current;
 
     let fallbackGen: number | undefined;
-    // Abort signal is acquired after sync semantic short-circuits (or on those
-    // early returns) so a future early return cannot clear pin without claiming
-    // or resolving a hit. Sync hits still preempt via getAbortSignal before return.
-    let signal: AbortSignal | undefined;
 
     // System One semantic retrieve: high-bar accept before Laya; else constrain faqIds.
     // Skip nav-shaped utterances (parity with dispatch.ts).
@@ -286,8 +282,9 @@ export function createDecisionFallbackHandler(
       (id) => id !== emptyFaqAcceptedId
     );
 
-    // Preempt prior in-flight work; claim pin before any await / Thinking UI.
-    signal = deps.getAbortSignal?.();
+    // Abort after sync semantic short-circuits so early returns cannot clear pin
+    // without claiming. Sync hits still preempt via getAbortSignal before return.
+    const signal = deps.getAbortSignal?.();
 
     const thinkingId = `thinking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     // Defer busy/Thinking… until Laya starts. Claim pin gen synchronously before
@@ -725,9 +722,9 @@ export function createDecisionFallbackHandler(
       } catch {
         if (signal?.aborted) {
           stripThinking();
-        } else if (thinkingShown) {
-          // Only surface unavailable when we never finalized a reply.
-          // Avoid dual bubbles (good refuse + “couldn't answer”) after post-reply errors.
+        } else {
+          // Always surface a visible failure — including throws before Thinking…
+          // (otherwise the turn stays user-only / silent blank).
           stripThinking();
           deps.onAssistantReply?.(FALLBACK_UNAVAILABLE_REPLY);
           patchMessages((prev) => [
@@ -741,8 +738,6 @@ export function createDecisionFallbackHandler(
             },
           ]);
           thinkingShown = false;
-        } else {
-          stripThinking();
         }
       } finally {
         // Busy clear is host-owned via gen-guarded onAsyncFallbackFinished /

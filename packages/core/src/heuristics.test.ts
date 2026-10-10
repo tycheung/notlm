@@ -44,6 +44,11 @@ describe('heuristics pack extraction', () => {
     expect(heuristicsContainHostBleed(h, SAMPLE_BRAND)).toBe(true);
   });
 
+  it('refuses rain / weather forecasts as clear OOD', () => {
+    expect(looksLikeClearOod('will it rain tomorrow in Columbus?')).toBe(true);
+    expect(looksLikeClearOod('what is the weather today')).toBe(true);
+  });
+
   it('slot extractors only apply from pack', () => {
     expect(extractMultiSlotPatches('8 seats', [])).toEqual({});
     const h = compileHeuristics({
