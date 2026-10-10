@@ -108,14 +108,14 @@ test.describe('@guide-nlu demo-todo nlu + queue', () => {
     // Expands create_list → add_item → complete_item; first step uses form default name.
     await sendUtterance(page, 'create list then complete item');
 
-    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' })).toBeVisible({
+    await expect(page.getByRole('listitem').filter({ hasText: 'Shopping' }).first()).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByRole('listitem').filter({ hasText: 'Milk' })).toBeVisible({
+    await expect(page.getByRole('listitem').filter({ hasText: 'Milk' }).first()).toBeVisible({
       timeout: 10_000,
     });
     // Queue auto-resume of complete_item bypasses confirm (executeStep path).
-    await expect(page.locator('li.done').filter({ hasText: 'Milk' })).toBeVisible({
+    await expect(page.locator('li.done').filter({ hasText: 'Milk' }).first()).toBeVisible({
       timeout: 10_000,
     });
   });
