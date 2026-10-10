@@ -50,7 +50,11 @@ function matchAliasCatalog<T extends AliasCatalog>(
   let best: T | null = null;
   let bestScore = 0;
   for (const entry of catalog) {
-    const labels = [entry.id, ...entry.aliases].map((a) => a.toLowerCase().trim());
+    // Normalize aliases the same way as utterances ($30 → 30) or dollar FAQ
+    // aliases never exact-match “how do I set up a $30 pot?”.
+    const labels = [entry.id, ...entry.aliases]
+      .map((a) => normalizeAsk(a))
+      .filter(Boolean);
     for (const label of labels) {
       if (!label) continue;
       if (needle === label) return entry;
@@ -118,7 +122,9 @@ export function matchStrongFaqEntry(
 export function isStrongFaqAliasMatch(utterance: string, entry: FaqEntry): boolean {
   const needle = normalizeAsk(utterance);
   if (!needle) return false;
-  const labels = [entry.id, ...entry.aliases].map((a) => a.toLowerCase().trim());
+  const labels = [entry.id, ...entry.aliases]
+    .map((a) => normalizeAsk(a))
+    .filter(Boolean);
   for (const label of labels) {
     if (!label) continue;
     if (needle === label) return true;

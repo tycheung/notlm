@@ -114,6 +114,24 @@ describe('matchFaqEntry', () => {
   });
 });
 
+describe('dollar-amount FAQ aliases', () => {
+  it('strong-matches when utterance $ is stripped the same as alias $', () => {
+    const faq = [
+      {
+        id: 'faq-fee-setup',
+        aliases: ['how do i set up a $30 fee', 'set up a 30 dollar fee'],
+        text: 'Open the fee settings and enter the amount.',
+      },
+    ];
+    expect(matchStrongFaqEntry(faq, 'how do I set up a $30 fee?')?.id).toBe(
+      'faq-fee-setup'
+    );
+    expect(matchStrongFaqEntry(faq, 'how do i set up a 30 fee')?.id).toBe(
+      'faq-fee-setup'
+    );
+  });
+});
+
 describe('looksLikeFaqQuestion', () => {
   it('detects question leads and rejects direct commands', () => {
     expect(looksLikeFaqQuestion('how do I create a record')).toBe(true);
