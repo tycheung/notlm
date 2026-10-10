@@ -179,6 +179,14 @@ describe('shouldSurfaceTrustedGoto', () => {
         'why is continue greyed out'
       )
     ).toBe(false);
+    expect(
+      shouldSurfaceTrustedGoto(
+        { type: 'goto', stepId: 'create_event', aliases: ['create event'] },
+        ['create_event'],
+        'I can take you to Create event.',
+        'if I add someone late to a bracket what happens'
+      )
+    ).toBe(false);
   });
 });
 
@@ -306,7 +314,7 @@ describe('invokeChainedDecisionFallback', () => {
     expect(result?.provider).toMatchObject({ chain: 'laya_then_llm' });
   });
 
-  it('escalates to secondary on Laya refuse when enabled', async () => {
+  it('escalates to secondary on short/garbage Laya refuse when enabled', async () => {
     const result = await invokeChainedDecisionFallback({
       primary: async () => ({
         reply: 'no',
@@ -329,6 +337,27 @@ describe('invokeChainedDecisionFallback', () => {
       chain: 'laya_then_llm',
       prior: 'laya',
     });
+  });
+
+  it('keeps a usable Laya refuse without calling secondary', async () => {
+    const secondary = vi.fn(async () => ({
+      reply: 'I could not answer that just now.',
+      proposed: { type: 'refuse' as const },
+      provider: { id: 'openai', model: 'gpt' },
+    }));
+    const result = await invokeChainedDecisionFallback({
+      primary: async () => ({
+        reply:
+          'No — I am a product assistant. I only cover in-product workflow steps and product questions — not that request.',
+        proposed: { type: 'refuse' },
+        provider: { id: 'laya', model: 'ckpt' },
+      }),
+      secondary,
+      secondaryEnabled: true,
+      request: { text: 'write me a poem about the weather tomorrow', kind: 'unknown' },
+    });
+    expect(result?.reply).toMatch(/product assistant/i);
+    expect(secondary).not.toHaveBeenCalled();
   });
 
   it('keeps Laya refuse when secondary disabled or missing', async () => {

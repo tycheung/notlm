@@ -12,9 +12,7 @@ import {
 import { looksLikeSurfaceAsk } from './normalizeConfig.js';
 import { packedUtteranceSummary, parsePackedUtterance, composeMixedIntentReply } from './packUtterance.js';
 import {
-  formatBlockedQueueMessage,
   injectBeforeDeferred,
-  listMissingRequires,
   planResumeQueue,
 } from './queueAdvance.js';
 import {
@@ -34,7 +32,6 @@ import {
   suggestNextStepOptions,
   unintelligiblePrompt,
 } from './dispatchResolve.js';
-import { pickReply } from './replies.js';
 import { pushRepairAssistant } from './repairUi.js';
 import { goBackToStep, patchStepSlots, setActionQueue } from './slots.js';
 import type { DispatchDeps } from './dispatchDeps.js';
@@ -42,6 +39,31 @@ import { launchStep } from './dispatchLaunch.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 import { isConceptualQuestion } from './utteranceIntent.js';
 import { tryDispatchCapabilityCatalog } from './dispatchCapability.js';
+
+function surfaceLaunchOpts(parsed: ParseUtteranceResult): {
+  forceOpenSurface?: string;
+  forceSurfaceStep?: string | null;
+  forceOpenModal?: string;
+  skipOpenModal?: boolean;
+  forceInstructOnly?: boolean;
+} {
+  const deleteConfirmSurface =
+    parsed.openSurface === 'confirmDeleteTournament' ||
+    parsed.openSurface === 'confirmDeleteCenter';
+  const forceSurfaceStep =
+    parsed.surfaceStep != null
+      ? parsed.surfaceStep
+      : deleteConfirmSurface
+        ? null
+        : undefined;
+  return {
+    ...(parsed.openSurface ? { forceOpenSurface: parsed.openSurface } : {}),
+    ...(forceSurfaceStep !== undefined ? { forceSurfaceStep } : {}),
+    ...(parsed.openModal ? { forceOpenModal: parsed.openModal } : {}),
+    ...(parsed.skipOpenModal ? { skipOpenModal: true } : {}),
+    ...(parsed.instructOnly ? { forceInstructOnly: true } : {}),
+  };
+}
 
 export function dispatchParsed(
   deps: DispatchDeps,
@@ -70,11 +92,62 @@ export function dispatchParsed(
       searchId: parsed.searchId,
     });
     if (cap === true) return;
+    // Catalog attempt failed — drop co-bundled catalog + step heads so a rejected
+    // mutationId cannot still open a bundled stepId on the recursive pass (CB-04).
+    // When a forced id was rejected, try fuzzy catalog once (dispatchParsed does not
+    // re-run dispatch.ts early catalog — e.g. skipCatalogEarly semantic retry path).
+    const hadForcedCatalogId = Boolean(
+      parsed.queryId || parsed.mutationId || parsed.tourId || parsed.searchId
+    );
+    const clearForcedCatalog = () =>
+      dispatchParsed(deps, intentPack, {
+        ...parsed,
+        queryId: undefined,
+        mutationId: undefined,
+        tourId: undefined,
+        searchId: undefined,
+        // CB-04: only drop bundled step/faq heads when a *forced* catalog id failed.
+        // rawIntent-only miss must keep a co-located goto stepId.
+        ...(hadForcedCatalogId
+          ? { stepId: null, candidates: undefined, faqId: undefined }
+          : {}),
+        rawIntent:
+          parsed.rawIntent === 'data_query' ||
+          parsed.rawIntent === 'mutation' ||
+          parsed.rawIntent === 'tour' ||
+          parsed.rawIntent === 'search'
+            ? null
+            : parsed.rawIntent,
+      });
+    const afterCatalogReject = (): void | Promise<void> => {
+      if (hadForcedCatalogId) {
+        const fuzzy = tryDispatchCapabilityCatalog(deps, trimmed);
+        if (fuzzy === true) return;
+        if (fuzzy && typeof (fuzzy as Promise<unknown>).then === 'function') {
+          return (async () => {
+            try {
+              if (await (fuzzy as Promise<boolean>)) return;
+            } catch {
+              /* fall through */
+            }
+            return clearForcedCatalog();
+          })();
+        }
+      }
+      return clearForcedCatalog();
+    };
     if (cap && typeof (cap as Promise<unknown>).then === 'function') {
       return (async () => {
-        await (cap as Promise<boolean>);
+        try {
+          if (await (cap as Promise<boolean>)) return;
+        } catch {
+          /* fall through — resolver threw */
+        }
+        return afterCatalogReject();
       })();
     }
+    // Sync false (forced-id reject or rawIntent-only catalog miss) — same clear.
+    return afterCatalogReject();
   }
 
   // First-class FAQ intent from parse (question-shaped catalog hit).
@@ -243,6 +316,7 @@ export function dispatchParsed(
       launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
+        ...surfaceLaunchOpts(parsed),
       });
       return;
     }
@@ -269,10 +343,15 @@ export function dispatchParsed(
 
   if (parsed.rawIntent === 'whats_next') {
     if (session.actionQueue.length > 0) {
-      const planned = planResumeQueue(pack, session, ctx, { announceContinue: true });
+      const planned = planResumeQueue(pack, session, ctx, { announceContinue: false });
       for (const msg of planned.messages) pushAssistant(msg);
+      // Offer the queued head as a chip — do not auto-navigate on “what's next”.
       if (planned.executeNext) {
-        executeStep(planned.executeNext.stepId, { prefill: planned.executeNext.slots });
+        const title = stepTitle(pack, planned.executeNext.stepId);
+        pushAssistant(
+          `Next up: ${title}. Say “open ${title}” or tap below when you want that step — I won’t navigate until you ask.`,
+          { choices: stepChoices(pack, [planned.executeNext.stepId]) }
+        );
       }
       return;
     }
@@ -282,8 +361,10 @@ export function dispatchParsed(
       pushAssistant('You are caught up on the checklist.');
       return;
     }
-    pushAssistant(`Next up: ${next.title}.`);
-    executeStep(next.id);
+    pushAssistant(
+      `Next up: ${next.title}. Say “open ${next.title}” or tap below when you want that step — I won’t navigate until you ask.`,
+      { choices: stepChoices(pack, [next.id]) }
+    );
     return;
   }
 
@@ -435,24 +516,8 @@ export function dispatchParsed(
       return;
     }
     const options = suggestNextStepOptions(pack, ctx, session);
-    if (session.actionQueue.length > 0) {
-      const head = session.actionQueue[0]!;
-      const missing = listMissingRequires(pack, head.stepId, ctx, session.stale);
-      if (missing.length > 0) {
-        const message = `I didn’t catch that. ${formatBlockedQueueMessage(pack, head.stepId, missing)}`;
-        const picked = pickReply(session, pack.replies, 'repair.unknown', { message });
-        setSession(() => picked.session);
-        pushRepairAssistant(deps, 'unknown', picked.text);
-        emitCoachEvent(deps, {
-          type: 'repair',
-          kind: 'unknown',
-          text: trimmed,
-          rawIntent: parsed.rawIntent,
-          confidence: parsed.confidence,
-        });
-        return;
-      }
-    }
+    // Do not let a blocked onboarding queue steal unrelated unknowns
+    // (delete / side-actions / format asks must reach FAQ or Laya).
     const picked = unintelligiblePrompt(pack, options, session);
     setSession(() => picked.session);
     pushRepairAssistant(deps, 'unknown', picked.text, {
@@ -474,17 +539,7 @@ export function dispatchParsed(
     packed.actions.length < 2 &&
     !(pack.confirm ?? []).includes(targetStep)
   ) {
-    if (deps.deferLowConfidenceToFallback) {
-      emitCoachEvent(deps, {
-        type: 'repair',
-        kind: 'low_confidence',
-        text: trimmed,
-        rawIntent: parsed.rawIntent,
-        confidence: parsed.confidence,
-      });
-      return;
-    }
-    // Mid with near-tie candidates → chips; otherwise soft Yes/No confirm.
+    // Mid near-tie chips stay local before Laya defer (parity with missLog intent).
     if (
       parsed.confidence === 'mid' &&
       parsed.candidates &&
@@ -504,6 +559,16 @@ export function dispatchParsed(
       emitCoachEvent(deps, {
         type: 'repair',
         kind: 'ambiguous',
+        text: trimmed,
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+      });
+      return;
+    }
+    if (deps.deferLowConfidenceToFallback) {
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'low_confidence',
         text: trimmed,
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
@@ -553,6 +618,29 @@ export function dispatchParsed(
     launchStep(deps, targetStep, slotPatches, true, {
       rawIntent: parsed.rawIntent,
       confidence: parsed.confidence,
+      ...surfaceLaunchOpts(parsed),
+    });
+    return;
+  }
+
+  // Explicit nav/open with high confidence clears a stale onboarding queue
+  // so “take me to …” is not poisoned by create-step blockers.
+  if (
+    session.actionQueue.length > 0 &&
+    parsed.confidence === 'high' &&
+    looksLikeNavCommand(trimmed, pack.compiledHeuristics)
+  ) {
+    let next = clearActionQueue(session);
+    next = patchStepSlots(next, targetStep, slotPatches);
+    next = {
+      ...next,
+      discourse: { ...(next.discourse ?? {}), lastStepId: targetStep },
+    };
+    setSession(() => next);
+    launchStep(deps, targetStep, slotPatches, false, {
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+      ...surfaceLaunchOpts(parsed),
     });
     return;
   }
@@ -578,6 +666,7 @@ export function dispatchParsed(
         skipGate: true,
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
+        ...surfaceLaunchOpts(parsed),
       });
       return;
     }
@@ -590,6 +679,7 @@ export function dispatchParsed(
       launchStep(deps, targetStep, slotPatches, false, {
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
+        ...surfaceLaunchOpts(parsed),
       });
       return;
     }
@@ -602,5 +692,6 @@ export function dispatchParsed(
   launchStep(deps, targetStep, slotPatches, false, {
     rawIntent: parsed.rawIntent,
     confidence: parsed.confidence,
+    ...surfaceLaunchOpts(parsed),
   });
 }

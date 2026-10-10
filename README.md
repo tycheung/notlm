@@ -40,10 +40,14 @@ Where the words live: FAQ → `faq.json`; goto/tour → flow + aliases; query/mu
 ```text
 User utterance
   → pack smart cache (intents / FAQ / catalogs / discourse)   ← most traffic
+  → semantic retrieve (hashed n-gram FAQ/query; high-bar accept
+       or constrained faqIds into Laya) — base + optional custom layers
   → on miss: Laya (/decide)
   → on miss: optional host LLM (/notlm/fallback)
   → reply + optional UI actions (navigate / spotlight / tour)
 ```
+
+**Semantic index (host-owned):** training builds `pack/semantic-index.json` (**base**, regenerable from FAQ/queries). Optional `pack/semantic-index.custom.json` holds training/miss overlays and is **never** overwritten by `pack embed-index`. Runtime scores both layers together. See [`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md#semantic-retrieve-base--custom-layers).
 
 This repo is the **runtime**: `@notlm/core`, `@notlm/react`, `@notlm/schema`, `@notlm/ranker` (infer), and `notlmCLI` (`init` / `validate` / `intents check` / `ranker check`). Pack JSON and optional ranker artifacts are **host-owned**.
 

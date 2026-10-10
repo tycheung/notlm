@@ -28,7 +28,10 @@ import {
 import { looksLikeDraftFinish } from './askNormalize.js';
 import { assembleOodReply } from './oodReply.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
-import { retrieveSemantic } from './semanticRetrieve.js';
+import {
+  isSemanticRetrieveEnabled,
+  retrieveSemantic,
+} from './semanticRetrieve.js';
 import { activeFlowSteps } from './subgraph.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 
@@ -171,12 +174,34 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   if (tryHandleExplainLast(live, trimmed)) return;
   // Catalog before context so pack aliases (e.g. billing "why is create greyed out")
   // are not stolen by the context-ask heuristic.
-  const capEarly = tryDispatchCapabilityCatalog(live, trimmed);
-  if (capEarly === true) return;
-  if (capEarly && typeof (capEarly as Promise<unknown>).then === 'function') {
-    return (async () => {
-      await (capEarly as Promise<boolean>);
-    })();
+  if (!live.skipCatalogEarly) {
+    const capEarly = tryDispatchCapabilityCatalog(live, trimmed);
+    if (capEarly === true) return;
+    if (capEarly && typeof (capEarly as Promise<unknown>).then === 'function') {
+      return (async () => {
+        try {
+          if (await (capEarly as Promise<boolean>)) return;
+        } catch {
+          /* resolver threw — continue NLU */
+        }
+        const fuzzy = tryDispatchCapabilityCatalog(live, trimmed);
+        if (fuzzy === true) return;
+        if (fuzzy && typeof (fuzzy as Promise<unknown>).then === 'function') {
+          try {
+            if (await (fuzzy as Promise<boolean>)) return;
+          } catch {
+            /* fall through */
+          }
+        }
+        await Promise.resolve(
+          dispatchUserUtterance({
+            ...live,
+            features: { ...live.features, semanticRetrieve: false },
+            skipCatalogEarly: true,
+          })
+        );
+      })();
+    }
   }
   if (tryHandleContextAsk(live, trimmed)) return;
 
@@ -212,16 +237,21 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
 
   // Semantic retrieve (hashed n-grams): high-bar FAQ/query accept before Laya.
+  // Scores base + custom layers together; best match per id wins.
+  const semLayers =
+    live.pack.semanticIndexLayers ??
+    (live.pack.semanticIndex ? [live.pack.semanticIndex] : []);
   if (
-    live.pack.semanticIndex?.docs?.length &&
+    isSemanticRetrieveEnabled(live.features) &&
+    semLayers.length &&
     !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)
   ) {
-    const sem = retrieveSemantic(trimmed, live.pack.semanticIndex, {
+    const sem = retrieveSemantic(trimmed, semLayers, {
       heuristics: live.pack.compiledHeuristics,
     });
     if (sem.accepted?.kind === 'faq') {
       const entry = (live.pack.faq ?? []).find((f) => f.id === sem.accepted!.id);
-      if (entry) {
+      if (entry?.text?.trim()) {
         pushFaqHit(live.pack, entry, live.pushAssistant);
         return;
       }
@@ -229,13 +259,41 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     if (sem.accepted?.kind === 'query') {
       const capSem = tryDispatchCapabilityCatalog(live, trimmed, {
         queryId: sem.accepted.id,
+        trustedQueryId: true,
       });
       if (capSem === true) return;
+      const afterForcedSemanticFail = async (): Promise<void> => {
+        // Forced semantic query failed — one fuzzy catalog attempt (parity with
+        // dispatchParsed), then NLU without semantic re-accept.
+        const fuzzy = tryDispatchCapabilityCatalog(live, trimmed);
+        if (fuzzy === true) return;
+        if (fuzzy && typeof (fuzzy as Promise<unknown>).then === 'function') {
+          try {
+            if (await (fuzzy as Promise<boolean>)) return;
+          } catch {
+            /* fall through */
+          }
+        }
+        await Promise.resolve(
+          dispatchUserUtterance({
+            ...live,
+            features: { ...live.features, semanticRetrieve: false },
+            skipCatalogEarly: true,
+          })
+        );
+      };
       if (capSem && typeof (capSem as Promise<unknown>).then === 'function') {
         return (async () => {
-          await (capSem as Promise<boolean>);
+          try {
+            if (await (capSem as Promise<boolean>)) return;
+          } catch {
+            /* resolver threw — continue NLU */
+          }
+          await afterForcedSemanticFail();
         })();
       }
+      // Sync false (alias miss / missing resolver) — same fuzzy + NLU path.
+      return afterForcedSemanticFail();
     }
   }
 

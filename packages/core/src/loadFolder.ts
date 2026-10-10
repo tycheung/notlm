@@ -7,6 +7,11 @@ import { dirname, join, resolve } from 'node:path';
 import { normalizeBindersMap } from './binders.js';
 import { mergeFaqEntries } from './glossary.js';
 import { loadPackFromJson } from './loadPack.js';
+import {
+  SEMANTIC_INDEX_BASE_FILE,
+  SEMANTIC_INDEX_CUSTOM_FILE,
+  type SemanticIndex,
+} from './semanticRetrieve.js';
 import type {
   FaqEntry,
   HeuristicsConfig,
@@ -101,11 +106,49 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
   const heuristics = existsSync(heuristicsPath) ? readJsonFile(heuristicsPath) : undefined;
   const subgraphsPath = join(pack, 'subgraphs.json');
   const subgraphsRaw = existsSync(subgraphsPath) ? readJsonFile(subgraphsPath) : undefined;
+  const semanticIndexPath = join(pack, SEMANTIC_INDEX_BASE_FILE);
+  const semanticIndexRaw = existsSync(semanticIndexPath)
+    ? readJsonFile(semanticIndexPath)
+    : undefined;
+  const semanticIndexCustomPath = join(pack, SEMANTIC_INDEX_CUSTOM_FILE);
+  const semanticIndexCustomRaw = existsSync(semanticIndexCustomPath)
+    ? readJsonFile(semanticIndexCustomPath)
+    : undefined;
+  const queriesPath = join(pack, 'queries.json');
+  const queriesRaw = existsSync(queriesPath) ? readJsonFile(queriesPath) : undefined;
+  const mutationsPath = join(pack, 'mutations.json');
+  const mutationsRaw = existsSync(mutationsPath) ? readJsonFile(mutationsPath) : undefined;
+  const toursPath = join(pack, 'tours.json');
+  const toursRaw = existsSync(toursPath) ? readJsonFile(toursPath) : undefined;
+  const searchPath = join(pack, 'search.json');
+  const searchRaw = existsSync(searchPath) ? readJsonFile(searchPath) : undefined;
 
   const manifest = pieces.manifest as PackJsonInput['manifest'];
   if (manifest == null || typeof manifest !== 'object' || typeof manifest.id !== 'string') {
     throw new Error('pack/manifest.json must include string id');
   }
+
+  const asSemanticIndex = (raw: unknown): SemanticIndex | undefined => {
+    if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+    const idx = raw as SemanticIndex;
+    return Array.isArray(idx.docs) ? idx : undefined;
+  };
+
+  /** Accept bare arrays or `{ queries|mutations|tours|search: [...] }` wrappers. */
+  const asCatalogList = <T>(
+    raw: unknown,
+    wrapperKey: string
+  ): T[] | undefined => {
+    if (Array.isArray(raw)) return raw as T[];
+    if (
+      raw != null &&
+      typeof raw === 'object' &&
+      Array.isArray((raw as Record<string, unknown>)[wrapperKey])
+    ) {
+      return (raw as Record<string, unknown>)[wrapperKey] as T[];
+    }
+    return undefined;
+  };
 
   return {
     manifest,
@@ -137,6 +180,12 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
       !Array.isArray(subgraphsRaw)
         ? (subgraphsRaw as PackJsonInput['subgraphs'])
         : undefined,
+    queries: asCatalogList(queriesRaw, 'queries'),
+    mutations: asCatalogList(mutationsRaw, 'mutations'),
+    tours: asCatalogList(toursRaw, 'tours'),
+    search: asCatalogList(searchRaw, 'search'),
+    semanticIndex: asSemanticIndex(semanticIndexRaw),
+    semanticIndexCustom: asSemanticIndex(semanticIndexCustomRaw),
   };
 }
 

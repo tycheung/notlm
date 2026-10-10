@@ -1,6 +1,11 @@
 import { bindersToCompleteness } from './binders.js';
 import { compileHeuristics } from './heuristics.js';
-import { buildSemanticIndex } from './semanticRetrieve.js';
+import {
+  DEFAULT_SEMANTIC_DIM,
+  buildSemanticIndex,
+  mergeSemanticIndexes,
+  semanticIndexLayers,
+} from './semanticRetrieve.js';
 import type {
   CompletenessFn,
   LoadedPack,
@@ -29,6 +34,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     search,
     heuristics,
     semanticIndex: precomputedIndex,
+    semanticIndexCustom,
   } = input;
   const controlByStep = new Map<StepId, (typeof controls)[number]>();
   for (const control of controls) {
@@ -36,6 +42,45 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
   }
 
   const compiledHeuristics = compileHeuristics(heuristics, normalize);
+
+  const baseIndex =
+    precomputedIndex?.docs?.length
+      ? { ...precomputedIndex, layer: precomputedIndex.layer ?? 'base' }
+      : faq?.length || queries?.length
+        ? { ...buildSemanticIndex({ faq, queries }), layer: 'base' as const }
+        : undefined;
+  let customIndex = semanticIndexCustom?.docs?.length
+    ? {
+        ...semanticIndexCustom,
+        layer: semanticIndexCustom.layer ?? 'custom',
+      }
+    : undefined;
+  if (baseIndex && customIndex) {
+    const baseDim =
+      baseIndex.dim ||
+      baseIndex.docs[0]?.vector?.length ||
+      DEFAULT_SEMANTIC_DIM;
+    const customDim =
+      customIndex.dim ||
+      customIndex.docs[0]?.vector?.length ||
+      DEFAULT_SEMANTIC_DIM;
+    if (baseDim !== customDim) {
+      if (
+        typeof console !== 'undefined' &&
+        typeof console.warn === 'function'
+      ) {
+        console.warn(
+          `[notlm] semantic index dim mismatch: base=${baseDim} custom=${customDim}; omitting custom layer`
+        );
+      }
+      customIndex = undefined;
+    } else {
+      // Normalize omitted dim so retrieve layers share an explicit dim.
+      if (!baseIndex.dim) baseIndex.dim = baseDim;
+      if (!customIndex.dim) customIndex.dim = customDim;
+    }
+  }
+  const indexLayers = semanticIndexLayers(baseIndex, customIndex);
 
   return {
     id: manifest.id,
@@ -95,12 +140,8 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,
     search: search?.length ? search : undefined,
-    semanticIndex:
-      precomputedIndex?.docs?.length
-        ? precomputedIndex
-        : faq?.length || queries?.length
-          ? buildSemanticIndex({ faq, queries })
-          : undefined,
+    semanticIndex: mergeSemanticIndexes(...indexLayers) ?? baseIndex,
+    semanticIndexLayers: indexLayers.length ? indexLayers : undefined,
   };
 }
 

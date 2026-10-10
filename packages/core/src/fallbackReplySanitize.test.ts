@@ -9,6 +9,8 @@ describe('fallbackReplySanitize', () => {
     expect(isGarbageFallbackReply('string')).toBe(true);
     expect(isGarbageFallbackReply('refuse')).toBe(true);
     expect(isGarbageFallbackReply('FAQ')).toBe(true);
+    expect(isGarbageFallbackReply('create_event')).toBe(true);
+    expect(isGarbageFallbackReply('run_reports')).toBe(true);
     expect(isGarbageFallbackReply('type=refuse')).toBe(true);
     expect(isGarbageFallbackReply('delete it', 'delete it')).toBe(true);
     expect(
@@ -38,5 +40,13 @@ describe('fallbackReplySanitize', () => {
     expect(sanitizeFallbackReply('Lock squads before scoring.')).toBe(
       'Lock squads before scoring.'
     );
+  });
+
+  it('strips leaked snake_case step id lines from otherwise good replies', () => {
+    expect(
+      sanitizeFallbackReply(
+        'Regenerate the bracket board.\ncreate_event\nThen lock entries.'
+      )
+    ).toBe('Regenerate the bracket board.\n\nThen lock entries.');
   });
 });

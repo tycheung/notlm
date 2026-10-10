@@ -17,7 +17,8 @@ export type ConversationOutcome =
   | 'blocked'
   | 'confirm'
   | 'slot_ask'
-  | 'adapter';
+  | 'adapter'
+  | 'regenerate';
 
 export type ConversationMissKind = 'unknown' | 'ambiguous' | 'low_confidence' | 'blocked';
 
@@ -74,6 +75,7 @@ const OUTCOME_SET = new Set<string>([
   'confirm',
   'slot_ask',
   'adapter',
+  'regenerate',
 ]);
 
 const MISS_KIND_SET = new Set<string>([
@@ -305,6 +307,8 @@ export function mintTurnId(): string {
 export type ConversationLogPipelineOpts = {
   transport: ConversationTransport;
   conversationId: string;
+  /** When set, overrides `conversationId` on each log (e.g. pin in-flight turn). */
+  getConversationId?: () => string;
   packId?: string;
   getPathname?: () => string | undefined;
   userTextCap?: number;
@@ -317,8 +321,20 @@ export type ConversationLogPipeline = {
   conversationId: string;
   /** Log a chat message (user or assistant). */
   logChat: (role: ConversationRole, text: string, opts?: { outcome?: ConversationOutcome }) => void;
-  /** Attach an outcome to the last user turn (adapter / late linkage). */
+  /**
+   * Attach/upgrade outcome on the last user turn (or deferred repair).
+   * Prefer this over a second logChat so miss→hit/regenerate does not duplicate.
+   */
   markLastUserOutcome: (outcome: ConversationOutcome, opts?: { stepId?: string }) => void;
+  /**
+   * Flush a deferred repair as `miss` (Laya started / cancel / abort).
+   * No-op when semantic short-circuit already marked hit.
+   */
+  settleRepairMiss: () => void;
+  /**
+   * Next coach `repair` logs as `regenerate` (replay) instead of deferred miss.
+   */
+  noteRegenerateReplay: () => void;
   /** Map coach telemetry into outcome turns (hit/miss/…). */
   onCoachEvent: (event: CoachEvent) => void;
 };
@@ -339,6 +355,24 @@ export function createConversationLogPipeline(
   /** Last user turn id — outcome events attach to it when text matches. */
   let lastUserTurnId: string | null = null;
   let lastUserText = '';
+  /** Outcome already logged for lastUserTurnId (blocks conflicting miss→hit append). */
+  let lastLoggedUserOutcome: {
+    turnId: string;
+    outcome: ConversationOutcome;
+  } | null = null;
+  /** Deferred non-blocked repair — settled as miss or upgraded via markLastUserOutcome. */
+  let pendingRepair: {
+    text: string;
+    missKind: ConversationMissKind;
+    rawIntent?: string | null;
+    confidence?: 'high' | 'mid' | 'low';
+  } | null = null;
+  /** Next repair emits as regenerate (skip deferred miss). */
+  let nextRepairAsRegenerate = false;
+  /** After regenerate replay, suppress the next repair emit (already upgraded). */
+  let suppressNextRepairLog = false;
+  const resolveConversationId = () =>
+    opts.getConversationId?.()?.trim() || opts.conversationId;
 
   const emit = (turn: ConversationTurn) => {
     const key = `${turn.role}:${turn.outcome ?? ''}:${turn.text}:${turn.stepId ?? ''}`;
@@ -357,6 +391,52 @@ export function createConversationLogPipeline(
     return meta;
   };
 
+  const emitUserOutcome = (
+    outcome: ConversationOutcome,
+    fields: {
+      text: string;
+      stepId?: string;
+      missKind?: ConversationMissKind;
+      rawIntent?: string | null;
+      confidence?: 'high' | 'mid' | 'low';
+    }
+  ) => {
+    const t = now();
+    const turnId = lastUserTurnId ?? mintTurnId();
+    lastUserTurnId = turnId;
+    lastUserText = fields.text;
+    lastLoggedUserOutcome = { turnId, outcome };
+    emit({
+      conversationId: resolveConversationId(),
+      turnId,
+      at: new Date(t).toISOString(),
+      role: 'user',
+      text: fields.text,
+      outcome,
+      stepId: fields.stepId,
+      missKind: fields.missKind,
+      rawIntent: fields.rawIntent,
+      confidence: fields.confidence,
+      ...baseMeta(),
+    });
+  };
+
+  const settleRepairMiss = () => {
+    try {
+      if (!pendingRepair) return;
+      const pending = pendingRepair;
+      pendingRepair = null;
+      emitUserOutcome('miss', {
+        text: pending.text,
+        missKind: pending.missKind,
+        rawIntent: pending.rawIntent,
+        confidence: pending.confidence,
+      });
+    } catch {
+      /* pipeline must never break chat */
+    }
+  };
+
   return {
     conversationId: opts.conversationId,
     logChat(role, text, chatOpts) {
@@ -371,7 +451,7 @@ export function createConversationLogPipeline(
           lastUserText = cleaned;
         }
         emit({
-          conversationId: opts.conversationId,
+          conversationId: resolveConversationId(),
           turnId,
           at: new Date(t).toISOString(),
           role,
@@ -385,21 +465,53 @@ export function createConversationLogPipeline(
     },
     markLastUserOutcome(outcome, markOpts) {
       try {
+        if (pendingRepair) {
+          const pending = pendingRepair;
+          pendingRepair = null;
+          emitUserOutcome(outcome, {
+            text: pending.text,
+            stepId: markOpts?.stepId,
+            missKind: pending.missKind,
+            rawIntent: pending.rawIntent,
+            confidence: pending.confidence,
+          });
+          return;
+        }
+        // Already settled this turn (e.g. miss at Laya start) — do not append
+        // a conflicting hit/miss for the same turnId.
+        if (
+          lastLoggedUserOutcome &&
+          lastUserTurnId &&
+          lastLoggedUserOutcome.turnId === lastUserTurnId
+        ) {
+          return;
+        }
         if (!lastUserText) return;
-        const t = now();
-        emit({
-          conversationId: opts.conversationId,
-          turnId: lastUserTurnId ?? mintTurnId(),
-          at: new Date(t).toISOString(),
-          role: 'user',
+        emitUserOutcome(outcome, {
           text: lastUserText,
-          outcome,
           stepId: markOpts?.stepId,
-          ...baseMeta(),
         });
       } catch {
         /* pipeline must never break chat */
       }
+    },
+    settleRepairMiss,
+    noteRegenerateReplay() {
+      // Upgrade existing miss/pending to regenerate; suppress the replay's repair.
+      if (pendingRepair) {
+        const pending = pendingRepair;
+        pendingRepair = null;
+        emitUserOutcome('regenerate', {
+          text: pending.text,
+          missKind: pending.missKind,
+          rawIntent: pending.rawIntent,
+          confidence: pending.confidence,
+        });
+      } else if (lastUserText) {
+        emitUserOutcome('regenerate', { text: lastUserText });
+      }
+      suppressNextRepairLog = true;
+      nextRepairAsRegenerate = false;
     },
     onCoachEvent(event) {
       try {
@@ -408,10 +520,11 @@ export function createConversationLogPipeline(
         const meta = baseMeta();
 
         if (event.type === 'launch') {
+          pendingRepair = null;
           const text = sanitizeMissText(event.text ?? lastUserText, userCap);
           if (!text) return;
           emit({
-            conversationId: opts.conversationId,
+            conversationId: resolveConversationId(),
             turnId: lastUserTurnId ?? mintTurnId(),
             at,
             role: 'user',
@@ -428,26 +541,57 @@ export function createConversationLogPipeline(
         if (event.type === 'repair') {
           const text = sanitizeMissText(event.text ?? lastUserText, userCap);
           if (!text && event.kind !== 'blocked') return;
-          const outcome: ConversationOutcome =
-            event.kind === 'blocked' ? 'blocked' : 'miss';
-          emit({
-            conversationId: opts.conversationId,
-            turnId: lastUserTurnId ?? mintTurnId(),
-            at,
-            role: 'user',
-            text: text || lastUserText || '(blocked)',
-            outcome,
+          if (event.kind === 'blocked') {
+            pendingRepair = null;
+            nextRepairAsRegenerate = false;
+            suppressNextRepairLog = false;
+            emit({
+              conversationId: resolveConversationId(),
+              turnId: lastUserTurnId ?? mintTurnId(),
+              at,
+              role: 'user',
+              text: text || lastUserText || '(blocked)',
+              outcome: 'blocked',
+              missKind: 'blocked',
+              rawIntent: event.rawIntent,
+              confidence: event.confidence,
+              ...meta,
+            });
+            return;
+          }
+          const cleaned = text || lastUserText || '';
+          if (!cleaned) return;
+          if (suppressNextRepairLog) {
+            // Regenerate already upgraded the prior miss — do not emit again.
+            suppressNextRepairLog = false;
+            lastUserText = cleaned;
+            return;
+          }
+          if (nextRepairAsRegenerate) {
+            nextRepairAsRegenerate = false;
+            pendingRepair = null;
+            emitUserOutcome('regenerate', {
+              text: cleaned,
+              missKind: event.kind,
+              rawIntent: event.rawIntent,
+              confidence: event.confidence,
+            });
+            return;
+          }
+          // Defer miss until Laya starts or semantic short-circuit upgrades.
+          pendingRepair = {
+            text: cleaned,
             missKind: event.kind,
             rawIntent: event.rawIntent,
             confidence: event.confidence,
-            ...meta,
-          });
+          };
+          if (!lastUserText) lastUserText = cleaned;
           return;
         }
 
         if (event.type === 'blocked') {
           emit({
-            conversationId: opts.conversationId,
+            conversationId: resolveConversationId(),
             turnId: lastUserTurnId ?? mintTurnId(),
             at,
             role: 'user',
@@ -462,7 +606,7 @@ export function createConversationLogPipeline(
 
         if (event.type === 'confirm_ask') {
           emit({
-            conversationId: opts.conversationId,
+            conversationId: resolveConversationId(),
             turnId: lastUserTurnId ?? mintTurnId(),
             at,
             role: 'user',
@@ -476,7 +620,7 @@ export function createConversationLogPipeline(
 
         if (event.type === 'slot_ask') {
           emit({
-            conversationId: opts.conversationId,
+            conversationId: resolveConversationId(),
             turnId: lastUserTurnId ?? mintTurnId(),
             at,
             role: 'user',

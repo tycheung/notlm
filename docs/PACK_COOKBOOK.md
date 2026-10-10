@@ -60,6 +60,8 @@ User says “add a todo” / picks a palette row
     lookups.json              # name-match entity lists from getContext().data
     normalize.json            # synonyms, fillers, open/create verbs, phrase lists
     heuristics.json           # OOD / discourse / context / nav / correction patterns
+    semantic-index.json       # base hashed n-gram FAQ/query index (regenerable)
+    semantic-index.custom.json # optional training overlay (never overwritten by embed-index)
   drafts/                     # CLI/LLM proposals before --accept
 ```
 
@@ -372,6 +374,36 @@ On `executeStep`, NotLM scrolls top→bottom and blinks each empty `userFill` fi
 `packs/_base-en/faq.json` supplies portable greetings (“hello”), who-are-you, and soft how-to-talk copy. Node loaders (`loadNotlmHomeFromDir`) merge it under product `pack/faq.json` (product wins on the same `id`). Browser demos import + `mergeFaqEntries` the same way.
 
 Ask **“what can you do”** for a live list of **currently available** flow steps (meta `help`) — not static marketing prose.
+
+---
+
+## Semantic retrieve (base + custom layers)
+
+System One can score pack FAQ/query texts with a **hashed char n-gram** index (no cloud embeddings). High similarity **and** token overlap → auto-answer; otherwise top‑k `faqIds` constrain Laya/LLM.
+
+| File | Role | Negotiation |
+|------|------|-------------|
+| `pack/semantic-index.json` | **Base** built from FAQ + queries | Safe to overwrite via offline host embed tooling |
+| `pack/semantic-index.custom.json` | **Custom** miss/training overlay | **Never** overwritten by base embed; commit or keep local |
+
+```bash
+# Rebuild base after FAQ/query alias edits — custom file is left alone
+# (offline host tooling; out of scope for this repo)
+```
+
+Load both into the pack:
+
+```ts
+loadPackFromJson({
+  /* … */
+  semanticIndex: baseIndex,           // semantic-index.json
+  semanticIndexCustom: customIndex,   // semantic-index.custom.json (may be empty docs)
+});
+```
+
+At live time, `retrieveSemantic(utterance, pack.semanticIndexLayers)` scores **both** layers and keeps the best match per `kind:id`. You do not need to merge files on disk. Enable with `features.semanticRetrieve` (default **on** when unset; no-ops if no index docs).
+
+Custom docs should point at **existing** FAQ/query ids (extra `texts` / vectors from production paraphrases). Growing the answer catalog still belongs in `faq.json` / aliases; the custom index is coverage glue, not a second FAQ authoring surface.
 
 ---
 

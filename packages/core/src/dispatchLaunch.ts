@@ -23,6 +23,11 @@ export function launchStep(
     skipGate?: boolean;
     rawIntent?: string | null;
     confidence?: 'high' | 'mid' | 'low';
+    forceOpenSurface?: string;
+    forceSurfaceStep?: string | null;
+    forceOpenModal?: string;
+    skipOpenModal?: boolean;
+    forceInstructOnly?: boolean;
   }
 ): void {
   const { pack, session, ctx, pushAssistant, executeStep, setSession } = deps;
@@ -136,7 +141,21 @@ export function launchStep(
         rawIntent: opts?.rawIntent,
         confidence: opts?.confidence,
       });
-      executeStep(targetStep, { prefill: slots, skipCoach: true });
+      executeStep(targetStep, {
+        prefill: slots,
+        skipCoach: true,
+        ...(opts?.forceOpenSurface
+          ? { forceOpenSurface: opts.forceOpenSurface }
+          : {}),
+        ...(opts?.forceSurfaceStep !== undefined
+          ? { forceSurfaceStep: opts.forceSurfaceStep }
+          : {}),
+        ...(opts?.forceOpenModal
+          ? { forceOpenModal: opts.forceOpenModal }
+          : {}),
+        ...(opts?.skipOpenModal ? { skipOpenModal: true } : {}),
+        ...(opts?.forceInstructOnly ? { forceInstructOnly: true } : {}),
+      });
       return;
     }
   }
@@ -200,6 +219,17 @@ export function launchStep(
   executeStep(targetStep, {
     prefill: slots,
     skipCoach: true,
-    coachCreate: Boolean(nav?.coachCreate || nav?.openModal),
+    coachCreate: Boolean(
+      !opts?.skipOpenModal && (nav?.coachCreate || nav?.openModal)
+    ),
+    ...(opts?.forceOpenSurface
+      ? { forceOpenSurface: opts.forceOpenSurface }
+      : {}),
+    ...(opts?.forceSurfaceStep !== undefined
+      ? { forceSurfaceStep: opts.forceSurfaceStep }
+      : {}),
+    ...(opts?.forceOpenModal ? { forceOpenModal: opts.forceOpenModal } : {}),
+    ...(opts?.skipOpenModal ? { skipOpenModal: true } : {}),
+    ...(opts?.forceInstructOnly ? { forceInstructOnly: true } : {}),
   });
 }

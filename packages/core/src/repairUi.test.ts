@@ -32,4 +32,15 @@ describe('repairUi', () => {
     );
     expect(push).toHaveBeenCalledWith('canned', undefined);
   });
+
+  it('never pushes a blank repair bubble', () => {
+    const push = vi.fn();
+    pushRepairAssistant(
+      { pushAssistant: push, deferDecisionFallbackUi: false },
+      'unknown',
+      '   '
+    );
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(String(push.mock.calls[0]?.[0] ?? '').trim().length).toBeGreaterThan(0);
+  });
 });

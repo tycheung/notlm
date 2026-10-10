@@ -37,7 +37,19 @@ export type SemanticIndex = {
   version: typeof SEMANTIC_INDEX_VERSION;
   dim: number;
   docs: SemanticDoc[];
+  /**
+   * Optional layer tag for multi-index retrieve.
+   * Convention: `base` = regenerable from pack FAQ/queries;
+   * `custom` = host/training overlay (never overwritten by `pack embed-index`).
+   */
+  layer?: 'base' | 'custom' | string;
+  /** SHA of FAQ/query source texts (stamped by training embed rebuild). */
+  sourceDigest?: string;
 };
+
+/** Host pack filenames (under `.notlm/pack/`). */
+export const SEMANTIC_INDEX_BASE_FILE = 'semantic-index.json';
+export const SEMANTIC_INDEX_CUSTOM_FILE = 'semantic-index.custom.json';
 
 export type SemanticCandidate = {
   id: string;
@@ -142,11 +154,8 @@ export function buildSemanticIndex(opts: {
 
   for (const entry of opts.faq ?? []) {
     if (!entry?.id) continue;
-    const texts = [
-      entry.id,
-      ...(entry.aliases ?? []),
-      (entry.text ?? '').slice(0, 160),
-    ]
+    // Aliases + body only — do not embed opaque ids (pollutes hashed n-grams).
+    const texts = [...(entry.aliases ?? []), (entry.text ?? '').slice(0, 160)]
       .map((t) => String(t).trim())
       .filter(Boolean);
     if (!texts.length) continue;
@@ -161,7 +170,7 @@ export function buildSemanticIndex(opts: {
 
   for (const q of opts.queries ?? []) {
     if (!q?.id) continue;
-    const texts = [q.id, q.title ?? '', ...(q.aliases ?? [])]
+    const texts = [q.title ?? '', ...(q.aliases ?? [])]
       .map((t) => String(t).trim())
       .filter(Boolean);
     if (!texts.length) continue;
@@ -180,56 +189,121 @@ export function buildSemanticIndex(opts: {
 export function isSemanticRetrieveEnabled(
   features?: AssistantFeatures | null
 ): boolean {
-  if (!features) return true;
-  if (features.semanticRetrieve === false) return false;
-  return features.semanticRetrieve !== undefined
-    ? Boolean(features.semanticRetrieve)
-    : true;
+  if (!features || features.semanticRetrieve === undefined) return true;
+  return Boolean(features.semanticRetrieve);
 }
 
+/**
+ * Normalize one or more indexes into retrieve layers (skips empty).
+ * Prefer this over concatenating docs when the same faqId appears in base + custom
+ * with different utterance vectors — live scoring keeps the best match per id.
+ */
+export function semanticIndexLayers(
+  ...indexes: Array<SemanticIndex | null | undefined>
+): SemanticIndex[] {
+  return indexes.filter((idx): idx is SemanticIndex => Boolean(idx?.docs?.length));
+}
+
+/**
+ * Flatten layers into one index for hosts that need a single artifact.
+ * Later layers win on the same `kind:id` (custom over base).
+ * Prefer {@link retrieveSemantic} with multiple layers for live combine.
+ */
+export function mergeSemanticIndexes(
+  ...indexes: Array<SemanticIndex | null | undefined>
+): SemanticIndex | undefined {
+  const layers = semanticIndexLayers(...indexes);
+  if (!layers.length) return undefined;
+  const dim = layers[0]!.dim || DEFAULT_SEMANTIC_DIM;
+  const byKey = new Map<string, SemanticDoc>();
+  for (const layer of layers) {
+    for (const doc of layer.docs) {
+      if (!doc?.id || !doc.vector?.length) continue;
+      byKey.set(`${doc.kind}:${doc.id}`, doc);
+    }
+  }
+  const docs = [...byKey.values()].filter(
+    (d) => d.vector?.length === dim
+  );
+  return {
+    version: SEMANTIC_INDEX_VERSION,
+    dim,
+    docs,
+    layer: layers.length > 1 ? 'merged' : layers[0]!.layer,
+  };
+}
+
+function candidateScore(c: SemanticCandidate): number {
+  return c.similarity + c.tokenOverlap * 0.35;
+}
+
+/**
+ * Semantic retrieve over one index or several layers combined at live score time.
+ * When the same id appears in base + custom, the stronger similarity/overlap wins.
+ */
 export function retrieveSemantic(
   utterance: string,
-  index: SemanticIndex | null | undefined,
+  index: SemanticIndex | SemanticIndex[] | null | undefined,
   opts?: SemanticRetrieveOpts
 ): SemanticRetrieveResult {
   const trimmed = (utterance ?? '').trim();
-  if (!trimmed || !index?.docs?.length) {
+  const layers = Array.isArray(index)
+    ? semanticIndexLayers(...index)
+    : semanticIndexLayers(index);
+  if (!trimmed || !layers.length) {
     return { candidates: [], accepted: null };
   }
-  const dim = index.dim || DEFAULT_SEMANTIC_DIM;
+  const dim = layers[0]!.dim || DEFAULT_SEMANTIC_DIM;
   const qVec = embedText(trimmed, dim);
   const topK = opts?.topK ?? DEFAULT_SEMANTIC_TOP_K;
   const minSim = opts?.minSimilarity ?? DEFAULT_MIN_SIMILARITY;
   const minOverlap = opts?.minTokenOverlap ?? DEFAULT_MIN_TOKEN_OVERLAP;
   const kind = opts?.kind;
 
-  const scored: SemanticCandidate[] = [];
-  for (const doc of index.docs) {
-    if (kind && doc.kind !== kind) continue;
-    if (!doc.vector?.length) continue;
-    const similarity = cosineSimilarity(qVec, doc.vector);
-    const tokenOverlap = bestTokenOverlap(trimmed, doc.texts, opts?.heuristics);
-    scored.push({
-      id: doc.id,
-      kind: doc.kind,
-      similarity,
-      tokenOverlap,
-    });
+  const bestByKey = new Map<string, SemanticCandidate>();
+  let warnedDim = false;
+  for (const layer of layers) {
+    const layerDim = layer.dim || DEFAULT_SEMANTIC_DIM;
+    if (layerDim !== dim) {
+      if (
+        !warnedDim &&
+        typeof console !== 'undefined' &&
+        typeof console.warn === 'function'
+      ) {
+        console.warn(
+          `[notlm] skipping semantic layer dim=${layerDim} (query dim=${dim})`
+        );
+        warnedDim = true;
+      }
+      continue;
+    }
+    for (const doc of layer.docs) {
+      if (kind && doc.kind !== kind) continue;
+      if (!doc.vector?.length || doc.vector.length !== dim) continue;
+      const similarity = cosineSimilarity(qVec, doc.vector);
+      const tokenOverlap = bestTokenOverlap(trimmed, doc.texts, opts?.heuristics);
+      const next: SemanticCandidate = {
+        id: doc.id,
+        kind: doc.kind,
+        similarity,
+        tokenOverlap,
+      };
+      const key = `${doc.kind}:${doc.id}`;
+      const prev = bestByKey.get(key);
+      if (!prev || candidateScore(next) > candidateScore(prev)) {
+        bestByKey.set(key, next);
+      }
+    }
   }
-  scored.sort((a, b) => {
-    const sa = a.similarity + a.tokenOverlap * 0.35;
-    const sb = b.similarity + b.tokenOverlap * 0.35;
-    return sb - sa;
-  });
+  const scored = [...bestByKey.values()];
+  scored.sort((a, b) => candidateScore(b) - candidateScore(a));
   const candidates = scored.slice(0, topK);
-  const top = candidates[0];
-  const accepted =
-    top &&
-    top.similarity >= minSim &&
-    top.tokenOverlap >= minOverlap &&
-    contentTokens(trimmed, opts?.heuristics).length >= 2
-      ? top
-      : null;
+  const hasContent = contentTokens(trimmed, opts?.heuristics).length >= 2;
+  const accepted = hasContent
+    ? (candidates.find(
+        (c) => c.similarity >= minSim && c.tokenOverlap >= minOverlap
+      ) ?? null)
+    : null;
   return { candidates, accepted };
 }
 

@@ -16,6 +16,7 @@ import {
   type CompiledHeuristics,
 } from './heuristics.js';
 import { escapeRegExp, hasTokenBoundaryMatch } from './fuzzyText.js';
+import { isGarbageFallbackReply } from './fallbackReplySanitize.js';
 import type { AssistantFeatures } from './types.js';
 
 /** Loose nav-verb sniff from pack heuristics (first token of each nav verb). */
@@ -110,15 +111,23 @@ const CANNED_OOD_REFUSE_RE =
   /\bdo not have the ability to help with\b|\bonly cover in-product workflow steps\b|\bnot that request\b/i;
 
 /**
- * Whether primary (Laya) should trigger secondary LLM — includes canned refuse
- * text even when `proposed.type` is meta/faq (sidecar bug or degraded stub).
+ * Whether primary (Laya) should trigger secondary LLM.
+ * Keep a usable refuse (proposed.type=refuse + real copy) — escalating those
+ * often yields a second “couldn't answer” bubble. Escalate empty/garbage
+ * refuses, and canned OOD text glued to a non-refuse proposed type (sidecar bug).
  */
 export function shouldEscalateToSecondaryLlm(
   result: LlmFallbackResult | null | undefined
 ): boolean {
-  if (isFallbackRefuse(result)) return true;
-  const reply = result?.reply?.trim() ?? '';
+  if (!result) return true;
+  const reply = result.reply?.trim() ?? '';
+  const proposedType = result.proposed?.type;
+  if (proposedType === 'refuse') {
+    if (reply.length >= 24 && !isGarbageFallbackReply(reply)) return false;
+    return true;
+  }
   if (reply && CANNED_OOD_REFUSE_RE.test(reply)) return true;
+  if (isFallbackRefuse(result)) return true;
   return false;
 }
 
@@ -228,6 +237,15 @@ export function isAutoExecutableTrustedGoto(
   ) {
     return false;
   }
+  // Bracket / regenerate questions must never open a create-* step.
+  if (
+    /^create_/.test(step) &&
+    userText &&
+    /\b(bracket|regenerate|late\s+entr)/i.test(userText) &&
+    !/\b(create|new|add)\s+(an?\s+)?(event|list|record)\b/i.test(userText)
+  ) {
+    return false;
+  }
   // High-confidence signal from Laya (aliases attached only when conf ≥ 0.85).
   const aliases = proposed.aliases;
   if (!(Array.isArray(aliases) && aliases.some((a) => String(a).trim().length > 0))) {
@@ -255,6 +273,14 @@ export function shouldSurfaceTrustedGoto(
   if (looksLikeExplainLast(userText)) return false;
   if (looksLikeFaqQuestion(userText)) return false;
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
+  const step = String(proposed!.stepId ?? '').toLowerCase();
+  if (
+    /^create_/.test(step) &&
+    /\b(bracket|regenerate|late\s+entr)/i.test(userText) &&
+    !/\b(create|new|add)\s+(an?\s+)?(event|list|record)\b/i.test(userText)
+  ) {
+    return false;
+  }
   if (!gotoAgreesWithUtterance(userText, proposed, domainTokens)) return false;
   const text = (reply ?? '').trim();
   if (CANNED_OOD_REFUSE_RE.test(text) || /\bdo not have the ability\b/i.test(text)) {

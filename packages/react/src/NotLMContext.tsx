@@ -63,8 +63,7 @@ import {
   runBeforeOpen,
 } from './guideInteract.js';
 import { appearanceToCssVars } from './notlm.css.js';
-import { useSpotlightController, type SpotlightState } from './useSpotlightController.js';
-import { swallowDispatchError } from './hostTelemetry.js';
+import { useSpotlightController } from './useSpotlightController.js';
 import type { ChatThread } from './ThreadList.js';
 import {
   DEFAULT_WELCOME,
@@ -73,26 +72,26 @@ import {
   newChatMessage,
   persistThreads,
 } from './chatThreadState.js';
+import type {
+  EnrichStatusesFn,
+  ExecuteStepOpts,
+  NavigateFn,
+  NotLMContextValue,
+  NotLMProviderProps,
+  OnWizardPageFn,
+  OpenModalFn,
+  OpenSurfaceFn,
+} from './notlmContextTypes.js';
 
-type NavigateFn = (path: string, opts?: { search?: string }) => void;
-/** Host opens a pack-declared modal key (UI-actions only — no product APIs). */
-export type OpenModalFn = (modalKey: string) => void;
-/** Host opens a pack-declared surface key (drawer / upload / wizard). */
-export type OpenSurfaceFn = (surfaceKey: string, surfaceStep?: string) => void;
-export type OnWizardPageFn = (wizardId: string, page: number) => void;
-export type EnrichStatusesFn = (statuses: StepStatus[], ctx: RuntimeContextBase) => StepStatus[];
-
-export type ExecuteStepOpts = {
-  prefill?: SlotBag;
-  skipCoach?: boolean;
-  /**
-   * Steps to treat as complete for requires checks (queue resume after notify
-   * when getContext binders have not flushed yet).
-   */
-  assumeComplete?: StepId[];
-  /** Force coach-create / modal open + missing-field tour. */
-  coachCreate?: boolean;
-};
+export type {
+  EnrichStatusesFn,
+  ExecuteStepOpts,
+  NotLMContextValue,
+  NotLMProviderProps,
+  OnWizardPageFn,
+  OpenModalFn,
+  OpenSurfaceFn,
+} from './notlmContextTypes.js';
 
 function asLoadedPack(pack: PackRuntime): LoadedPack {
   const withIntents = pack as PackRuntime & {
@@ -106,104 +105,7 @@ function asLoadedPack(pack: PackRuntime): LoadedPack {
   };
 }
 
-export type NotLMContextValue = {
-  pack: PackRuntime;
-  getContext: () => RuntimeContextBase;
-  navigate: NavigateFn;
-  features: AssistantFeatures;
-  session: SessionSlots;
-  messages: ChatMessage[];
-  statuses: StepStatus[];
-  panelOpen: boolean;
-  paletteOpen: boolean;
-  checklistOpen: boolean;
-  spotlight: SpotlightState;
-  handleUserUtterance: (text: string) => void;
-  pushAssistant: (
-    text: string,
-    opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[]; intentKey?: string }
-  ) => void;
-  executeStep: (stepId: StepId, opts?: ExecuteStepOpts) => void;
-  notifyStepCompleted: (stepId: StepId) => void;
-  setPanelOpen: (open: boolean) => void;
-  setPaletteOpen: (open: boolean) => void;
-  setChecklistOpen: (open: boolean) => void;
-  clearSpotlight: () => void;
-  chrome: NotLMChromeConfig;
-  hostRootStyle: CSSProperties;
-  hostRootClassName: string;
-  /** True while decision fallback (Laya/LLM) is in flight. */
-  fallbackBusy: boolean;
-  cancelFallback: () => void;
-  regenerateLastFallback: () => void;
-  threads: ChatThread[];
-  activeThreadId: string;
-  selectThread: (id: string) => void;
-  newThread: () => void;
-};
-
 const NotLMContext = createContext<NotLMContextValue | null>(null);
-
-export type NotLMProviderProps = {
-  pack: PackRuntime;
-  getContext: () => RuntimeContextBase;
-  navigate: NavigateFn;
-  openModal?: OpenModalFn;
-  openSurface?: OpenSurfaceFn;
-  onWizardPage?: OnWizardPageFn;
-  enrichStatuses?: EnrichStatusesFn;
-  /** Host draft compilers keyed by control compilerId. */
-  draftCompilers?: Record<string, DraftCompiler>;
-  onApplyDraft?: (draftKey: string, draft: SlotBag) => void | Promise<void>;
-  features?: AssistantFeatures;
-  /** Optional hybrid / ONNX ranker parser (feature-flagged by host). */
-  parseUtteranceFn?: ParseUtteranceFn;
-  /**
-   * Host adapter hook (format NLU, entity open, …).
-   * Return true to skip core dispatch for this utterance.
-   */
-  clearPendingChoices?: (text: string) => boolean | Promise<boolean>;
-  tryHandleUtterance?: (text: string) => boolean | Promise<boolean>;
-  /** Optional structured coach telemetry (no secrets). */
-  onCoachEvent?: (event: CoachEvent) => void;
-  /**
-   * Optional miss-log sink for unknown/ambiguous/low-confidence utterances.
-   * Disabled when `features.missLog === false`.
-   * When `exchangeTransport` is set, successful decision fallbacks also POST MissExchange.
-   */
-  missLog?: {
-    transport: MissLogTransport;
-    exchangeTransport?: MissExchangeTransport;
-    kinds?: MissKind[];
-    packId?: string;
-    getPathname?: () => string | undefined;
-  };
-  /**
-   * Optional conversation transcript sink (hits + misses under one conversationId).
-   * Disabled when `features.conversationLog === false`.
-   */
-  conversationLog?: {
-    transport: ConversationTransport;
-    packId?: string;
-    getPathname?: () => string | undefined;
-  };
-  /** Host BYO decision fallback (Laya sidecar proxy). */
-  fallbackLlm?: LlmFallbackFn;
-  /** Optional secondary LLM after Laya refuses. */
-  secondaryFallbackLlm?: LlmFallbackFn;
-  /** Host typed capability resolvers (reads / writes / tours / search). */
-  resolveQuery?: ResolveQueryFn;
-  previewMutation?: PreviewMutationFn;
-  executeMutation?: ExecuteMutationFn;
-  runTour?: RunTourFn;
-  openSearchHit?: OpenSearchHitFn;
-  resolveContextAsk?: (req: {
-    text: string;
-    ctx: RuntimeContextBase;
-    session: SessionSlots;
-  }) => string | null;
-  children: ReactNode;
-} & NotLMChromeConfig;
 
 export function NotLMProvider({
   pack,
@@ -251,15 +153,19 @@ export function NotLMProvider({
   );
 
   const conversationIdRef = useRef(mintConversationId());
+  const turnThreadIdRef = useRef<string | null>(null);
+  const asyncFallbackOwnsPinRef = useRef(false);
+  const fallbackGenRef = useRef(0);
   const conversationPipelineRef = useRef<ConversationLogPipeline | null>(null);
   const phraseLruRef = useRef<PhraseLruStore>(createMemoryPhraseLru());
-  /** Filled after executeStep is defined; used by decision-fallback auto-nav. */
   const executeStepRef = useRef<(stepId: StepId, opts?: ExecuteStepOpts) => void>(
     () => {}
   );
   const abortRef = useRef<AbortController | null>(null);
-  const lastFallbackTextRef = useRef<string | null>(null);
+  const lastFallbackTextByThreadRef = useRef<Record<string, string>>({});
   const [fallbackBusy, setFallbackBusy] = useState(false);
+  const [fallbackOwnsPin, setFallbackOwnsPin] = useState(false);
+  const [composerQueueBustGen, setComposerQueueBustGen] = useState(0);
 
   const welcome = DEFAULT_WELCOME;
   const [activeThreadId, setActiveThreadId] = useState(() => {
@@ -285,6 +191,8 @@ export function NotLMProvider({
   );
   const messagesByThreadRef = useRef(messagesByThread);
   messagesByThreadRef.current = messagesByThread;
+  const activeThreadIdRef = useRef(activeThreadId);
+  activeThreadIdRef.current = activeThreadId;
 
   useEffect(() => {
     persistThreads(pack.id, {
@@ -294,27 +202,74 @@ export function NotLMProvider({
     });
   }, [pack.id, activeThreadId, threads, messagesByThread]);
   const messages = messagesByThread[activeThreadId] ?? [];
-  const setMessages = useCallback(
-    (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
+
+  const clearTurnThreadPin = useCallback(() => {
+    turnThreadIdRef.current = null;
+  }, []);
+
+  const setMessagesForThread = useCallback(
+    (threadId: string, updater: (prev: ChatMessage[]) => ChatMessage[]) => {
       setMessagesByThread((prev) => {
-        const tid = conversationIdRef.current;
-        const cur = prev[tid] ?? [];
-        return { ...prev, [tid]: updater(cur) };
+        const cur = prev[threadId] ?? [];
+        return { ...prev, [threadId]: updater(cur) };
       });
       setThreads((prev) =>
         prev.map((t) =>
-          t.id === conversationIdRef.current
-            ? { ...t, updatedAt: Date.now() }
-            : t
+          t.id === threadId ? { ...t, updatedAt: Date.now() } : t
         )
       );
     },
     []
   );
 
-  const [session, setSession] = useState<SessionSlots>(() => emptySession());
+  const setMessages = useCallback(
+    (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
+      const tid = turnThreadIdRef.current ?? conversationIdRef.current;
+      setMessagesForThread(tid, updater);
+    },
+    [setMessagesForThread]
+  );
+
+  const [sessionByThread, setSessionByThread] = useState<Record<string, SessionSlots>>(
+    () => {
+      const persisted = loadPersistedThreads(pack.id);
+      const tid = persisted?.activeThreadId ?? conversationIdRef.current;
+      const initial: Record<string, SessionSlots> = { [tid]: emptySession() };
+      const msgs = persisted?.messagesByThread;
+      if (msgs) {
+        for (const k of Object.keys(msgs)) {
+          if (!initial[k]) initial[k] = emptySession();
+        }
+      }
+      return initial;
+    }
+  );
+  const session = sessionByThread[activeThreadId] ?? emptySession();
   const sessionRef = useRef(session);
-  sessionRef.current = session;
+  const sessionByThreadRef = useRef(sessionByThread);
+  sessionByThreadRef.current = sessionByThread;
+  const setSessionForThread = useCallback(
+    (threadId: string, updater: (s: SessionSlots) => SessionSlots) => {
+      setSessionByThread((prev) => {
+        const cur = prev[threadId] ?? emptySession();
+        const next = updater(cur);
+        if (threadId === activeThreadIdRef.current) sessionRef.current = next;
+        return { ...prev, [threadId]: next };
+      });
+    },
+    []
+  );
+
+  const setSession = useCallback(
+    (updater: (s: SessionSlots) => SessionSlots) => {
+      const tid = turnThreadIdRef.current ?? conversationIdRef.current;
+      setSessionForThread(tid, updater);
+    },
+    [setSessionForThread]
+  );
+  useEffect(() => {
+    sessionRef.current = sessionByThread[activeThreadId] ?? emptySession();
+  }, [activeThreadId, sessionByThread]);
   const defaultPathname = useCallback(() => {
     try {
       return getContext().pathname;
@@ -339,7 +294,9 @@ export function NotLMProvider({
     const convPipeline = convEnabled
       ? createConversationLogPipeline({
           transport: conversationLog!.transport,
-          conversationId: conversationIdRef.current,
+          conversationId: activeThreadId,
+          getConversationId: () =>
+            turnThreadIdRef.current ?? conversationIdRef.current,
           packId: conversationLog!.packId ?? pack.id,
           getPathname: conversationLog!.getPathname ?? defaultPathname,
         })
@@ -365,17 +322,69 @@ export function NotLMProvider({
       executeMutation,
       runTour,
       openSearchHit,
+      openSurface: openSurface
+        ? (key, step, surfaceOpts) =>
+            openSurface(key, step ?? undefined, surfaceOpts)
+        : undefined,
       getAbortSignal: () => {
+        const hadInFlight = asyncFallbackOwnsPinRef.current;
         abortRef.current?.abort();
+        // Bump gen; keep turn pin. Do not settle (pending is this turn).
+        fallbackGenRef.current += 1;
+        asyncFallbackOwnsPinRef.current = false;
+        setFallbackOwnsPin(false);
+        setFallbackBusy(false);
+        // Internal preempt must bust composer queue (parity with cancelFallback).
+        if (hadInFlight) setComposerQueueBustGen((n) => n + 1);
         abortRef.current = new AbortController();
         return abortRef.current.signal;
       },
-      onBusyChange: setFallbackBusy,
+      onBusyChange: (busy: boolean) => {
+        if (busy) setFallbackBusy(true);
+      },
       onFallbackMissText: (t) => {
-        lastFallbackTextRef.current = t;
+        const tid = turnThreadIdRef.current ?? conversationIdRef.current;
+        lastFallbackTextByThreadRef.current[tid] = t;
+      },
+      onAssistantReply: (t) => {
+        conversationPipelineRef.current?.logChat('assistant', t);
+      },
+      onRepairResolved: (outcome) => {
+        conversationPipelineRef.current?.markLastUserOutcome(outcome);
+      },
+      getTurnThreadId: () =>
+        turnThreadIdRef.current ?? conversationIdRef.current,
+      setMessagesForThread,
+      setSessionForThread,
+      getSession: () => {
+        const tid = turnThreadIdRef.current ?? conversationIdRef.current;
+        return sessionByThreadRef.current[tid] ?? emptySession();
+      },
+      getSessionForThread: (threadId: string) =>
+        sessionByThreadRef.current[threadId] ?? emptySession(),
+      onAsyncFallbackStarted: () => {
+        const gen = ++fallbackGenRef.current;
+        asyncFallbackOwnsPinRef.current = true;
+        setFallbackOwnsPin(true);
+        return gen;
+      },
+      onEscalatedToLaya: () => {
+        conversationPipelineRef.current?.settleRepairMiss();
+      },
+      onAsyncFallbackFinished: (generation?: number) => {
+        if (
+          typeof generation !== 'number' ||
+          generation !== fallbackGenRef.current
+        ) {
+          return;
+        }
+        asyncFallbackOwnsPinRef.current = false;
+        setFallbackOwnsPin(false);
+        setFallbackBusy(false);
+        clearTurnThreadPin();
       },
       getRecentTurns: () => {
-        const tid = conversationIdRef.current;
+        const tid = turnThreadIdRef.current ?? conversationIdRef.current;
         const msgs = messagesByThreadRef.current[tid] ?? [];
         return msgs
           .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -409,22 +418,37 @@ export function NotLMProvider({
     runTour,
     openSearchHit,
     setMessages,
+    setMessagesForThread,
+    setSession,
+    setSessionForThread,
+    clearTurnThreadPin,
+    activeThreadId,
+    openSurface,
   ]);
 
-  const cancelFallback = useCallback(() => {
+  const cancelFallback = useCallback((opts?: { skipSettleRepair?: boolean }) => {
     abortRef.current?.abort();
     abortRef.current = null;
+    fallbackGenRef.current += 1;
     setFallbackBusy(false);
-  }, []);
+    setFallbackOwnsPin(false);
+    setComposerQueueBustGen((n) => n + 1);
+    if (!opts?.skipSettleRepair) {
+      conversationPipelineRef.current?.settleRepairMiss();
+    }
+    const tid = turnThreadIdRef.current ?? conversationIdRef.current;
+    setMessagesForThread(tid, (prev) =>
+      prev.filter((m) => m.status !== 'thinking' && m.status !== 'streaming')
+    );
+    asyncFallbackOwnsPinRef.current = false;
+    clearTurnThreadPin();
+  }, [clearTurnThreadPin, setMessagesForThread]);
 
   const selectThread = useCallback(
     (id: string) => {
       cancelFallback();
       conversationIdRef.current = id;
       setActiveThreadId(id);
-      if (conversationPipelineRef.current) {
-        // Pipeline conversationId is fixed at create; newThread remints pipeline via effect deps.
-      }
     },
     [cancelFallback]
   );
@@ -439,9 +463,12 @@ export function NotLMProvider({
       ...prev,
       [id]: [newChatMessage('assistant', welcome)],
     }));
+    setSessionByThread((prev) => ({ ...prev, [id]: emptySession() }));
   }, [cancelFallback, welcome]);
 
-  const handleUserUtteranceRef = useRef<(text: string) => void>(() => {});
+  const handleUserUtteranceRef = useRef<
+    (text: string, opts?: { skipUserAppend?: boolean }) => void
+  >(() => {});
 
   const chrome = useMemo<NotLMChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
@@ -505,28 +532,35 @@ export function NotLMProvider({
         pushAssistant('I could not find where to go for that step.');
         return;
       }
-      setSession((prev) => {
-        const next = markActiveStep(prev, stepId);
-        sessionRef.current = next;
-        return next;
-      });
+      setSession((prev) => markActiveStep(prev, stepId));
 
       const mergedPrefill = { ...(nav.prefill ?? {}), ...(opts?.prefill ?? {}) };
-      // Persist draft before CTA click so host controlled inputs see slots.
+      // Persist draft before CTA for host controlled inputs.
       if (nav.draftKey && Object.keys(mergedPrefill).length > 0) {
         writeDraft(pack.id, nav.draftKey, mergedPrefill);
       }
 
       runBeforeOpen(nav);
       if (nav.path) navigate(nav.path, nav.search ? { search: nav.search } : undefined);
-      if (nav.openModal) openModal?.(nav.openModal);
-      if (nav.openSurface) {
-        openSurface?.(nav.openSurface, nav.surfaceStep ?? stepId);
+      const modalKey =
+        opts?.forceOpenModal ||
+        (!opts?.skipOpenModal ? nav.openModal : undefined);
+      if (modalKey) openModal?.(modalKey);
+      const surfaceKey = opts?.forceOpenSurface || nav.openSurface;
+      const surfaceStep =
+        opts?.forceSurfaceStep !== undefined
+          ? opts.forceSurfaceStep ?? undefined
+          : nav.surfaceStep ??
+            (typeof surfaceKey === 'string' && /^confirmDelete/.test(surfaceKey)
+              ? undefined
+              : stepId);
+      if (surfaceKey) {
+        openSurface?.(surfaceKey, surfaceStep);
       }
       if (nav.wizardId != null && nav.wizardPage != null) {
         onWizardPage?.(nav.wizardId, nav.wizardPage);
       }
-      if (nav.confirmDialog) {
+      if (nav.confirmDialog && !opts?.forceOpenSurface) {
         queueMicrotask(() => {
           requestAnimationFrame(() => {
             flashGuideField(nav.confirmDialog!);
@@ -534,13 +568,16 @@ export function NotLMProvider({
           });
         });
       }
-      const coachCreate = Boolean(opts?.coachCreate || nav.coachCreate || nav.openModal);
+      const coachCreate = Boolean(
+        opts?.coachCreate ||
+          (!opts?.skipOpenModal && (nav.coachCreate || nav.openModal))
+      );
       const spotlightOnly = isSpotlightOnly(nav);
       const skipCoach =
         Boolean(opts?.skipCoach) ||
         coachCreate ||
-        Boolean(nav.openModal) ||
-        Boolean(nav.openSurface);
+        Boolean(modalKey) ||
+        Boolean(surfaceKey);
       const roleCopy = coachCopyForRole(nav, stepId);
       let coached = false;
       if (!skipCoach && nav.coachMessage) {
@@ -579,8 +616,7 @@ export function NotLMProvider({
           flashGuideFieldsSequential(userFill, { onlyEmpty: false });
         });
       } else if (coachCreate && nav.openModal && !opts?.skipCoach) {
-        // Re-open path: brief coach nudge when form has no userFill list.
-        // Skip when caller already coached (capability/goto) via skipCoach.
+        // Re-open nudge when form has no userFill; skip if caller already coached.
         pushAssistant('Opening the form — fill what’s needed, then save.');
       } else if (spotlightOnly && nav.spotlight && !coached) {
         pushAssistant(
@@ -604,8 +640,7 @@ export function NotLMProvider({
         getContext(),
         stepId
       );
-      sessionRef.current = result.session;
-      setSession(result.session);
+      setSession(() => result.session);
       for (let i = 0; i < result.messages.length; i++) {
         const msg = result.messages[i]!;
         const choices =
@@ -615,7 +650,7 @@ export function NotLMProvider({
       if (result.executeNext) {
         const next = result.executeNext;
         const assumeComplete = [stepId];
-        // After opening A, B’s control often mounts on the next frame.
+        // Next control often mounts on the following frame.
         queueMicrotask(() => {
           requestAnimationFrame(() => {
             executeStepRef.current(next.stepId, {
@@ -630,30 +665,34 @@ export function NotLMProvider({
   );
 
   const handleUserUtterance = useCallback(
-    (text: string) => {
+    (text: string, opts?: { skipUserAppend?: boolean }) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      conversationPipelineRef.current?.logChat('user', trimmed);
-      setMessages((prev) => [...prev, newChatMessage('user', trimmed)]);
+      if (fallbackBusy || asyncFallbackOwnsPinRef.current) cancelFallback();
+      turnThreadIdRef.current = conversationIdRef.current;
+      if (!opts?.skipUserAppend) {
+        conversationPipelineRef.current?.logChat('user', trimmed);
+        setMessages((prev) => [...prev, newChatMessage('user', trimmed)]);
+      }
       setPanelOpen(true);
 
       const runCore = () => {
+        const turnId = turnThreadIdRef.current ?? conversationIdRef.current;
+        const turnSession = sessionByThreadRef.current[turnId] ?? emptySession();
+        const finishTurn = () => {
+          if (!asyncFallbackOwnsPinRef.current) clearTurnThreadPin();
+        };
         const decisionFallbackOn =
           Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
         const result = dispatchUserUtterance({
           text: trimmed,
           pack: asLoadedPack(pack),
-          session: sessionRef.current,
+          session: turnSession,
           ctx: getContext(),
+          features,
           pushAssistant,
           executeStep: executeStepRef.current,
-          setSession: (updater) => {
-            setSession((prev) => {
-              const next = updater(prev);
-              sessionRef.current = next;
-              return next;
-            });
-          },
+          setSession,
           flashField: (guideId) => {
             flashGuideField(guideId);
           },
@@ -675,13 +714,25 @@ export function NotLMProvider({
           runTour,
           openSearchHit,
           resolveContextAsk,
+          openSurface: openSurface
+            ? (key, step, surfaceOpts) =>
+                openSurface(key, step ?? undefined, surfaceOpts)
+            : undefined,
         });
-        swallowDispatchError(result, pushAssistant);
+        if (result && typeof (result as Promise<unknown>).then === 'function') {
+          void (result as Promise<void>)
+            .catch(() => {
+              pushAssistant(
+                'Something went wrong parsing that — try again in a moment.'
+              );
+            })
+            .finally(finishTurn);
+        } else {
+          finishTurn();
+        }
       };
 
-      // Always clear stuck numbered-match traps (or consume a valid pick) first.
       const runAfterPending = () => {
-        // Prefer typed catalogs / FAQ / context over host entity-open adapters.
         const preferCore = utteranceMatchesTypedCatalog(
           {
             queries: pack.queries,
@@ -698,6 +749,7 @@ export function NotLMProvider({
             void (intercepted as Promise<boolean>).then((handled) => {
               if (handled) {
                 conversationPipelineRef.current?.markLastUserOutcome('adapter');
+                clearTurnThreadPin();
               } else {
                 runCore();
               }
@@ -706,6 +758,7 @@ export function NotLMProvider({
           }
           if (intercepted) {
             conversationPipelineRef.current?.markLastUserOutcome('adapter');
+            clearTurnThreadPin();
             return;
           }
         }
@@ -718,6 +771,7 @@ export function NotLMProvider({
           void (picked as Promise<boolean>).then((handled) => {
             if (handled) {
               conversationPipelineRef.current?.markLastUserOutcome('adapter');
+              clearTurnThreadPin();
             } else {
               runAfterPending();
             }
@@ -726,6 +780,7 @@ export function NotLMProvider({
         }
         if (picked) {
           conversationPipelineRef.current?.markLastUserOutcome('adapter');
+          clearTurnThreadPin();
           return;
         }
       }
@@ -752,16 +807,24 @@ export function NotLMProvider({
       openSearchHit,
       resolveContextAsk,
       setMessages,
+      clearTurnThreadPin,
+      openSurface,
+      fallbackBusy,
+      cancelFallback,
     ]
   );
 
   handleUserUtteranceRef.current = handleUserUtterance;
 
   const regenerateLastFallback = useCallback(() => {
-    const text = lastFallbackTextRef.current?.trim();
+    // Same thread key as onFallbackMissText (turn pin, else active).
+    const tid = turnThreadIdRef.current ?? conversationIdRef.current;
+    const text = lastFallbackTextByThreadRef.current[tid]?.trim();
     if (!text) return;
-    handleUserUtteranceRef.current(text);
-  }, []);
+    cancelFallback({ skipSettleRepair: true });
+    conversationPipelineRef.current?.noteRegenerateReplay();
+    handleUserUtteranceRef.current(text, { skipUserAppend: true });
+  }, [cancelFallback]);
 
   const value = useMemo<NotLMContextValue>(
     () => ({
@@ -788,6 +851,8 @@ export function NotLMProvider({
       hostRootStyle,
       hostRootClassName,
       fallbackBusy,
+      fallbackInFlight: fallbackBusy || fallbackOwnsPin,
+      composerQueueBustGen,
       cancelFallback,
       regenerateLastFallback,
       threads,
@@ -801,8 +866,10 @@ export function NotLMProvider({
       checklistOpen,
       chrome,
       clearSpotlight,
+      composerQueueBustGen,
       executeStep,
       fallbackBusy,
+      fallbackOwnsPin,
       features,
       getContext,
       handleUserUtterance,

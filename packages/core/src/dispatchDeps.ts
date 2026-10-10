@@ -19,6 +19,8 @@ export type DispatchDeps = {
   pack: LoadedPack;
   session: SessionSlots;
   ctx: { pathname: string; data: Record<string, unknown> };
+  /** When set, honors `features.semanticRetrieve` (default on if omitted). */
+  features?: import('./types.js').AssistantFeatures;
   pushAssistant: (
     text: string,
     opts?: {
@@ -49,12 +51,23 @@ export type DispatchDeps = {
   deferDecisionFallbackUi?: boolean;
   /** Skip low-confidence Yes/No; emit repair for Laya→LLM when admin LLM fallback is on. */
   deferLowConfidenceToFallback?: boolean;
+  /**
+   * Skip early fuzzy catalog match. Used after a forced semantic/catalog query
+   * fails so re-dispatch cannot fuzzy another query or claim empty repair.
+   */
+  skipCatalogEarly?: boolean;
   /** Host typed data-query resolver. */
   resolveQuery?: import('./capabilityCatalog.js').ResolveQueryFn;
   previewMutation?: import('./capabilityCatalog.js').PreviewMutationFn;
   executeMutation?: import('./capabilityCatalog.js').ExecuteMutationFn;
   runTour?: import('./capabilityCatalog.js').RunTourFn;
   openSearchHit?: import('./capabilityCatalog.js').OpenSearchHitFn;
+  /** Optional surface open when mutation answers omit stepId (host confirm dialogs). */
+  openSurface?: (
+    surfaceKey: string,
+    surfaceStep?: string,
+    opts?: { deleteList?: 'sa' | 'full' }
+  ) => void;
   /** Contextual “why can’t I save / what’s missing” host narrator. */
   resolveContextAsk?: (req: {
     text: string;

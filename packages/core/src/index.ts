@@ -27,6 +27,7 @@ export * from './entityLookup.js';
 export * from './replies.js';
 export * from './discourse.js';
 export * from './dispatch.js';
+export { stepChoices, stepTitle, pushFaqHit } from './dispatchResolve.js';
 export * from './loadPack.js';
 export * from './coachEvents.js';
 export * from './fireAndForget.js';

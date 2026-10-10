@@ -118,10 +118,12 @@ describe('dispatchUserUtterance', () => {
     expect(calls.sessions[0]?.actionQueue).toHaveLength(2);
   });
 
-  it('handles whats_next meta intent', () => {
+  it('handles whats_next meta intent without auto-navigating', () => {
     const calls = runDispatch("what's next");
-    expect(calls.executed).toEqual(['create_list']);
+    expect(calls.executed).toEqual([]);
     expect(calls.assistant[0]).toContain('Next up');
+    expect(calls.assistant[0]).toMatch(/won’t navigate|won't navigate|tap below/i);
+    expect(calls.choices[0]?.map((c) => c.id)).toEqual(['create_list']);
   });
 
   it('dispatches a single matched step', () => {
@@ -301,7 +303,7 @@ describe('dispatchUserUtterance', () => {
     expect(calls.assistant[0]).toMatch(/what.?s next/i);
   });
 
-  it('explains DAG blockers when gibberish hits a blocked queue head', () => {
+  it('does not let a blocked queue head steal gibberish into a DAG lecture', () => {
     const session: SessionSlots = {
       ...emptySession(),
       actionQueue: [{ stepId: 'add_item', slots: {}, rawSegment: 'add item' }],
@@ -309,8 +311,9 @@ describe('dispatchUserUtterance', () => {
     const calls = runDispatch('mumble jumble', session, { pathname: '/', data: {} });
     expect(calls.executed).toEqual([]);
     expect(calls.assistant[0]).toMatch(/didn.?t catch that/i);
-    expect(calls.assistant[0]).toMatch(/blocked/i);
-    expect(calls.assistant[0]).toContain('Create list');
+    // Point at the queue / what’s next — do not claim the unknown ask “is blocked”.
+    expect(calls.assistant[0]).not.toMatch(/is blocked until/i);
+    expect(calls.assistant[0]).toMatch(/queued|what.?s next/i);
   });
 
   it('injects a missing require ahead of a deferred queued step', () => {
@@ -791,7 +794,7 @@ describe('dispatchUserUtterance', () => {
         {
           id: 'assistant.next_item',
           title: 'Next item',
-          aliases: ['next item'],
+          aliases: ['next item', 'forced query'],
         },
       ],
     });

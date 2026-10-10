@@ -81,6 +81,8 @@ export type MutationPreview = {
   slots?: Record<string, unknown>;
   stepId?: StepId;
   navigatePath?: string;
+  /** Opt-in page navigation (default false — navigatePath alone is informational). */
+  autoNavigate?: boolean;
 };
 
 export type ResolveQueryFn = (req: {

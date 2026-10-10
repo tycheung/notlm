@@ -138,6 +138,9 @@ describe('createConversationLogPipeline', () => {
       kind: 'unknown',
       text: 'asdfgh',
     });
+    // Repair miss is deferred until Laya starts / settle.
+    expect(mem.snapshot().some((t) => t.outcome === 'miss')).toBe(false);
+    pipe.settleRepairMiss();
 
     const snap = mem.snapshot();
     expect(snap.every((t) => t.conversationId === id)).toBe(true);
@@ -175,6 +178,88 @@ describe('createConversationLogPipeline', () => {
     pipe.markLastUserOutcome('adapter');
     const records = mem.snapshotRecords();
     expect(records[0]?.turns.some((t) => t.outcome === 'adapter')).toBe(true);
+  });
+
+  it('logChat accepts regenerate outcome', () => {
+    const mem = createMemoryConversationTransport();
+    const pipe = createConversationLogPipeline({
+      transport: mem,
+      conversationId: 'c',
+      dedupeMs: 0,
+    });
+    pipe.logChat('user', 'what is max score', { outcome: 'regenerate' });
+    const records = mem.snapshotRecords();
+    expect(records[0]?.turns.some((t) => t.outcome === 'regenerate')).toBe(
+      true
+    );
+  });
+
+  it('defers repair miss until settle; upgrades via markLastUserOutcome', () => {
+    const mem = createMemoryConversationTransport();
+    const pipe = createConversationLogPipeline({
+      transport: mem,
+      conversationId: 'c',
+      dedupeMs: 0,
+    });
+    pipe.logChat('user', 'is max 300 enforced');
+    pipe.onCoachEvent({
+      type: 'repair',
+      kind: 'unknown',
+      text: 'is max 300 enforced',
+    });
+    expect(mem.snapshot()).toHaveLength(1);
+    pipe.markLastUserOutcome('hit');
+    expect(mem.snapshot().some((t) => t.outcome === 'hit')).toBe(true);
+    expect(mem.snapshot().some((t) => t.outcome === 'miss')).toBe(false);
+  });
+
+  it('does not append hit after settleRepairMiss for the same turn', () => {
+    const mem = createMemoryConversationTransport();
+    const pipe = createConversationLogPipeline({
+      transport: mem,
+      conversationId: 'c',
+      dedupeMs: 0,
+    });
+    pipe.logChat('user', 'is max 300 enforced');
+    pipe.onCoachEvent({
+      type: 'repair',
+      kind: 'unknown',
+      text: 'is max 300 enforced',
+    });
+    pipe.settleRepairMiss();
+    pipe.markLastUserOutcome('hit');
+    const snaps = mem.snapshot();
+    expect(snaps.filter((t) => t.outcome === 'miss')).toHaveLength(1);
+    expect(snaps.some((t) => t.outcome === 'hit')).toBe(false);
+  });
+
+  it('noteRegenerateReplay upgrades prior miss and suppresses replay repair', () => {
+    const mem = createMemoryConversationTransport();
+    const pipe = createConversationLogPipeline({
+      transport: mem,
+      conversationId: 'c',
+      dedupeMs: 0,
+    });
+    pipe.logChat('user', 'what is max score');
+    pipe.onCoachEvent({
+      type: 'repair',
+      kind: 'unknown',
+      text: 'what is max score',
+    });
+    pipe.settleRepairMiss();
+    expect(mem.snapshot().filter((t) => t.outcome === 'miss')).toHaveLength(1);
+    pipe.noteRegenerateReplay();
+    pipe.onCoachEvent({
+      type: 'repair',
+      kind: 'unknown',
+      text: 'what is max score',
+    });
+    const snaps = mem.snapshot();
+    expect(snaps.some((t) => t.outcome === 'regenerate')).toBe(true);
+    // Replay repair must not add a second miss/regenerate user outcome.
+    expect(snaps.filter((t) => t.role === 'user' && t.outcome === 'regenerate')).toHaveLength(
+      1
+    );
   });
 });
 

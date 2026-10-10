@@ -95,4 +95,82 @@ describe('loadPackFromJson', () => {
       openModal: 'sheet',
     });
   });
+
+  it('omits custom semantic layer when dim mismatches base', () => {
+    const baseDocs = [
+      {
+        id: 'faq-a',
+        kind: 'faq' as const,
+        texts: ['hello'],
+        vector: Array(256).fill(0.01),
+      },
+    ];
+    const pack = loadPackFromJson({
+      manifest: { id: 'dim-lab' },
+      flow,
+      controls: [],
+      intents: { aliases: {} },
+      binders: {},
+      semanticIndex: {
+        version: 1,
+        dim: 256,
+        layer: 'base',
+        docs: baseDocs,
+      },
+      semanticIndexCustom: {
+        version: 1,
+        dim: 64,
+        layer: 'custom',
+        docs: [
+          {
+            id: 'faq-a',
+            kind: 'faq',
+            texts: ['hello custom'],
+            vector: Array(64).fill(0.01),
+          },
+        ],
+      },
+    });
+    expect(pack.semanticIndexLayers).toHaveLength(1);
+    expect(pack.semanticIndexLayers?.[0]?.layer).toBe('base');
+    expect(pack.semanticIndex?.dim).toBe(256);
+  });
+
+  it('omits custom when base dim is omitted but vectors imply a different width', () => {
+    const pack = loadPackFromJson({
+      manifest: { id: 'dim-omit' },
+      flow,
+      controls: [],
+      intents: { aliases: {} },
+      binders: {},
+      semanticIndex: {
+        version: 1,
+        dim: 0 as unknown as number,
+        layer: 'base',
+        docs: [
+          {
+            id: 'faq-a',
+            kind: 'faq',
+            texts: ['hello'],
+            vector: Array(256).fill(0.01),
+          },
+        ],
+      },
+      semanticIndexCustom: {
+        version: 1,
+        dim: 64,
+        layer: 'custom',
+        docs: [
+          {
+            id: 'faq-a',
+            kind: 'faq',
+            texts: ['hello custom'],
+            vector: Array(64).fill(0.01),
+          },
+        ],
+      },
+    });
+    expect(pack.semanticIndexLayers).toHaveLength(1);
+    expect(pack.semanticIndexLayers?.[0]?.layer).toBe('base');
+  });
 });

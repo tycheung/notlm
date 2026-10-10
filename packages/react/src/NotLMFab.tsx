@@ -19,7 +19,8 @@ export function NotLMFab() {
     chrome,
     hostRootStyle,
     hostRootClassName,
-    fallbackBusy,
+    fallbackInFlight,
+    composerQueueBustGen,
     cancelFallback,
     regenerateLastFallback,
     threads,
@@ -37,8 +38,22 @@ export function NotLMFab() {
   const labels = chrome.labels;
   const assistantTitle = labels?.assistantTitle ?? 'Assistant';
 
+  /** Direct utterance (chip/voice) supersedes any composer queue waiting on busy. */
+  const utterNow = useCallback(
+    (text: string) => {
+      queuedWhileBusy.current = null;
+      handleUserUtterance(text);
+    },
+    [handleUserUtterance]
+  );
+
+  const cancelNow = useCallback(() => {
+    queuedWhileBusy.current = null;
+    cancelFallback();
+  }, [cancelFallback]);
+
   const { supported, listening, error, toggle, clearError } = useWebSpeechInput((text) => {
-    handleUserUtterance(text);
+    utterNow(text);
   });
 
   useEffect(() => {
@@ -46,13 +61,18 @@ export function NotLMFab() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages, panelOpen]);
 
+  // Drop queued composer text on thread switch or fallback cancel/preempt.
   useEffect(() => {
-    if (fallbackBusy) return;
+    queuedWhileBusy.current = null;
+  }, [activeThreadId, composerQueueBustGen]);
+
+  useEffect(() => {
+    if (fallbackInFlight) return;
     const queued = queuedWhileBusy.current?.trim();
     if (!queued) return;
     queuedWhileBusy.current = null;
     handleUserUtterance(queued);
-  }, [fallbackBusy, handleUserUtterance]);
+  }, [fallbackInFlight, handleUserUtterance]);
 
   const closePanel = useCallback(() => setPanelOpen(false), [setPanelOpen]);
   useFocusTrap(panelOpen, panelRef, closePanel);
@@ -60,7 +80,7 @@ export function NotLMFab() {
   const submit = () => {
     const text = draft.trim();
     if (!text) return;
-    if (fallbackBusy) {
+    if (fallbackInFlight) {
       queuedWhileBusy.current = text;
       setDraft('');
       return;
@@ -98,14 +118,17 @@ export function NotLMFab() {
       messages={messages}
       className={classNames?.chatMessages}
       listRef={listRef}
-      onChoice={(label) => handleUserUtterance(label)}
+      onChoice={(label) => utterNow(label)}
       onLinkAction={(action) => {
         if (action === 'open_checklist') setChecklistOpen(true);
       }}
       onCopy={(text) => {
         void navigator.clipboard?.writeText?.(text);
       }}
-      onRegenerate={() => regenerateLastFallback()}
+      onRegenerate={() => {
+        queuedWhileBusy.current = null;
+        regenerateLastFallback();
+      }}
       regenerateLabel={labels?.regenerateLabel}
       copyLabel={labels?.copyLabel}
     />
@@ -119,8 +142,8 @@ export function NotLMFab() {
         if (error) clearError();
       }}
       onSubmit={submit}
-      onCancel={cancelFallback}
-      busy={fallbackBusy}
+      onCancel={cancelNow}
+      busy={fallbackInFlight}
       inputClassName={classNames?.chatInput}
       placeholder={labels?.composerPlaceholder ?? 'Ask or type a step…'}
       sendLabel={labels?.sendLabel ?? 'Send'}

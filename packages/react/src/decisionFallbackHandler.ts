@@ -27,11 +27,14 @@ import {
   isSemanticRetrieveEnabled,
   isTrustedGoto,
   looksLikeClearOod,
+  looksLikeNavCommand,
   mismatchedGotoClarifyReply,
   retrieveSemantic,
   sanitizeFallbackReply,
   semanticFaqIdHints,
   shouldSurfaceTrustedGoto,
+  stepChoices,
+  stepTitle,
   tryDispatchCapabilityCatalog,
 } from '@notlm/core';
 import { logExchangeSafe } from './hostTelemetry.js';
@@ -55,8 +58,27 @@ export type DecisionFallbackDeps = {
   getContext: () => { pathname: string; data: Record<string, unknown> };
   thinkingLabel: string;
   setMessages: (updater: (prev: ChatMessage[]) => ChatMessage[]) => void;
+  /** Pin assistant UI to the thread that started this fallback (survives pin clear / thread switch). */
+  setMessagesForThread?: (
+    threadId: string,
+    updater: (prev: ChatMessage[]) => ChatMessage[]
+  ) => void;
   setSession: (updater: (prev: SessionSlots) => SessionSlots) => void;
+  setSessionForThread?: (
+    threadId: string,
+    updater: (prev: SessionSlots) => SessionSlots
+  ) => void;
   sessionRef: { current: SessionSlots };
+  getSession?: () => SessionSlots;
+  getSessionForThread?: (threadId: string) => SessionSlots;
+  getTurnThreadId?: () => string;
+  /**
+   * Sync: async Laya/LLM path started — host should defer clearing the turn thread pin.
+   * Return a generation id so only the latest run clears pin/busy on finish.
+   */
+  onAsyncFallbackStarted?: () => number | void;
+  /** Async fallback finished (success, error, or abort). Pass the start generation. */
+  onAsyncFallbackFinished?: (generation?: number) => void;
   executeStepRef: {
     current: (stepId: StepId, opts?: { skipCoach?: boolean }) => void;
   };
@@ -66,9 +88,22 @@ export type DecisionFallbackDeps = {
   executeMutation?: ExecuteMutationFn;
   runTour?: RunTourFn;
   openSearchHit?: OpenSearchHitFn;
+  openSurface?: (
+    surfaceKey: string,
+    surfaceStep?: string,
+    opts?: { deleteList?: 'sa' | 'full' }
+  ) => void;
   getAbortSignal?: () => AbortSignal | undefined;
   onBusyChange?: (busy: boolean) => void;
   onFallbackMissText?: (text: string) => void;
+  /** Host conversation telemetry for assistant turns that bypass pushAssistant. */
+  onAssistantReply?: (text: string) => void;
+  /**
+   * Upgrade the repair miss outcome when semantic FAQ/query resolves without Laya.
+   */
+  onRepairResolved?: (outcome: 'hit') => void;
+  /** Laya/LLM UI started — settle deferred repair as miss (NLU miss stands). */
+  onEscalatedToLaya?: () => void;
   /** Last N chat turns for follow-up context (role:text). */
   getRecentTurns?: () => Array<{ role: string; text: string }>;
 };
@@ -106,6 +141,8 @@ export function createDecisionFallbackHandler(
   return (event: CoachEvent) => {
     if (!fallbackEnabled || !deps.fallbackLlm) return;
     if (event.type !== 'repair') return;
+    // Clear-OOD already pushed a canned reply in dispatch — miss-log only, no Laya.
+    if (event.rawIntent === 'ood') return;
     if (
       !isDecisionFallbackMissKind(event.kind, {
         includeLowConfidence: includeLowConfidenceFallback,
@@ -118,19 +155,56 @@ export function createDecisionFallbackHandler(
     if (!text) return;
     deps.onFallbackMissText?.(text);
 
+    const boundThreadId = deps.getTurnThreadId?.() ?? '';
+    const patchMessages = (
+      updater: (prev: ChatMessage[]) => ChatMessage[]
+    ): void => {
+      if (boundThreadId && deps.setMessagesForThread) {
+        deps.setMessagesForThread(boundThreadId, updater);
+      } else {
+        deps.setMessages(updater);
+      }
+    };
+    const patchSession = (updater: (prev: SessionSlots) => SessionSlots): void => {
+      if (boundThreadId && deps.setSessionForThread) {
+        deps.setSessionForThread(boundThreadId, updater);
+      } else {
+        deps.setSession(updater);
+      }
+    };
+    const sessionForCap = (): SessionSlots =>
+      (boundThreadId && deps.getSessionForThread
+        ? deps.getSessionForThread(boundThreadId)
+        : deps.getSession?.()) ?? deps.sessionRef.current;
+
+    let fallbackGen: number | undefined;
+    // Abort signal is acquired after sync semantic short-circuits (or on those
+    // early returns) so a future early return cannot clear pin without claiming
+    // or resolving a hit. Sync hits still preempt via getAbortSignal before return.
+    let signal: AbortSignal | undefined;
+
     // System One semantic retrieve: high-bar accept before Laya; else constrain faqIds.
+    // Skip nav-shaped utterances (parity with dispatch.ts).
+    const semLayers =
+      deps.pack.semanticIndexLayers ??
+      (deps.pack.semanticIndex ? [deps.pack.semanticIndex] : []);
     const semEnabled =
       isSemanticRetrieveEnabled(deps.features) &&
-      Boolean(deps.pack.semanticIndex?.docs?.length);
+      semLayers.length > 0 &&
+      !looksLikeNavCommand(text, deps.pack.compiledHeuristics);
     const sem = semEnabled
-      ? retrieveSemantic(text, deps.pack.semanticIndex, {
+      ? retrieveSemantic(text, semLayers, {
           heuristics: deps.pack.compiledHeuristics,
         })
       : null;
+    let emptyFaqAcceptedId: string | null = null;
     if (sem?.accepted?.kind === 'faq') {
       const entry = (deps.pack.faq ?? []).find((f) => f.id === sem.accepted!.id);
       if (entry?.text?.trim()) {
-        deps.setMessages((prev) => [
+        deps.getAbortSignal?.(); // preempt prior Laya/repair
+        deps.onRepairResolved?.('hit');
+        deps.onAssistantReply?.(entry.text);
+        patchMessages((prev) => [
           ...prev,
           {
             id: `a-${Date.now()}`,
@@ -140,28 +214,192 @@ export function createDecisionFallbackHandler(
             status: 'final' as const,
             intentKey: entry.id,
             choices: entry.stepId
-              ? [{ id: entry.stepId, label: entry.stepId }]
+              ? stepChoices(deps.pack, [entry.stepId])
               : undefined,
           },
         ]);
         return;
       }
+      // Accepted FAQ id with empty/missing text is not a hit — exclude from Laya hints.
+      emptyFaqAcceptedId = sem.accepted.id;
     }
-    const constrainedFaqIds = sem ? semanticFaqIdHints(sem, 8) : [];
+    // Pending async query resolve — await inside thinking block; never fire-and-forget
+    // (failed resolve must fall through to fuzzy then Laya).
+    let pendingQueryCap: Promise<boolean> | null = null;
+    let semanticQueryCapDeps: Parameters<
+      typeof tryDispatchCapabilityCatalog
+    >[0] | null = null;
+    if (sem?.accepted?.kind === 'query') {
+      const pushAssistant = (
+        reply: string,
+        opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[] }
+      ) => {
+        deps.onAssistantReply?.(reply);
+        patchMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            role: 'assistant' as const,
+            text: reply,
+            at: Date.now(),
+            choices: opts?.choices,
+            links: opts?.links,
+            status: 'final' as const,
+            intentKey: sem.accepted!.id,
+          },
+        ]);
+      };
+      const capDeps = {
+        text,
+        pack: deps.pack,
+        session: sessionForCap(),
+        ctx: deps.getContext(),
+        pushAssistant,
+        executeStep: deps.executeStepRef.current,
+        setSession: patchSession,
+        navigate: (path: string) => deps.navigate(path),
+        resolveQuery: deps.resolveQuery,
+        previewMutation: deps.previewMutation,
+        executeMutation: deps.executeMutation,
+        runTour: deps.runTour,
+        openSearchHit: deps.openSearchHit,
+        openSurface: deps.openSurface,
+      };
+      // Always keep deps for fuzzy retry (even when resolveQuery is unwired).
+      semanticQueryCapDeps = capDeps;
+      if (deps.resolveQuery) {
+        const cap = tryDispatchCapabilityCatalog(capDeps, text, {
+          queryId: sem.accepted.id,
+          trustedQueryId: true,
+        });
+        if (cap === true) {
+          deps.getAbortSignal?.(); // preempt prior Laya/repair
+          deps.onRepairResolved?.('hit');
+          return;
+        }
+        if (cap && typeof (cap as Promise<unknown>).then === 'function') {
+          pendingQueryCap = cap as Promise<boolean>;
+        }
+      }
+    }
+    const constrainedFaqIds = (sem ? semanticFaqIdHints(sem, 8) : []).filter(
+      (id) => id !== emptyFaqAcceptedId
+    );
+
+    // Preempt prior in-flight work; claim pin before any await / Thinking UI.
+    signal = deps.getAbortSignal?.();
 
     const thinkingId = `thinking-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    deps.onBusyChange?.(true);
-    deps.setMessages((prev) => [
-      ...prev,
-      {
-        id: thinkingId,
-        role: 'assistant' as const,
-        text: deps.thinkingLabel,
-        at: Date.now(),
-        status: 'thinking' as const,
-      },
-    ]);
+    // Defer busy/Thinking… until Laya starts. Claim pin gen synchronously before
+    // scheduling async work so finishTurn cannot clear the turn pin.
+    let thinkingShown = false;
+    let raisedBusy = false;
+    const claimPinGen = (): void => {
+      if (typeof fallbackGen === 'number') return;
+      fallbackGen = deps.onAsyncFallbackStarted?.() ?? undefined;
+    };
+    if (!signal?.aborted) {
+      claimPinGen();
+    }
+    const stripThinking = (): void => {
+      if (!thinkingShown) return;
+      patchMessages((prev) => prev.filter((m) => m.id !== thinkingId));
+      thinkingShown = false;
+    };
+    const beginThinkingUi = (): void => {
+      if (thinkingShown) return;
+      thinkingShown = true;
+      claimPinGen();
+      deps.onEscalatedToLaya?.();
+      if (!raisedBusy) {
+        raisedBusy = true;
+        deps.onBusyChange?.(true);
+      }
+      patchMessages((prev) => [
+        ...prev,
+        {
+          id: thinkingId,
+          role: 'assistant' as const,
+          text: deps.thinkingLabel,
+          at: Date.now(),
+          status: 'thinking' as const,
+        },
+      ]);
+    };
+    const finishCapSuccessUi = (): void => {
+      deps.onRepairResolved?.('hit');
+      // Side-effect-only success → Done. even when Thinking… never showed.
+      let emittedAck = false;
+      patchMessages((prev) => {
+        const without = thinkingShown
+          ? prev.filter((m) => m.id !== thinkingId)
+          : prev;
+        const last = without[without.length - 1];
+        const hasVisible =
+          last?.role === 'assistant' &&
+          (String(last.text ?? '').trim().length > 0 ||
+            (last.choices?.length ?? 0) > 0 ||
+            (last.links?.length ?? 0) > 0);
+        if (hasVisible) return without;
+        emittedAck = true;
+        const base =
+          last?.role === 'assistant' ? without.slice(0, -1) : without;
+        return [
+          ...base,
+          {
+            id: `a-${Date.now()}`,
+            role: 'assistant' as const,
+            text: 'Done.',
+            at: Date.now(),
+            status: 'final' as const,
+          },
+        ];
+      });
+      if (emittedAck) deps.onAssistantReply?.('Done.');
+      thinkingShown = false;
+    };
+    const aborted = (): boolean => {
+      if (!signal?.aborted) return false;
+      stripThinking();
+      return true;
+    };
     void (async () => {
+      try {
+      if (aborted()) return;
+      // Own the turn pin before any await (sync prelude runs before finishTurn).
+      claimPinGen();
+      if (pendingQueryCap) {
+        try {
+          const handled = await pendingQueryCap;
+          if (aborted()) return;
+          if (handled) {
+            finishCapSuccessUi();
+            return;
+          }
+        } catch {
+          /* fall through — fuzzy then Laya */
+        }
+      }
+      if (aborted()) return;
+      // Sync or async forced-query miss: one fuzzy catalog attempt before Laya.
+      if (semanticQueryCapDeps) {
+        try {
+          const fuzzy = tryDispatchCapabilityCatalog(semanticQueryCapDeps, text);
+          const fuzzyHandled =
+            fuzzy && typeof (fuzzy as Promise<unknown>).then === 'function'
+              ? await (fuzzy as Promise<boolean>)
+              : fuzzy === true;
+          if (aborted()) return;
+          if (fuzzyHandled) {
+            finishCapSuccessUi();
+            return;
+          }
+        } catch {
+          /* fall through to Laya */
+        }
+      }
+      if (aborted()) return;
+      beginThinkingUi();
       let pathname: string | undefined;
       let ctxData: Record<string, unknown> = {};
       try {
@@ -196,7 +434,6 @@ export function createDecisionFallbackHandler(
         .filter(Boolean)
         .join(';')
         .slice(0, 2000);
-      const signal = deps.getAbortSignal?.();
       const result = await invokeChainedDecisionFallback({
         primary: deps.fallbackLlm!,
         secondary: deps.secondaryFallbackLlm,
@@ -225,7 +462,8 @@ export function createDecisionFallbackHandler(
           knownSearchIds,
           signal,
           onDelta: (partial) => {
-            deps.setMessages((prev) =>
+            if (signal?.aborted) return;
+            patchMessages((prev) =>
               prev.map((m) =>
                 m.id === thinkingId
                   ? { ...m, text: partial, status: 'streaming' as const }
@@ -235,11 +473,7 @@ export function createDecisionFallbackHandler(
           },
         },
       });
-      deps.onBusyChange?.(false);
-      if (signal?.aborted) {
-        deps.setMessages((prev) => prev.filter((m) => m.id !== thinkingId));
-        return;
-      }
+      if (aborted()) return;
       const resolveFaqPackText = (): string | null => {
         const faqId = result?.proposed?.faqId?.trim();
         if (!faqId || result?.proposed?.type !== 'faq') return null;
@@ -248,11 +482,16 @@ export function createDecisionFallbackHandler(
         return body || null;
       };
       const replaceThinking = (reply: string, choices?: ChatChoice[]) => {
+        if (signal?.aborted) {
+          stripThinking();
+          return;
+        }
         const cleaned =
           sanitizeFallbackReply(reply, text) ??
           resolveFaqPackText() ??
           FALLBACK_UNAVAILABLE_REPLY;
-        deps.setMessages((prev) => {
+        deps.onAssistantReply?.(cleaned);
+        patchMessages((prev) => {
           const without = prev.filter((m) => m.id !== thinkingId);
           return [
             ...without,
@@ -266,6 +505,7 @@ export function createDecisionFallbackHandler(
             },
           ];
         });
+        thinkingShown = false;
       };
       if (!result) {
         // Never silently drop — always leave a visible outcome.
@@ -283,13 +523,15 @@ export function createDecisionFallbackHandler(
         const capDeps = {
           text,
           pack: deps.pack,
-          session: deps.sessionRef.current,
+          session: sessionForCap(),
           ctx: deps.getContext(),
           pushAssistant: (
             reply: string,
             opts?: { choices?: ChatChoice[]; links?: ChatMessageLink[] }
           ) => {
-            deps.setMessages((prev) => {
+            if (signal?.aborted) return;
+            deps.onAssistantReply?.(reply);
+            patchMessages((prev) => {
               const without = prev.filter((m) => m.id !== thinkingId);
               return [
                 ...without,
@@ -305,20 +547,33 @@ export function createDecisionFallbackHandler(
               ];
             });
           },
-          executeStep: deps.executeStepRef.current,
-          setSession: (updater: (s: SessionSlots) => SessionSlots) => {
-            deps.setSession((prev) => {
-              const next = updater(prev);
-              deps.sessionRef.current = next;
-              return next;
-            });
+          executeStep: (stepId: StepId, opts?: { skipCoach?: boolean }) => {
+            if (signal?.aborted) return;
+            deps.executeStepRef.current(stepId, opts);
           },
-          navigate: (path: string) => deps.navigate(path),
+          setSession: (updater: (prev: SessionSlots) => SessionSlots) => {
+            if (signal?.aborted) return;
+            patchSession(updater);
+          },
+          navigate: (path: string) => {
+            if (signal?.aborted) return;
+            deps.navigate(path);
+          },
           resolveQuery: deps.resolveQuery,
           previewMutation: deps.previewMutation,
           executeMutation: deps.executeMutation,
           runTour: deps.runTour,
           openSearchHit: deps.openSearchHit,
+          openSurface: deps.openSurface
+            ? (
+                key: string,
+                step?: string,
+                surfaceOpts?: { deleteList?: 'sa' | 'full' }
+              ) => {
+                if (signal?.aborted) return;
+                deps.openSurface?.(key, step, surfaceOpts);
+              }
+            : undefined,
         };
         const cap = tryDispatchCapabilityCatalog(capDeps, text, {
           queryId: proposed.queryId,
@@ -326,37 +581,70 @@ export function createDecisionFallbackHandler(
           tourId: proposed.tourId,
           searchId: proposed.searchId,
         });
-        const handled =
-          cap && typeof (cap as Promise<unknown>).then === 'function'
-            ? await (cap as Promise<boolean>)
-            : cap === true;
-        if (!handled) {
-          replaceThinking(result.reply);
-        } else {
+        let handled = false;
+        try {
+          handled =
+            cap && typeof (cap as Promise<unknown>).then === 'function'
+              ? await (cap as Promise<boolean>)
+              : cap === true;
+        } catch {
+          handled = false;
+        }
+        if (aborted()) return;
+        const ensureVisibleAfterCap = () => {
+          if (signal?.aborted) {
+            stripThinking();
+            return;
+          }
           // Capability claimed handled — never strip Thinking… into a blank turn.
-          deps.setMessages((prev) => {
+          // Side-effect-only success → Done. (parity with finishCapSuccessUi).
+          let emittedAck = false;
+          patchMessages((prev) => {
             const without = prev.filter((m) => m.id !== thinkingId);
             const last = without[without.length - 1];
             const hasVisible =
-              last?.role === 'assistant' && String(last.text ?? '').trim().length > 0;
+              last?.role === 'assistant' &&
+              (String(last.text ?? '').trim().length > 0 ||
+                (last.choices?.length ?? 0) > 0 ||
+                (last.links?.length ?? 0) > 0);
             if (hasVisible) return without;
-            const cleaned =
-              sanitizeFallbackReply(result.reply, text) ??
-              resolveFaqPackText() ??
-              FALLBACK_UNAVAILABLE_REPLY;
+            emittedAck = true;
+            const base =
+              last?.role === 'assistant' ? without.slice(0, -1) : without;
             return [
-              ...without,
+              ...base,
               {
                 id: `a-${Date.now()}`,
                 role: 'assistant' as const,
-                text: cleaned,
+                text: 'Done.',
                 at: Date.now(),
                 status: 'final' as const,
               },
             ];
           });
+          if (emittedAck) deps.onAssistantReply?.('Done.');
+          thinkingShown = false;
+        };
+        if (!handled) {
+          // Parity with dispatchParsed: forced-id reject → one fuzzy catalog retry.
+          let fuzzyHandled = false;
+          try {
+            const fuzzy = tryDispatchCapabilityCatalog(capDeps, text);
+            fuzzyHandled =
+              fuzzy && typeof (fuzzy as Promise<unknown>).then === 'function'
+                ? await (fuzzy as Promise<boolean>)
+                : fuzzy === true;
+          } catch {
+            fuzzyHandled = false;
+          }
+          if (aborted()) return;
+          if (!fuzzyHandled) replaceThinking(result.reply);
+          else ensureVisibleAfterCap();
+        } else {
+          ensureVisibleAfterCap();
         }
       } else {
+        if (aborted()) return;
         const domainTokens =
           deps.pack.gotoDomainTokens ?? deps.pack.normalize?.gotoDomainTokens;
         const trusted =
@@ -373,8 +661,9 @@ export function createDecisionFallbackHandler(
         if (trusted) {
           replaceThinking(result.reply);
           queueMicrotask(() => {
+            if (signal?.aborted) return;
             deps.executeStepRef.current(trusted, { skipCoach: true });
-            deps.setSession((s) => ({
+            patchSession((s) => ({
               ...s,
               discourse: {
                 ...(s.discourse ?? {}),
@@ -382,7 +671,7 @@ export function createDecisionFallbackHandler(
                 lastCoachAction: {
                   kind: 'goto',
                   id: trusted,
-                  summary: `Opened “${trusted}”.`,
+                  summary: `Opened “${stepTitle(deps.pack, trusted)}”.`,
                 },
               },
             }));
@@ -397,7 +686,7 @@ export function createDecisionFallbackHandler(
           )
         ) {
           const stepId = result.proposed!.stepId!;
-          replaceThinking(result.reply, [{ id: stepId, label: stepId }]);
+          replaceThinking(result.reply, stepChoices(deps.pack, [stepId]));
         } else if (
           looksLikeClearOod(text) ||
           (/i can take you to/i.test(result.reply) &&
@@ -413,6 +702,7 @@ export function createDecisionFallbackHandler(
           replaceThinking(result.reply);
         }
       }
+      if (aborted()) return;
       const exchangeTransport = deps.missLog?.exchangeTransport;
       if (exchangeTransport) {
         logExchangeSafe(
@@ -431,6 +721,37 @@ export function createDecisionFallbackHandler(
           }),
           'missExchange.logExchange'
         );
+      }
+      } catch {
+        if (signal?.aborted) {
+          stripThinking();
+        } else if (thinkingShown) {
+          // Only surface unavailable when we never finalized a reply.
+          // Avoid dual bubbles (good refuse + “couldn't answer”) after post-reply errors.
+          stripThinking();
+          deps.onAssistantReply?.(FALLBACK_UNAVAILABLE_REPLY);
+          patchMessages((prev) => [
+            ...prev.filter((m) => m.id !== thinkingId),
+            {
+              id: `a-${Date.now()}`,
+              role: 'assistant' as const,
+              text: FALLBACK_UNAVAILABLE_REPLY,
+              at: Date.now(),
+              status: 'final' as const,
+            },
+          ]);
+          thinkingShown = false;
+        } else {
+          stripThinking();
+        }
+      } finally {
+        // Busy clear is host-owned via gen-guarded onAsyncFallbackFinished /
+        // getAbortSignal / cancelFallback — do not emit onBusyChange(false) here
+        // (host ignores false; a mismatched false would be fragile if that changed).
+        // Finish when pin gen was claimed (pre-Laya async and/or Laya UI).
+        if (typeof fallbackGen === 'number') {
+          deps.onAsyncFallbackFinished?.(fallbackGen);
+        }
       }
     })();
   };

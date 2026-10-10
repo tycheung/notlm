@@ -37,6 +37,19 @@ export function pathExists(path: string): boolean {
   return existsSync(path);
 }
 
+/** Accept bare arrays or `{ [key]: [...] }` catalog wrappers. */
+export function unwrapCatalogArray(raw: unknown, key: string): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    Array.isArray((raw as Record<string, unknown>)[key])
+  ) {
+    return (raw as Record<string, unknown>)[key] as unknown[];
+  }
+  return [];
+}
+
 export function packDir(home: string): string {
   return join(home, 'pack');
 }
@@ -71,12 +84,23 @@ export function loadPackFolderJson(home: string): Record<string, unknown> {
     const p = join(pack, file);
     if (!existsSync(p)) continue;
     const key = file.replace(/\.json$/, '');
-    out[key] = readJsonFile(p);
+    const raw = readJsonFile(p);
+    if (file === 'faq.json') out[key] = unwrapCatalogArray(raw, 'faq');
+    else if (file === 'corpus.json') out[key] = unwrapCatalogArray(raw, 'corpus');
+    else if (file === 'lookups.json') out[key] = unwrapCatalogArray(raw, 'lookups');
+    else if (file === 'glossary.json') out[key] = unwrapCatalogArray(raw, 'glossary');
+    else out[key] = raw;
+  }
+  const queriesPath = join(pack, 'queries.json');
+  if (existsSync(queriesPath)) {
+    out.queries = unwrapCatalogArray(readJsonFile(queriesPath), 'queries');
   }
   const configPath = join(home, 'config.json');
   if (existsSync(configPath)) out.config = readJsonFile(configPath);
   const scenariosPath = join(home, 'scenarios.json');
-  if (existsSync(scenariosPath)) out.scenarios = readJsonFile(scenariosPath);
+  if (existsSync(scenariosPath)) {
+    out.scenarios = unwrapCatalogArray(readJsonFile(scenariosPath), 'scenarios');
+  }
   return out;
 }
 

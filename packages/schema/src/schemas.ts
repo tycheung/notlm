@@ -467,7 +467,15 @@ const conversationTurnProperties = {
   text: { type: 'string', minLength: 1, maxLength: 2000 },
   outcome: {
     type: 'string',
-    enum: ['hit', 'miss', 'blocked', 'confirm', 'slot_ask', 'adapter'],
+    enum: [
+      'hit',
+      'miss',
+      'blocked',
+      'confirm',
+      'slot_ask',
+      'adapter',
+      'regenerate',
+    ],
   },
   stepId: { type: 'string' },
   missKind: {

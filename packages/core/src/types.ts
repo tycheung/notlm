@@ -268,6 +268,17 @@ export type ParseUtteranceResult = {
   mutationId?: string;
   tourId?: string;
   searchId?: string;
+  /**
+   * Host surface key (drawer / confirm / upload). Bridged via executeStep
+   * `forceOpenSurface` — not a pack control id.
+   */
+  openSurface?: string;
+  /** Optional entity id/name for openSurface (row / confirm target). */
+  surfaceStep?: string;
+  openModal?: string;
+  /** When true, do not open the step’s default modal (surface-only). */
+  skipOpenModal?: boolean;
+  instructOnly?: boolean;
 };
 
 /** Structured coach telemetry for hosts (no secrets / raw credentials). */
@@ -409,8 +420,14 @@ export type PackRuntime = {
   /**
    * Optional precomputed semantic index (FAQ/query embeddings).
    * When omitted, runtime builds one from faq/queries at pack load.
+   * Prefer {@link semanticIndexLayers} when base + custom both exist.
    */
   semanticIndex?: import('./semanticRetrieve.js').SemanticIndex;
+  /**
+   * Live combine layers (e.g. regenerable base + training custom).
+   * Retrieve scores across all layers; best match per id wins.
+   */
+  semanticIndexLayers?: import('./semanticRetrieve.js').SemanticIndex[];
 };
 
 export type BinderOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'truthy' | 'falsy';
@@ -553,6 +570,14 @@ export type ScenarioCase = {
     goBack?: boolean;
     isCorrection?: boolean;
     slots?: SlotBag;
+    /** FAQ paraphrase label for ranker / gates (optional). */
+    faqId?: string;
+    /** Desk query paraphrase label for gates (optional). */
+    queryId?: string;
+    mutationId?: string;
+    tourId?: string;
+    searchId?: string;
+    openSurface?: string;
   };
 };
 
@@ -592,8 +617,16 @@ export type PackJsonInput = {
   mutations?: import('./capabilityCatalog.js').MutationDef[];
   tours?: import('./capabilityCatalog.js').TourDef[];
   search?: import('./capabilityCatalog.js').SearchSurfaceDef[];
-  /** Optional precomputed semantic index artifact. */
+  /**
+   * Base semantic index (regenerable via `pack embed-index` →
+   * `semantic-index.json`).
+   */
   semanticIndex?: import('./semanticRetrieve.js').SemanticIndex;
+  /**
+   * Custom/training overlay (`semantic-index.custom.json`).
+   * Never overwritten by base embed-index; combined at live retrieve.
+   */
+  semanticIndexCustom?: import('./semanticRetrieve.js').SemanticIndex;
 };
 
 /** Host-registered NL → draft patch compiler (no domain types in core). */

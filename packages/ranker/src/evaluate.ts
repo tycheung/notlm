@@ -41,6 +41,9 @@ function expectedLabel(c: RankerEvalCase): string | null {
   if (e.goBack) return 'meta:go_back';
   if (e.rawIntent) return `meta:${e.rawIntent}`;
   if (typeof e.stepId === 'string' && e.stepId) return `goto:${e.stepId}`;
+  // Matches ranker-train labelFromCase — FAQ paraphrase rows train as `faq`.
+  if (e.faqId) return 'faq';
+  // queryId rows are not ranker-labeled (desk queries are catalog, not goto heads).
   return null;
 }
 

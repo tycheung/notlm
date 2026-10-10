@@ -5,12 +5,18 @@
 const RAW_TOKEN_RE =
   /^(?:string|refuse|Refuse|FAQ|faq|goto|meta|query|mutation|tour|search|null|undefined|NaN|true|false|type\s*=\s*\w+)$/i;
 
+/** Bare snake_case step / intent ids (create_event, run_reports, …). */
+const SNAKE_STEP_ID_RE = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/i;
+
 const IMAGE_REFUSAL_RE =
   /\b(?:cannot|can't|can not|unable to|am unable to)\s+view\s+images?\b|\b(?:provide|describe)\s+(?:a\s+)?(?:text\s+)?description\b|\bplease describe the image\b/i;
 
 /** Provider leaked intent labels / debug tokens into the user-visible reply. */
 const LEAKED_INTENT_RE =
   /^(?:Refuse|refuse|FAQ|faq|goto|meta)\b[,:]|\bnot mappable to the catalog\b|\bproposed\.type\s*=/i;
+
+/** Standalone lines that are only a snake_case catalog id. */
+const LEAKED_STEP_LINE_RE = /^\s*[a-z][a-z0-9]*(?:_[a-z0-9]+)+\s*$/gim;
 
 export function isGarbageFallbackReply(
   reply: string | null | undefined,
@@ -19,6 +25,7 @@ export function isGarbageFallbackReply(
   const t = (reply ?? '').trim();
   if (!t) return true;
   if (RAW_TOKEN_RE.test(t)) return true;
+  if (SNAKE_STEP_ID_RE.test(t) && t.length < 48) return true;
   if (IMAGE_REFUSAL_RE.test(t)) return true;
   if (LEAKED_INTENT_RE.test(t)) return true;
   if (/^type\s*=/i.test(t) && t.length < 40) return true;
@@ -57,5 +64,8 @@ export function sanitizeFallbackReply(
   userText?: string
 ): string | null {
   if (isGarbageFallbackReply(reply, userText)) return null;
-  return (reply ?? '').trim();
+  // Strip leaked snake_case step ids on their own lines (keep surrounding prose).
+  const stripped = (reply ?? '').replace(LEAKED_STEP_LINE_RE, '').trim();
+  if (!stripped || isGarbageFallbackReply(stripped, userText)) return null;
+  return stripped;
 }

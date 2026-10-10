@@ -26,5 +26,10 @@ export function pushRepairAssistant(
   policyOpts?: { includeLowConfidence?: boolean }
 ): void {
   if (shouldDeferRepairUi(kind, deps, policyOpts)) return;
-  deps.pushAssistant(text, opts);
+  const msg = String(text ?? '').trim();
+  // Never push a blank/whitespace bubble when Laya defer is off.
+  deps.pushAssistant(
+    msg || 'I didn’t catch that — try rephrasing.',
+    opts
+  );
 }
