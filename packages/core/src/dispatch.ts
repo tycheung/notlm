@@ -191,6 +191,9 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
   if (tryHandleOrphanConfirmNo(live, trimmed)) return;
   if (tryHandleExplainLast(live, trimmed)) return;
+  // Draft compilers before capability catalog — otherwise “build a format…” is
+  // stolen into a multi-step checklist (billing → create…) and auto-launches.
+  if (tryDraftCompilers(live)) return;
   // Catalog before context so pack aliases (e.g. billing "why is create greyed out")
   // are not stolen by the context-ask heuristic.
   if (!live.skipCatalogEarly) {

@@ -783,6 +783,78 @@ describe('dispatchUserUtterance', () => {
     expect(calls.choices[0]?.some((c) => c.id === '__yes__')).toBe(true);
   });
 
+  it('draft compilers beat capability catalog (no auto-nav on format build)', () => {
+    const formatPack = loadPackFromJson({
+      manifest: { id: 'format-draft' },
+      flow: [
+        {
+          id: 'billing',
+          title: 'Subscription / access',
+          keywords: ['subscription'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'apply_format',
+          title: 'Event format',
+          keywords: ['format'],
+          kind: 'hard',
+          requires: ['billing'],
+        },
+      ],
+      controls: [
+        { id: 'nav-billing', stepId: 'billing', path: '/billing' },
+        {
+          id: 'nav-format',
+          stepId: 'apply_format',
+          path: '/format',
+          compilerId: 'event_format',
+          draftKey: 'formatDraft',
+        },
+      ],
+      intents: {
+        aliases: {
+          billing: ['subscription'],
+          apply_format: ['build a format', 'event format'],
+        },
+        meta: [],
+      },
+      binders: {},
+    });
+    let session = emptySession();
+    const assistant: string[] = [];
+    const executed: string[] = [];
+    dispatchUserUtterance({
+      text: 'build a format with 3 games then a cut to stepladder',
+      pack: formatPack,
+      session,
+      ctx: { pathname: '/tournaments/1', data: {} },
+      pushAssistant: (msg) => {
+        assistant.push(msg);
+      },
+      executeStep: (stepId) => {
+        executed.push(stepId);
+      },
+      setSession: (updater) => {
+        session = updater(session);
+      },
+      draftCompilers: {
+        event_format: {
+          id: 'event_format',
+          match: (text) => /\bbuild\b.+\bformat\b/i.test(text),
+          compile: () => ({
+            draft: { formatDraft: { rounds: [{ games: 3 }] } },
+            summary: 'Drafted 3-game format with stepladder cut.',
+          }),
+          listMissing: () => [{ key: 'finals', label: 'finals detail' }],
+        },
+      },
+    });
+    expect(executed).toEqual([]);
+    expect(assistant.join('\n')).toMatch(/Drafted 3-game format|Still need|missing|Focus an event|chat/i);
+    expect(assistant.join('\n')).not.toMatch(/Queued Subscription/i);
+  });
+
   it('awaits async capability when parse returns queryId', async () => {
     const capPack = loadPackFromJson({
       manifest: { id: 'cap' },
