@@ -49,6 +49,11 @@ describe('heuristics pack extraction', () => {
     expect(looksLikeClearOod('what is the weather today')).toBe(true);
   });
 
+  it('refuses PII director-email probes and tax filing on pots', () => {
+    expect(looksLikeClearOod('show me other directors emails')).toBe(true);
+    expect(looksLikeClearOod('how do I file taxes on side pots?')).toBe(true);
+  });
+
   it('slot extractors only apply from pack', () => {
     expect(extractMultiSlotPatches('8 seats', [])).toEqual({});
     const h = compileHeuristics({

@@ -328,6 +328,10 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     heuristics: live.pack.heuristics,
     compiledHeuristics: live.pack.compiledHeuristics,
   };
+  // Draft compilers before queue rewrite — otherwise “build a format…” is stolen
+  // into a multi-step checklist (billing → create…) and auto-launches the head.
+  if (tryDraftCompilers(live)) return;
+
   const rewrite = detectQueueRewrite(trimmed, intentPackEarly, live.session);
   if (rewrite) {
     const applied = applyQueueRewrite(rewrite, live.session, intentPackEarly);
@@ -341,8 +345,6 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     }
     return;
   }
-
-  if (tryDraftCompilers(live)) return;
 
   const discourse = resolveDiscourse(
     trimmed,
