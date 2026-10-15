@@ -24,6 +24,7 @@ import {
   looksLikeClearOod,
   looksLikeDraftFinish,
   looksLikeJailbreakProbe,
+  looksLikeMarkupOrEmptyProbe,
 } from './askNormalize.js';
 import {
   looksLikeNavCommand,
@@ -194,6 +195,25 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
   if (tryHandleOrphanConfirmNo(live, trimmed)) return;
   if (tryHandleExplainLast(live, trimmed)) return;
+
+  // Markup / empty-after-strip before Laya — never silent blank or slow soft-fail.
+  if (looksLikeMarkupOrEmptyProbe(trimmed)) {
+    const assembled = assembleOodReply(trimmed, {
+      session: live.session,
+      bank: live.pack.replies,
+      productRole: live.pack.productRole,
+      heuristics: live.pack.compiledHeuristics,
+    });
+    live.setSession(() => assembled.session);
+    live.pushAssistant(assembled.text);
+    emitCoachEvent(live, {
+      type: 'repair',
+      kind: 'unknown',
+      text: trimmed,
+      rawIntent: 'ood',
+    });
+    return;
+  }
 
   // Jailbreak probes before draft/catalog — must never queue steps or navigate.
   // (General topic-bag OOD stays later so mixed “create X and muffin” can pack.)

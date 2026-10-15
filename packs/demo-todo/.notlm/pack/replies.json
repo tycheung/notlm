@@ -24,5 +24,8 @@
   "repair.unknown": ["{{message}}"],
   "repair.low_confidence": [
     "Just to check — did you mean “{{title}}”? Say yes to continue."
+  ],
+  "repair.open_miss": [
+    "Tell me which item to open (for example: show me the Shopping list)."
   ]
 }

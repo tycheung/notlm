@@ -104,7 +104,9 @@ export function bestAliasContentCoverage(
 ): number {
   const ordered = aliasContentCoverage(needle, label, heuristics);
   const labelToks = contentTokens(label, heuristics);
-  if (labelToks.length < 3) return ordered;
+  // 2+ content tokens: allow bag-of-words so word-order paraphrases hit
+  // (e.g. "baker vs standard" ↔ "standard vs baker"). Singletons stay ordered-only.
+  if (labelToks.length < 2) return ordered;
   return Math.max(
     ordered,
     aliasContentCoverageBagable(needle, label, heuristics)
@@ -138,10 +140,37 @@ export function looksLikeClearOod(
 const JAILBREAK_PROBE_RE =
   /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b|\bfollow (any |the |all )?(instructions|prompts|commands)\b.{0,80}\b(in (them|the names?|this page|bowler)|from the)\b|\bread .{0,40}\b(bowler )?names\b.{0,40}\bfollow\b|\byou are now in (developer|god|dan) mode\b|\bjailbreak\b/i;
 
+/**
+ * True when jailbreak-shaped words appear only as literal name/title payload
+ * after named/called (create/open with adversarial names must not refuse the act).
+ */
+export function jailbreakOnlyInNamedPayload(utterance: string): boolean {
+  const n = normalizeAsk(utterance);
+  if (!n || !JAILBREAK_PROBE_RE.test(n)) return false;
+  const namedIdx = n.search(/\b(?:named|called|title[d]?)\b/);
+  if (namedIdx < 0) return false;
+  const jailIdx = n.search(
+    /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\bjailbreak\b|\byou are now in (developer|god|dan) mode\b/
+  );
+  return jailIdx > namedIdx;
+}
+
 export function looksLikeJailbreakProbe(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n) return false;
+  if (jailbreakOnlyInNamedPayload(utterance)) return false;
   return JAILBREAK_PROBE_RE.test(n);
+}
+
+/** Markup / script / empty-after-strip probes — refuse locally, never Laya. */
+export function looksLikeMarkupOrEmptyProbe(utterance: string): boolean {
+  const raw = utterance.trim();
+  if (!raw) return true;
+  if (/<script\b|javascript\s*:|on\w+\s*=/i.test(raw)) return true;
+  // Markdown javascript links
+  if (/\[[^\]]*\]\(\s*javascript\s*:/i.test(raw)) return true;
+  const n = normalizeAsk(raw);
+  return !n;
 }
 
 /**

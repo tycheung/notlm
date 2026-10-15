@@ -130,6 +130,19 @@ describe('dollar-amount FAQ aliases', () => {
       'faq-fee-setup'
     );
   });
+
+  it('strong-matches word-order paraphrase for compare aliases', () => {
+    const faq = [
+      {
+        id: 'faq-standard-vs-baker',
+        aliases: ['standard vs baker', 'difference between standard and baker'],
+        text: 'Standard vs Baker.',
+      },
+    ];
+    expect(matchStrongFaqEntry(faq, 'baker vs standard')?.id).toBe(
+      'faq-standard-vs-baker'
+    );
+  });
 });
 
 describe('looksLikeFaqQuestion', () => {

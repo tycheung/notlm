@@ -29,6 +29,10 @@ const DEFAULTS: ReplyBank = {
     'Okay — {{handled}}. I am {{product_role}} and cannot help with the rest of that request.',
     'I’ll handle {{handled}}, but I can’t do the rest — I am {{product_role}}.',
   ],
+  // Generic — packs override (demo lists vs host tournaments/events).
+  'repair.open_miss': [
+    'Tell me which item to open (for example: open it by name).',
+  ],
 };
 
 export function renderTemplate(

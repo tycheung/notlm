@@ -39,6 +39,7 @@ import { launchStep } from './dispatchLaunch.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 import { isConceptualQuestion } from './utteranceIntent.js';
 import { tryDispatchCapabilityCatalog } from './dispatchCapability.js';
+import { pickReply } from './replies.js';
 
 function surfaceLaunchOpts(parsed: ParseUtteranceResult): {
   forceOpenSurface?: string;
@@ -448,11 +449,14 @@ export function dispatchParsed(
     return;
   }
   if (lookup.kind === 'miss') {
-    pushAssistant(
-      lookup.query
-        ? `I couldn’t find “${lookup.query}” in the current list.`
-        : 'Tell me which item to open (for example: show me the Shopping list).'
-    );
+    if (lookup.query) {
+      pushAssistant(`I couldn’t find “${lookup.query}” in the current list.`);
+    } else {
+      // Pack-overridable — never hardcode host/demo examples (e.g. Shopping list).
+      const picked = pickReply(session, pack.replies, 'repair.open_miss', {});
+      setSession(() => picked.session);
+      pushAssistant(picked.text);
+    }
     return;
   }
 
