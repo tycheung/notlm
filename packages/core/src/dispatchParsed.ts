@@ -1,6 +1,5 @@
 import { emitCoachEvent } from './coachEvents.js';
 import { extractMultiSlotPatches } from './discourse.js';
-import { evaluateFlowStatuses, nextAvailableSteps } from './flowStatus.js';
 import { dependentStepIds } from './flowGraph.js';
 import { matchEntityLookup } from './entityLookup.js';
 import {
@@ -24,6 +23,7 @@ import {
 import {
   disambiguationPrompt,
   lowConfidencePrompt,
+  preferFocusedNextStep,
   pushFaqHit,
   resolveGoBackStep,
   resolveKeywordCollision,
@@ -356,8 +356,8 @@ export function dispatchParsed(
       }
       return;
     }
-    const statuses = evaluateFlowStatuses(pack, ctx, session.stale);
-    const next = nextAvailableSteps(statuses)[0];
+    const options = suggestNextStepOptions(pack, ctx, session);
+    const next = preferFocusedNextStep(options, pack, ctx);
     if (!next) {
       pushAssistant('You are caught up on the checklist.');
       return;

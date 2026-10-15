@@ -203,15 +203,10 @@
         "^(undo( that)?|never ?mind( that| this| the (choice|pick|selection))?|scratch that|cancel (that|this|the (choice|pick|selection))|never mind that (choice|pick|selection)|cancel that (choice|pick)|nevermind that (pick|choice))[.!?]*$"
       ],
       "againPatterns": [
-        "^(do\\s+)?(that|it|the same)(\\s+again)?[.!?]*$",
-        "^(and\\s+)?after that[.!?]*$",
-        "^(and\\s+)?then what[.!?]*$",
-        "^(what(?:'s| is)\\s+)?next after that[.!?]*$"
+        "^(do\\s+)?(that|it|the same)(\\s+again)?[.!?]*$"
       ],
       "thatStepPatterns": [
-        "^(that(\\s+one)?|the (last|previous) (one|step)|again)[.!?]*$",
-        "^(and\\s+)?after that[.!?]*$",
-        "^(and\\s+)?then what[.!?]*$"
+        "^(that(\\s+one)?|the (last|previous) (one|step)|again)[.!?]*$"
       ],
       "entityPatterns": [
         "^(that|the same)\\s+(list|contact|item|one|record|entry)[.!?]*$"

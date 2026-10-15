@@ -53,6 +53,20 @@ describe('discourse repair', () => {
     expect(resolveDiscourse('go back', {}).kind).toBe('none');
   });
 
+  it('does not treat “after that / then what” as re-open last step', () => {
+    // Those phrases are whats_next meta — not discourse again/thatStep (avoids
+    // unsolicited open of lastStepId after a how-to).
+    expect(
+      resolveDiscourse('And after that?', { lastStepId: 'side_actions' }).kind
+    ).toBe('none');
+    expect(
+      resolveDiscourse('then what?', { lastStepId: 'lock_squads' }).kind
+    ).toBe('none');
+    expect(
+      resolveDiscourse('next after that', { lastStepId: 'enter_scores' }).kind
+    ).toBe('none');
+  });
+
   it('detects meant-the-other as clarify or alternate choice', () => {
     expect(resolveDiscourse('I meant the other project', {}).kind).toBe('clarify_choice');
     expect(

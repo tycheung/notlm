@@ -109,6 +109,51 @@ export function disambiguationPrompt(
   return pickReply(session, pack.replies, 'repair.ambiguous', { message });
 }
 
+/** True when step (transitively) assumes `prereq` already exists in the flow DAG. */
+export function stepAssumesPrerequisite(
+  pack: LoadedPack,
+  stepId: StepId,
+  prereq: StepId,
+  seen: Set<StepId> = new Set()
+): boolean {
+  if (seen.has(stepId)) return false;
+  seen.add(stepId);
+  const step = pack.steps.find((s) => s.id === stepId);
+  if (!step) return false;
+  const req = step.requires ?? [];
+  if (req.includes(prereq)) return true;
+  return req.some((r) => stepAssumesPrerequisite(pack, r, prereq, seen));
+}
+
+/**
+ * When an entity is already focused (event / list), prefer the next incomplete
+ * step that assumes that entity exists — not early setup (billing, create_*).
+ */
+export function preferFocusedNextStep(
+  options: StepStatus[],
+  pack: LoadedPack,
+  ctx: { pathname: string; data: Record<string, unknown> }
+): StepStatus | undefined {
+  if (!options.length) return undefined;
+  const eventFocused =
+    ctx.data.eventId != null && String(ctx.data.eventId).trim() !== '';
+  if (eventFocused) {
+    const desk = options.find((s) =>
+      stepAssumesPrerequisite(pack, s.id, 'create_event')
+    );
+    if (desk) return desk;
+  }
+  const listFocused =
+    ctx.data.listId != null && String(ctx.data.listId).trim() !== '';
+  if (listFocused) {
+    const desk = options.find((s) =>
+      stepAssumesPrerequisite(pack, s.id, 'create_list')
+    );
+    if (desk) return desk;
+  }
+  return options[0];
+}
+
 /** Next incomplete available steps, path-relevant first, capped for chat. */
 export function suggestNextStepOptions(
   pack: LoadedPack,
