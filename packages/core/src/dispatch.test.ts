@@ -126,6 +126,67 @@ describe('dispatchUserUtterance', () => {
     expect(calls.choices[0]?.map((c) => c.id)).toEqual(['create_list']);
   });
 
+  it('whats_next skips the step that matches the open tab when alternatives exist', () => {
+    const deskPack = loadPackFromJson({
+      manifest: { id: 'tab-next' },
+      flow: [
+        {
+          id: 'billing_ready',
+          title: 'Subscription / access',
+          keywords: ['billing'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'create_event',
+          title: 'Create event',
+          keywords: ['create event'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'optional_pots',
+          title: 'Optional pots',
+          keywords: ['optional pots'],
+          kind: 'optional',
+          requires: ['create_event'],
+        },
+        {
+          id: 'register_participants',
+          title: 'Register participants',
+          keywords: ['register'],
+          kind: 'hard',
+          requires: ['create_event'],
+        },
+      ],
+      controls: [
+        { id: 'nb', stepId: 'billing_ready', path: '/billing' },
+        { id: 'ne', stepId: 'create_event', path: '/events/new' },
+        { id: 'ns', stepId: 'optional_pots', path: '/events/pots' },
+        { id: 'nr', stepId: 'register_participants', path: '/events/roster' },
+      ],
+      intents: { aliases: {}, meta: ['whats_next'] },
+      binders: {
+        billing_ready: { path: 'data.billingOk', op: 'truthy' },
+        create_event: { path: 'data.eventId', op: 'truthy' },
+        optional_pots: { path: 'data.potsDone', op: 'truthy' },
+        register_participants: { path: 'data.rosterReady', op: 'truthy' },
+      },
+    });
+    const calls = runDispatch(
+      "what's next",
+      emptySession(),
+      {
+        pathname: '/app/events/17',
+        data: { eventId: 17, tab: 'optional_pots', billingOk: false },
+      },
+      deskPack
+    );
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toContain('Register participants');
+    expect(calls.assistant[0]).not.toMatch(/Optional pots/i);
+  });
+
   it('whats_next prefers entity-desk steps when an event is focused', () => {
     const deskPack = loadPackFromJson({
       manifest: { id: 'desk-next' },

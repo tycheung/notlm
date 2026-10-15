@@ -129,16 +129,34 @@ export function stepAssumesPrerequisite(
  * When an entity is already focused (event / list), prefer the next incomplete
  * step that assumes that entity exists — not early setup (billing, create_*).
  */
+/** True when the open tab/surface already is this checklist step. */
+export function isCurrentSurfaceStep(
+  stepId: StepId,
+  ctx: { pathname: string; data: Record<string, unknown> }
+): boolean {
+  const tab = String(ctx.data.tab ?? '')
+    .toLowerCase()
+    .replace(/-/g, '_');
+  if (!tab) return false;
+  const id = String(stepId).toLowerCase();
+  if (id === tab) return true;
+  // e.g. tab "side_action" vs step "side_actions"
+  if (id.startsWith(tab) || tab.startsWith(id.replace(/s$/, ''))) return true;
+  return false;
+}
+
 export function preferFocusedNextStep(
   options: StepStatus[],
   pack: LoadedPack,
   ctx: { pathname: string; data: Record<string, unknown> }
 ): StepStatus | undefined {
   if (!options.length) return undefined;
+  const notHere = options.filter((s) => !isCurrentSurfaceStep(s.id, ctx));
+  const pool = notHere.length > 0 ? notHere : options;
   const eventFocused =
     ctx.data.eventId != null && String(ctx.data.eventId).trim() !== '';
   if (eventFocused) {
-    const desk = options.find((s) =>
+    const desk = pool.find((s) =>
       stepAssumesPrerequisite(pack, s.id, 'create_event')
     );
     if (desk) return desk;
@@ -146,12 +164,12 @@ export function preferFocusedNextStep(
   const listFocused =
     ctx.data.listId != null && String(ctx.data.listId).trim() !== '';
   if (listFocused) {
-    const desk = options.find((s) =>
+    const desk = pool.find((s) =>
       stepAssumesPrerequisite(pack, s.id, 'create_list')
     );
     if (desk) return desk;
   }
-  return options[0];
+  return pool[0];
 }
 
 /** Next incomplete available steps, path-relevant first, capped for chat. */

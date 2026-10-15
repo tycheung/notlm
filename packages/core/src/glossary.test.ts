@@ -92,6 +92,26 @@ describe('matchFaqEntry', () => {
     ).toBe('faq-bracket-byes');
   });
 
+  it('strong-matches bye-limit paraphrases that Laya previously reversed', () => {
+    const faq = [
+      {
+        id: 'faq-bracket-byes',
+        aliases: [
+          'how many byes can a bracket have',
+          'are byes more than 1 allowed',
+          'are more than one bye allowed',
+        ],
+        text: 'A bracket can never have more than one bye.',
+      },
+    ];
+    expect(matchStrongFaqEntry(faq, 'are byes more than 1 allowed')?.id).toBe(
+      'faq-bracket-byes'
+    );
+    expect(matchStrongFaqEntry(faq, 'are more than one bye allowed')?.id).toBe(
+      'faq-bracket-byes'
+    );
+  });
+
   it('does not let short polluted aliases steal longer product questions', () => {
     const faq = [
       {

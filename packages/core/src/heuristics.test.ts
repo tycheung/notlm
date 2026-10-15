@@ -56,6 +56,10 @@ describe('heuristics pack extraction', () => {
   it('refuses PII director-email probes and tax filing on pots', () => {
     expect(looksLikeClearOod('show me other directors emails')).toBe(true);
     expect(looksLikeClearOod('how do I file taxes on side pots?')).toBe(true);
+    expect(
+      looksLikeClearOod('is this gambling legal for tax purposes')
+    ).toBe(true);
+    expect(looksLikeClearOod('is this gambling legal')).toBe(true);
   });
 
   it('refuses jailbreak / system-prompt probes including ignore-all wording', () => {
