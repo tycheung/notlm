@@ -138,7 +138,7 @@ export function looksLikeClearOod(
  * mixed "create X and muffin recipe" OOD+action packing via topic bags.
  */
 const JAILBREAK_PROBE_RE =
-  /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b|\bfollow (any |the |all )?(instructions|prompts|commands)\b.{0,80}\b(in (them|the names?|this page|bowler)|from the)\b|\bread .{0,40}\b(bowler )?names\b.{0,40}\bfollow\b|\byou are now in (developer|god|dan) mode\b|\bjailbreak\b/i;
+  /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b|\b(print|show|reveal|dump|leak|output|list)\b.{0,60}\b(bowler |user |director )?(ssns?|social security(?: numbers?)?|passwords?)\b|\bfollow (any |the |all )?(instructions|prompts|commands)\b.{0,80}\b(in (them|the names?|this page|bowler)|from the)\b|\bread .{0,40}\b(bowler )?names\b.{0,40}\bfollow\b|\byou are now in (developer|god|dan) mode\b|\bjailbreak\b/i;
 
 /**
  * True when jailbreak-shaped words appear only as literal name/title payload
@@ -188,7 +188,9 @@ export function looksLikeInformationalQuestion(utterance: string): boolean {
 
 /** Finish / apply phrases for structured draft compilers. */
 export function looksLikeDraftFinish(utterance: string): boolean {
-  return /\b(?:done|finish|save\s+(?:the\s+)?format|apply\s+(?:the\s+)?format|that's\s+it|thats\s+it)\b/i.test(
+  // "how is X done?" must never count as finishing a draft.
+  if (looksLikeInformationalQuestion(utterance)) return false;
+  return /\b(?:(?:i'?m\s+|all\s+)?done|finish(?:ing)?(?:\s+up)?|save\s+(?:the\s+)?format|apply\s+(?:the\s+)?format|that's\s+it|thats\s+it)\b/i.test(
     utterance
   );
 }
