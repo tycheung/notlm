@@ -1,8 +1,9 @@
 import type { ChatChoice, ChatMessage } from '@notlm/core';
 import type { ChatThread } from './ThreadList.js';
 
+/** Generic default — hosts override via labels.welcome (avoid IDE “command palette” copy). */
 export const DEFAULT_WELCOME =
-  'How can I help? Ask for a workflow step or open the command palette.';
+  'How can I help? Ask a product question, a checklist step, or what’s next.';
 
 const THREAD_STORAGE_PREFIX = 'notlm:threads:';
 const MAX_PERSISTED_MESSAGES = 80;

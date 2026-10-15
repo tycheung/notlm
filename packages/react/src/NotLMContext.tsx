@@ -145,7 +145,7 @@ export function NotLMProvider({
   const [fallbackOwnsPin, setFallbackOwnsPin] = useState(false);
   const [composerQueueBustGen, setComposerQueueBustGen] = useState(0);
 
-  const welcome = DEFAULT_WELCOME;
+  const welcome = labels?.welcome?.trim() || DEFAULT_WELCOME;
   const [activeThreadId, setActiveThreadId] = useState(() => {
     const persisted = loadPersistedThreads(pack.id);
     if (persisted?.activeThreadId) {
@@ -649,8 +649,11 @@ export function NotLMProvider({
       turnThreadIdRef.current = conversationIdRef.current;
       if (!opts?.skipUserAppend) {
         conversationPipelineRef.current?.logChat('user', trimmed || text);
+        // Drop stale confirm/step chips so Cancel/Yes cannot fire after resolution.
         setMessages((prev) => [
-          ...prev,
+          ...prev.map((m) =>
+            m.choices?.length ? { ...m, choices: undefined } : m
+          ),
           newChatMessage('user', trimmed || text || ' '),
         ]);
       }

@@ -32,6 +32,8 @@ export type NotLMChromeClassNames = Partial<Record<NotLMChromeSlot, string>>;
 
 export type NotLMChromeLabels = {
   assistantTitle?: string;
+  /** First message on New chat (host product voice). */
+  welcome?: string;
   paletteAriaLabel?: string;
   palettePlaceholder?: string;
   paletteSearchAriaLabel?: string;

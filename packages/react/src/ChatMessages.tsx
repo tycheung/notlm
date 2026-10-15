@@ -72,6 +72,9 @@ export function ChatMessages({
   liveRegionId = 'notlm-chat-live',
 }: ChatMessagesProps): ReactNode {
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+  const lastChoiceMsgId = [...messages]
+    .reverse()
+    .find((m) => m.role === 'assistant' && (m.choices?.length ?? 0) > 0)?.id;
   const liveText =
     lastAssistant?.status === 'thinking' || lastAssistant?.status === 'streaming'
       ? lastAssistant.text
@@ -101,6 +104,7 @@ export function ChatMessages({
             m.role === 'assistant' &&
             (m.status === 'final' || m.status === 'error' || !m.status) &&
             Boolean(m.text);
+          const choicesLive = m.id === lastChoiceMsgId;
           return (
             <div key={m.id} className="notlm-chat-turn" data-status={m.status ?? 'final'}>
               <div
@@ -121,7 +125,7 @@ export function ChatMessages({
                   m.text
                 )}
               </div>
-              {m.role === 'assistant' && m.choices && m.choices.length > 0 && (
+              {m.role === 'assistant' && m.choices && m.choices.length > 0 && choicesLive && (
                 <div className="notlm-chat-choices" role="group" aria-label="Suggested steps">
                   {m.choices.map((c) => (
                     <button

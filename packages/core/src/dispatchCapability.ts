@@ -234,6 +234,8 @@ export function tryHandlePendingMutationConfirm(
       delete flags.pendingMutation;
       return { ...s, flags };
     });
+    // Plain ack — host UI clears Yes/Cancel chips on the next user turn /
+    // by keeping only the latest choice group interactive.
     deps.pushAssistant('Canceled — nothing was changed.');
     return true;
   }
