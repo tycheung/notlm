@@ -297,7 +297,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   {
     const faqHit = matchStrongFaqEntry(live.pack.faq ?? [], trimmed);
     if (faqHit && !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)) {
-      pushFaqHit(live.pack, faqHit, live.pushAssistant);
+      pushFaqHit(live.pack, faqHit, live.pushAssistant, live.setSession);
       return;
     }
   }
@@ -318,7 +318,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     if (sem.accepted?.kind === 'faq') {
       const entry = (live.pack.faq ?? []).find((f) => f.id === sem.accepted!.id);
       if (entry?.text?.trim()) {
-        pushFaqHit(live.pack, entry, live.pushAssistant);
+        pushFaqHit(live.pack, entry, live.pushAssistant, live.setSession);
         return;
       }
     }

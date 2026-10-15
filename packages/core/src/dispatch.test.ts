@@ -309,6 +309,88 @@ describe('dispatchUserUtterance', () => {
     expect(calls.assistant[0]).not.toMatch(/opening/i);
   });
 
+  it('FAQ how-to then And after that? prefers the flow successor step', () => {
+    const deskPack = loadPackFromJson({
+      manifest: { id: 'faq-follow' },
+      flow: [
+        {
+          id: 'billing_ready',
+          title: 'Subscription / access',
+          keywords: ['billing'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'lock_squads',
+          title: 'Lock squads',
+          keywords: ['lock squads'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'enter_scores',
+          title: 'Enter scores',
+          keywords: ['enter scores'],
+          kind: 'hard',
+          requires: ['lock_squads'],
+        },
+        {
+          id: 'register_participants',
+          title: 'Register participants',
+          keywords: ['register'],
+          kind: 'hard',
+          requires: [],
+        },
+      ],
+      controls: [
+        { id: 'nb', stepId: 'billing_ready', path: '/billing' },
+        { id: 'nl', stepId: 'lock_squads', path: '/lock' },
+        { id: 'ne', stepId: 'enter_scores', path: '/scores' },
+        { id: 'nr', stepId: 'register_participants', path: '/roster' },
+      ],
+      intents: { aliases: {}, meta: ['whats_next'] },
+      binders: {
+        billing_ready: { path: 'data.billingOk', op: 'truthy' },
+        lock_squads: { path: 'data.locked', op: 'truthy' },
+        enter_scores: { path: 'data.scored', op: 'truthy' },
+        register_participants: { path: 'data.rosterReady', op: 'truthy' },
+      },
+      faq: [
+        {
+          id: 'faq-lock',
+          aliases: ['how do I lock squads'],
+          text: 'Lock squads freezes the roster.',
+          stepId: 'lock_squads',
+        },
+      ],
+    });
+    let session = emptySession();
+    const first = runDispatch(
+      'how do I lock squads',
+      session,
+      {
+        pathname: '/director/tournaments/1/events/1',
+        data: { eventId: 1, billingOk: false },
+      },
+      deskPack
+    );
+    expect(first.assistant[0]).toMatch(/Lock squads freezes/i);
+    session = first.sessions[first.sessions.length - 1] ?? session;
+    expect(session.discourse?.lastStepId).toBe('lock_squads');
+    const second = runDispatch(
+      'And after that?',
+      session,
+      {
+        pathname: '/director/tournaments/1/events/1',
+        data: { eventId: 1, billingOk: false },
+      },
+      deskPack
+    );
+    expect(second.executed).toEqual([]);
+    expect(second.assistant[0]).toMatch(/Enter scores/i);
+    expect(second.assistant[0]).not.toMatch(/Subscription/i);
+  });
+
   it('dispatches a single matched step', () => {
     const calls = runDispatch('make a list');
     expect(calls.executed).toEqual(['create_list']);

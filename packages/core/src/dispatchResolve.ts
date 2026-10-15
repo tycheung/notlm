@@ -35,7 +35,8 @@ export function stepChoices(pack: LoadedPack, stepIds: StepId[]) {
 export function pushFaqHit(
   pack: LoadedPack,
   faqHit: FaqEntry,
-  pushAssistant: PushAssistantFn
+  pushAssistant: PushAssistantFn,
+  setSession?: (updater: (s: SessionSlots) => SessionSlots) => void
 ): void {
   const offer = faqHit.stepId
     ? ` If you want, I can take you to “${stepTitle(pack, faqHit.stepId)}”.`
@@ -50,11 +51,47 @@ export function pushFaqHit(
           },
         ]
       : undefined;
+  if (faqHit.stepId && setSession) {
+    const stepId = faqHit.stepId;
+    setSession((s) => ({
+      ...s,
+      discourse: { ...(s.discourse ?? {}), lastStepId: stepId },
+    }));
+  }
   pushAssistant(`${faqHit.text}${offer}`, {
     choices: faqHit.stepId ? stepChoices(pack, [faqHit.stepId]) : undefined,
     links,
     intentKey: faqHit.id,
   });
+}
+
+/**
+ * After a how-to FAQ stamped lastStepId, prefer a direct flow successor
+ * (e.g. lock_squads → enter_scores) over an unrelated checklist head.
+ */
+export function preferFaqSuccessorNext(
+  pack: LoadedPack,
+  session: SessionSlots,
+  options: StepStatus[]
+): StepStatus | undefined {
+  const last = session.discourse?.lastStepId;
+  if (!last) return undefined;
+  const direct = pack.steps.filter((s) => (s.requires ?? []).includes(last));
+  if (!direct.length) return undefined;
+  for (const s of direct) {
+    const hit = options.find((o) => o.id === s.id);
+    if (hit) return hit;
+  }
+  const hard = direct.find((s) => s.kind === 'hard') ?? direct[0]!;
+  return {
+    id: hard.id,
+    title: hard.title,
+    kind: hard.kind,
+    complete: false,
+    available: true,
+    blockedReason: null,
+    stale: false,
+  };
 }
 
 export function resolveGoBackStep(session: SessionSlots): StepId | null {

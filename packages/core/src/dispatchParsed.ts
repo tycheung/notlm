@@ -23,6 +23,7 @@ import {
 import {
   disambiguationPrompt,
   lowConfidencePrompt,
+  preferFaqSuccessorNext,
   preferFocusedNextStep,
   pushFaqHit,
   resolveGoBackStep,
@@ -157,7 +158,7 @@ export function dispatchParsed(
       (pack.faq ?? []).find((e) => e.id === parsed.faqId) ??
       matchFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
-      pushFaqHit(pack, faqHit, pushAssistant);
+      pushFaqHit(pack, faqHit, pushAssistant, setSession);
       return;
     }
   }
@@ -357,7 +358,9 @@ export function dispatchParsed(
       return;
     }
     const options = suggestNextStepOptions(pack, ctx, session);
-    const next = preferFocusedNextStep(options, pack, ctx);
+    const next =
+      preferFaqSuccessorNext(pack, session, options) ??
+      preferFocusedNextStep(options, pack, ctx);
     if (!next) {
       pushAssistant('You are caught up on the checklist.');
       return;
@@ -378,7 +381,7 @@ export function dispatchParsed(
     }
     const faqHit = matchStrongFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
-      pushFaqHit(pack, faqHit, pushAssistant);
+      pushFaqHit(pack, faqHit, pushAssistant, setSession);
       return;
     }
     emitCoachEvent(deps, {
@@ -468,7 +471,7 @@ export function dispatchParsed(
   {
     const faqHitEarly = matchStrongFaqEntry(pack.faq ?? [], trimmed);
     if (faqHitEarly && !looksLikeNavCommand(trimmed, pack.compiledHeuristics)) {
-      pushFaqHit(pack, faqHitEarly, pushAssistant);
+      pushFaqHit(pack, faqHitEarly, pushAssistant, setSession);
       return;
     }
   }
@@ -516,7 +519,7 @@ export function dispatchParsed(
     }
     const faqHit = matchStrongFaqEntry(pack.faq ?? [], trimmed);
     if (faqHit) {
-      pushFaqHit(pack, faqHit, pushAssistant);
+      pushFaqHit(pack, faqHit, pushAssistant, setSession);
       return;
     }
     const options = suggestNextStepOptions(pack, ctx, session);
