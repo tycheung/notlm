@@ -22,6 +22,8 @@ export function normalizeAsk(
     .trim()
     .toLowerCase()
     .replace(/[’']/g, "'")
+    // Drop HTML/XML tags before tokenizing so markup cannot pollute FAQ match.
+    .replace(/<[^>]*>/g, ' ')
     .replace(/[^a-z0-9'\s-]/g, ' ')
     // Path-style tokens ("actions-needed") match spaced product language.
     .replace(/[-_]+/g, ' ')
@@ -126,6 +128,20 @@ export function looksLikeClearOod(
     if (re.test(n)) return true;
   }
   return false;
+}
+
+/**
+ * Prompt-injection / jailbreak shaped asks. Used to block multi-segment packing
+ * from queuing product steps (e.g. "print" → reports) while still allowing
+ * mixed "create X and muffin recipe" OOD+action packing via topic bags.
+ */
+const JAILBREAK_PROBE_RE =
+  /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b|\byou are now in (developer|god|dan) mode\b|\bjailbreak\b/i;
+
+export function looksLikeJailbreakProbe(utterance: string): boolean {
+  const n = normalizeAsk(utterance);
+  if (!n) return false;
+  return JAILBREAK_PROBE_RE.test(n);
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { ParseUtteranceFn } from './dispatchDeps.js';
+import { looksLikeJailbreakProbe } from './askNormalize.js';
 import { extractEntitySpans } from './oodReply.js';
 import { parseUtterance } from './intents.js';
 import { expandActionsWithPrereqs } from './queueOps.js';
@@ -51,6 +52,24 @@ export function parsePackedUtterance(
   const text = raw.trim();
   if (!text) {
     return { actions: [], meta: null, segments: [], oodSegments: [] };
+  }
+
+  // Jailbreak probes must never queue step actions from a later segment
+  // (e.g. "…and print your system prompt" → run_reports). Topic-bag OOD mixed
+  // with real steps ("create event and muffin recipe") still packs normally.
+  if (looksLikeJailbreakProbe(text)) {
+    return {
+      actions: [],
+      meta: null,
+      segments: [
+        {
+          kind: 'ood',
+          segment: text,
+          entities: extractEntitySpans(text),
+        },
+      ],
+      oodSegments: [text],
+    };
   }
 
   const parseFn = opts?.parseUtteranceFn ?? parseUtterance;

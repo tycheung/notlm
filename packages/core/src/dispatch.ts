@@ -20,12 +20,15 @@ import {
   tryHandlePendingDraftApply,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
-import { looksLikeClearOod } from './askNormalize.js';
+import {
+  looksLikeClearOod,
+  looksLikeDraftFinish,
+  looksLikeJailbreakProbe,
+} from './askNormalize.js';
 import {
   looksLikeNavCommand,
   matchStrongFaqEntry,
 } from './glossary.js';
-import { looksLikeDraftFinish } from './askNormalize.js';
 import { assembleOodReply } from './oodReply.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
 import {
@@ -191,6 +194,27 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
   if (tryHandleOrphanConfirmNo(live, trimmed)) return;
   if (tryHandleExplainLast(live, trimmed)) return;
+
+  // Jailbreak probes before draft/catalog — must never queue steps or navigate.
+  // (General topic-bag OOD stays later so mixed “create X and muffin” can pack.)
+  if (looksLikeJailbreakProbe(trimmed)) {
+    const assembled = assembleOodReply(trimmed, {
+      session: live.session,
+      bank: live.pack.replies,
+      productRole: live.pack.productRole,
+      heuristics: live.pack.compiledHeuristics,
+    });
+    live.setSession(() => assembled.session);
+    live.pushAssistant(assembled.text);
+    emitCoachEvent(live, {
+      type: 'repair',
+      kind: 'unknown',
+      text: trimmed,
+      rawIntent: 'ood',
+    });
+    return;
+  }
+
   // Draft compilers before capability catalog — otherwise “build a format…” is
   // stolen into a multi-step checklist (billing → create…) and auto-launches.
   if (tryDraftCompilers(live)) return;
