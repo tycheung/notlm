@@ -44,6 +44,8 @@ export function ChatComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            // Always submit (including whitespace-only) so the host can show a
+            // clarification instead of a silent no-op when Send is disabled.
             if (!busy) onSubmit();
           }
         }}

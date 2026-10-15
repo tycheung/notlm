@@ -187,6 +187,58 @@ describe('dispatchUserUtterance', () => {
     expect(calls.assistant[0]).not.toMatch(/Optional pots/i);
   });
 
+  it('whats_next on app desk prefers create work over billing_ready', () => {
+    const deskPack = loadPackFromJson({
+      manifest: { id: 'home-next' },
+      flow: [
+        {
+          id: 'billing_ready',
+          title: 'Billing / access',
+          keywords: ['billing'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'create_list',
+          title: 'Create list',
+          keywords: ['create list'],
+          kind: 'hard',
+          requires: [],
+        },
+        {
+          id: 'create_event',
+          title: 'Create event',
+          keywords: ['create event'],
+          kind: 'hard',
+          requires: [],
+        },
+      ],
+      controls: [
+        { id: 'nb', stepId: 'billing_ready', path: '/billing' },
+        { id: 'nl', stepId: 'create_list', path: '/lists/new' },
+        { id: 'ne', stepId: 'create_event', path: '/events/new' },
+      ],
+      intents: { aliases: {}, meta: ['whats_next'] },
+      binders: {
+        billing_ready: { path: 'data.billingOk', op: 'truthy' },
+        create_list: { path: 'data.listId', op: 'truthy' },
+        create_event: { path: 'data.eventId', op: 'truthy' },
+      },
+    });
+    const calls = runDispatch(
+      'And after that?',
+      emptySession(),
+      {
+        pathname: '/app',
+        data: { billingOk: false },
+      },
+      deskPack
+    );
+    expect(calls.executed).toEqual([]);
+    expect(calls.assistant[0]).toMatch(/Create list|Create event/i);
+    expect(calls.assistant[0]).not.toMatch(/Billing/i);
+  });
+
   it('whats_next prefers entity-desk steps when an event is focused', () => {
     const deskPack = loadPackFromJson({
       manifest: { id: 'desk-next' },

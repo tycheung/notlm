@@ -78,8 +78,24 @@ export function NotLMFab() {
   useFocusTrap(panelOpen, panelRef, closePanel);
 
   const submit = () => {
-    const text = draft.trim();
-    if (!text) return;
+    // Prefer React draft; fall back to the live textarea when a programmatic fill
+    // updated the DOM without a React onChange (automation / some IME paths).
+    const domValue =
+      typeof document !== 'undefined'
+        ? (
+            document.querySelector(
+              '[data-testid="notlm-chat-input"]'
+            ) as HTMLTextAreaElement | null
+          )?.value ?? ''
+        : '';
+    const text = (draft || domValue).trim();
+    if (!text) {
+      // Never silent-blank: Enter on whitespace must still get a visible reply.
+      if (fallbackInFlight) return;
+      setDraft('');
+      handleUserUtterance(' ');
+      return;
+    }
     if (fallbackInFlight) {
       queuedWhileBusy.current = text;
       setDraft('');

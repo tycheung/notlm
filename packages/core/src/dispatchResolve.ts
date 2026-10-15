@@ -169,6 +169,15 @@ export function preferFocusedNextStep(
     );
     if (desk) return desk;
   }
+  // Director / app desk with no focused entity: prefer create/open work over
+  // billing so “what’s next / after that?” is not stuck on Subscription.
+  const onAppDesk = /\/(director|lists|app)(\/|$)/i.test(ctx.pathname || '');
+  if (onAppDesk) {
+    const nonBilling = pool.find(
+      (s) => s.id !== 'billing_ready' && !/subscription|billing/i.test(s.id)
+    );
+    if (nonBilling) return nonBilling;
+  }
   return pool[0];
 }
 
