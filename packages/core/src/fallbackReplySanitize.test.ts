@@ -8,6 +8,7 @@ describe('fallbackReplySanitize', () => {
   it('rejects raw tokens and echoes', () => {
     expect(isGarbageFallbackReply('string')).toBe(true);
     expect(isGarbageFallbackReply('refuse')).toBe(true);
+    expect(isGarbageFallbackReply('off-domain')).toBe(true);
     expect(isGarbageFallbackReply('FAQ')).toBe(true);
     expect(isGarbageFallbackReply('create_event')).toBe(true);
     expect(isGarbageFallbackReply('run_reports')).toBe(true);

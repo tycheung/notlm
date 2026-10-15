@@ -136,7 +136,7 @@ export function looksLikeClearOod(
  * mixed "create X and muffin recipe" OOD+action packing via topic bags.
  */
 const JAILBREAK_PROBE_RE =
-  /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b|\byou are now in (developer|god|dan) mode\b|\bjailbreak\b/i;
+  /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b|\bfollow (any |the |all )?(instructions|prompts|commands)\b.{0,80}\b(in (them|the names?|this page|bowler)|from the)\b|\bread .{0,40}\b(bowler )?names\b.{0,40}\bfollow\b|\byou are now in (developer|god|dan) mode\b|\bjailbreak\b/i;
 
 export function looksLikeJailbreakProbe(utterance: string): boolean {
   const n = normalizeAsk(utterance);

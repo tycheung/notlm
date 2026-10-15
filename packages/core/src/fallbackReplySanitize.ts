@@ -3,7 +3,7 @@
  */
 
 const RAW_TOKEN_RE =
-  /^(?:string|refuse|Refuse|FAQ|faq|goto|meta|query|mutation|tour|search|null|undefined|NaN|true|false|type\s*=\s*\w+)$/i;
+  /^(?:string|refuse|Refuse|off-domain|off domain|FAQ|faq|goto|meta|query|mutation|tour|search|null|undefined|NaN|true|false|type\s*=\s*\w+)$/i;
 
 /** Bare snake_case step / intent ids (create_event, run_reports, …). */
 const SNAKE_STEP_ID_RE = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$/i;
