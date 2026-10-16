@@ -266,8 +266,6 @@ export function dispatchParsed(
         return;
       }
       // Partial: queue in-DAG actions then tell user about OOD remainder.
-      // Head must go through launchStep so confirm / unavailable gates apply
-      // (never raw executeStep → auto-nav to billing).
       let nextSession = mixed.session;
       let queue = session.actionQueue;
       for (const action of packed.actions) {
@@ -280,10 +278,17 @@ export function dispatchParsed(
       pushAssistant(mixed.text);
       const head = queue[0];
       if (head) {
-        launchStep(deps, head.stepId, head.slots ?? {}, false, {
-          rawIntent: parsed.rawIntent,
-          confidence: parsed.confidence,
-        });
+        // Multi-step: executeStep — launchStep still sees deps.session pre-setSession
+        // and would replace the packed queue with a singleton head.
+        // Single-step (e.g. create+OOD title): launchStep for confirm/unavailable gates.
+        if (queue.length >= 2) {
+          executeStep(head.stepId, { prefill: head.slots ?? {} });
+        } else {
+          launchStep(deps, head.stepId, head.slots ?? {}, false, {
+            rawIntent: parsed.rawIntent,
+            confidence: parsed.confidence,
+          });
+        }
       }
       return;
     }
@@ -302,10 +307,9 @@ export function dispatchParsed(
     const summary = packedUtteranceSummary(queue, pack.steps);
     if (summary) pushAssistant(summary);
     const head = queue[0]!;
-    launchStep(deps, head.stepId, head.slots ?? {}, false, {
-      rawIntent: parsed.rawIntent,
-      confidence: parsed.confidence,
-    });
+    // executeStep (not launchStep): packed queue is only on the pending setSession
+    // snapshot; launchStep would wipe it to [head] via empty deps.session.actionQueue.
+    executeStep(head.stepId, { prefill: head.slots });
     return;
   }
 
