@@ -131,6 +131,9 @@ export function looksLikeClearOod(
   const h = resolveH(heuristics);
   const n = normalizeAsk(utterance, heuristics);
   if (!n) return false;
+  // Create/open titles may embed jailbreak chrome as a literal name — that is
+  // not Clear OOD (see jailbreakOnlyInNamedPayload).
+  if (jailbreakOnlyInNamedPayload(utterance)) return false;
   if (h.oodTopicRe?.test(n)) return true;
   for (const re of h.oodPhraseRes) {
     if (re.test(n)) return true;
