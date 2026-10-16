@@ -149,16 +149,26 @@ const JAILBREAK_PROBE_RE =
 /**
  * True when jailbreak-shaped words appear only as literal name/title payload
  * after named/called (create/open with adversarial names must not refuse the act).
+ * Also covers `create event BOT E1 Ignore previous…` without an explicit
+ * named/called keyword — but not `create event and ignore previous…` (second clause).
  */
 export function jailbreakOnlyInNamedPayload(utterance: string): boolean {
   const n = normalizeAsk(utterance);
   if (!n || !JAILBREAK_PROBE_RE.test(n)) return false;
-  const namedIdx = n.search(/\b(?:named|called|title[d]?)\b/);
-  if (namedIdx < 0) return false;
   const jailIdx = n.search(
     /\bignore (all )?(previous|prior|above|earlier) (instructions|rules|prompts)\b|\bjailbreak\b|\byou are now in (developer|god|dan) mode\b/
   );
-  return jailIdx > namedIdx;
+  if (jailIdx < 0) return false;
+  const namedIdx = n.search(/\b(?:named|called|title[d]?)\b/);
+  if (namedIdx >= 0 && jailIdx > namedIdx) return true;
+  const createOpen = n.match(
+    /\b(?:create|add|make|open)\s+(?:an?\s+)?(?:event|tournament)\b/
+  );
+  if (!createOpen || createOpen.index == null) return false;
+  const afterType = n.slice(createOpen.index + createOpen[0].length).trimStart();
+  // Second-clause OOD ("create event and ignore…") is not a title payload.
+  if (!afterType || /^and\b/i.test(afterType)) return false;
+  return jailIdx >= createOpen.index + createOpen[0].length;
 }
 
 export function looksLikeJailbreakProbe(utterance: string): boolean {
