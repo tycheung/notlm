@@ -4,6 +4,7 @@ import {
   normalizeAsk,
 } from './askNormalize.js';
 import { hasTokenBoundaryMatch } from './fuzzyText.js';
+import { matchStrongFaqEntry } from './glossary.js';
 import {
   anyReTest,
   DEFAULT_HEURISTICS,
@@ -150,8 +151,14 @@ export function matchAliasCatalogEntry<T extends AliasCatalog>(
       if (needleTokens.length < 2 && labelTokens.length >= 2 && !prefixHit) {
         continue;
       }
+      // label⊂needle is always OK (longer ask contains short alias).
+      // needle⊂label only when near-equal length — otherwise bare "what's next"
+      // steals "what's next this week" / long FAQ typo aliases via boundary.
       const boundary =
-        hasTokenBoundaryMatch(needle, label) || hasTokenBoundaryMatch(label, needle);
+        hasTokenBoundaryMatch(needle, label) ||
+        (hasTokenBoundaryMatch(label, needle) &&
+          needleTokens.length >= labelTokens.length - 1 &&
+          needle.length >= label.length * 0.85);
       const coverage = label.includes(' ')
         ? bestAliasContentCoverage(needle, label)
         : 0;
@@ -322,8 +329,17 @@ export function utteranceMatchesTypedCatalog(
   if (matchMutationEntry(pack.mutations ?? [], trimmed)) return true;
   if (matchTourEntry(pack.tours ?? [], trimmed)) return true;
   if (matchSearchEntry(pack.search ?? [], trimmed)) return true;
-  // FAQ: avoid pulling in glossary — callers pass pack.faq; match via aliases only.
+  // Strong FAQ only — weak typo-alias hits must not skip host orientation adapters
+  // (e.g. bare "whats next?" vs "uhh whats next round or whatever").
   const faq = pack.faq ?? [];
-  if (faq.length && matchAliasCatalogEntry(faq, trimmed)) return true;
+  if (
+    faq.length &&
+    matchStrongFaqEntry(
+      faq.map((f) => ({ ...f, text: (f as { text?: string }).text ?? '' })),
+      trimmed
+    )
+  ) {
+    return true;
+  }
   return false;
 }

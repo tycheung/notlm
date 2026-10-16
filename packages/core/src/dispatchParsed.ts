@@ -266,6 +266,8 @@ export function dispatchParsed(
         return;
       }
       // Partial: queue in-DAG actions then tell user about OOD remainder.
+      // Head must go through launchStep so confirm / unavailable gates apply
+      // (never raw executeStep → auto-nav to billing).
       let nextSession = mixed.session;
       let queue = session.actionQueue;
       for (const action of packed.actions) {
@@ -277,7 +279,12 @@ export function dispatchParsed(
       setSession(() => nextSession);
       pushAssistant(mixed.text);
       const head = queue[0];
-      if (head) executeStep(head.stepId, { prefill: head.slots });
+      if (head) {
+        launchStep(deps, head.stepId, head.slots ?? {}, false, {
+          rawIntent: parsed.rawIntent,
+          confidence: parsed.confidence,
+        });
+      }
       return;
     }
   }
@@ -295,7 +302,10 @@ export function dispatchParsed(
     const summary = packedUtteranceSummary(queue, pack.steps);
     if (summary) pushAssistant(summary);
     const head = queue[0]!;
-    executeStep(head.stepId, { prefill: head.slots });
+    launchStep(deps, head.stepId, head.slots ?? {}, false, {
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+    });
     return;
   }
 

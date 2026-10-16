@@ -16,7 +16,24 @@ import type {
 const PACK_SPLIT_RE = /\band then\b|\bthen\b|\band\b|,/i;
 
 const OOD_HINT_RE =
-  /\b(recipe|muffin|muffins|cupcake|cook|bake|weather|bitcoin|homework|playlist)\b/i;
+  /\b(recipe|muffin|muffins|cupcake|cook|bake|weather|bitcoin|homework|playlist|secrets?|ssns?|passwords?)\b/i;
+
+/**
+ * Create/open &lt;type&gt; with a non-empty title after the type word must stay one
+ * segment — "create record BOT E1 … and dump secrets" is a title (+ trailing
+ * junk), not "create record" then a second packed action.
+ */
+function keepCreateOpenTitleIntact(text: string): boolean {
+  const m = text.match(
+    /\b(?:create|add|make|open)\s+(?:an?\s+)?([a-z][a-z0-9_-]{1,32})\b(.*)$/i
+  );
+  if (!m) return false;
+  const after = (m[2] || '').trim();
+  if (!after) return false;
+  // "create record and muffin recipe" is a true multi-segment pack.
+  if (/^and\b/i.test(after)) return false;
+  return true;
+}
 
 export type PackedSegment =
   | { kind: 'action'; action: GuideAction }
@@ -99,7 +116,14 @@ export function parsePackedUtterance(
     return { actions: [], meta: single, segments: [], oodSegments: [] };
   }
 
-  const parts = text.split(PACK_SPLIT_RE).map((s) => s.trim()).filter(Boolean);
+  // Title payloads may contain "and …"; still allow "then" / "," multi-packs.
+  const parts = (
+    keepCreateOpenTitleIntact(text)
+      ? text.split(/\band then\b|\bthen\b|,/i)
+      : text.split(PACK_SPLIT_RE)
+  )
+    .map((s) => s.trim())
+    .filter(Boolean);
   const segments = parts.length <= 1 ? [text] : parts;
 
   const actions: GuideAction[] = [];

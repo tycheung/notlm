@@ -83,6 +83,37 @@ describe('capabilityCatalog', () => {
       false
     );
   });
+
+  it('bare whats next does not prefer weak FAQ or coming-up this-week alias', () => {
+    const faq = [
+      {
+        id: 'faq-advance',
+        aliases: ['uhh whats next round or whatever', 'how do advance filters work'],
+        text: 'Advance after scores.',
+      },
+    ];
+    const comingUp = [
+      {
+        id: 'td.coming_up',
+        title: 'Coming up',
+        aliases: [
+          "what's coming up",
+          "what's coming next this week",
+          'tournaments next this week',
+        ],
+      },
+    ];
+    expect(
+      utteranceMatchesTypedCatalog({ queries: comingUp, faq }, 'whats next?')
+    ).toBe(false);
+    expect(
+      utteranceMatchesTypedCatalog({ queries: comingUp, faq }, "what's next?")
+    ).toBe(false);
+    expect(matchQueryEntry(comingUp, "what's next?")?.id).toBeUndefined();
+    expect(
+      matchQueryEntry(comingUp, "what's coming next this week")?.id
+    ).toBe('td.coming_up');
+  });
 });
 
 describe('askNormalize / FAQ compare', () => {
