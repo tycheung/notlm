@@ -42,6 +42,10 @@ import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 
 export type { DispatchDeps, ParseUtteranceFn } from './dispatchDeps.js';
 
+/** Shown after a successful in-chat format draft compile (no finish/apply). */
+export const FORMAT_DRAFT_REFINE_NUDGE =
+  'Keep refining in chat (game counts, cuts, payouts), say save or apply the format when ready, or say open event format for the wizard.';
+
 function trackSession(deps: DispatchDeps): DispatchDeps {
   const tracked: DispatchDeps = {
     ...deps,
@@ -78,8 +82,8 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
     });
     if (!run.handled) continue;
     live.setSession(() => run.session);
-    if (run.summary) live.pushAssistant(run.summary);
     if (run.missing && run.missing.length > 0) {
+      if (run.summary) live.pushAssistant(run.summary);
       live.pushAssistant(`Still need: ${run.missing.map((m) => m.label).join(', ')}.`);
       // Finish/apply with gaps: answer only — do not open the wizard unless the
       // user explicitly asked to build/edit (non-finish path below).
@@ -128,10 +132,9 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
       );
       return true;
     }
-    // Draft compile without finish/apply: stay in chat (never auto-open wizard).
-    live.pushAssistant(
-      'Keep refining in chat (game counts, cuts, payouts), say save or apply the format when ready, or say open event format for the wizard.'
-    );
+    // Draft compile without finish/apply: one bubble with outline + refine nudge.
+    const draftReply = [run.summary, FORMAT_DRAFT_REFINE_NUDGE].filter(Boolean).join('\n\n');
+    live.pushAssistant(draftReply || FORMAT_DRAFT_REFINE_NUDGE);
     return true;
   }
   return false;

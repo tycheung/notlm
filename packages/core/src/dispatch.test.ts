@@ -1174,7 +1174,65 @@ describe('dispatchUserUtterance', () => {
       },
     });
     expect(executed).toEqual([]);
-    expect(assistant.join('\n')).toMatch(/Built qualifying|refining in chat|open event format/i);
+    expect(assistant).toHaveLength(1);
+    expect(assistant[0]).toMatch(/Built qualifying/i);
+    expect(assistant[0]).toMatch(/refining in chat|open event format/i);
+  });
+
+  it('merges format draft summary and refine nudge into one assistant message', () => {
+    const formatPack = loadPackFromJson({
+      manifest: { id: 'format-draft-merge' },
+      flow: [
+        {
+          id: 'apply_format',
+          title: 'Event format',
+          keywords: ['format'],
+          kind: 'hard',
+          requires: [],
+        },
+      ],
+      controls: [
+        {
+          id: 'nav-format',
+          stepId: 'apply_format',
+          path: '/format',
+          compilerId: 'event_format',
+          draftKey: 'formatDraft',
+        },
+      ],
+      intents: { aliases: { apply_format: ['build a format'] }, meta: [] },
+      binders: {},
+    });
+    let session = emptySession();
+    const assistant: string[] = [];
+    dispatchUserUtterance({
+      text: 'build a format with qualifying then stepladder',
+      pack: formatPack,
+      session,
+      ctx: { pathname: '/events/1', data: { eventId: 1 } },
+      pushAssistant: (msg) => {
+        assistant.push(msg);
+      },
+      executeStep: () => {},
+      setSession: (updater) => {
+        session = updater(session);
+      },
+      draftCompilers: {
+        event_format: {
+          id: 'event_format',
+          match: (text) => /\bbuild\b.+\bformat\b/i.test(text),
+          compile: () => ({
+            draft: { formatDraft: { rounds: [{ ref: 'q' }, { ref: 's' }] } },
+            summary:
+              'Draft outline: Qualifying → Stepladder. Top 4 advance from Qualifying to Stepladder.',
+          }),
+          listMissing: () => [],
+        },
+      },
+    });
+    expect(assistant).toHaveLength(1);
+    expect(assistant[0]).toMatch(/Draft outline: Qualifying → Stepladder/i);
+    expect(assistant[0]).toMatch(/Keep refining in chat/i);
   });
 
   it('awaits async capability when parse returns queryId', async () => {
