@@ -25,6 +25,7 @@ import {
   looksLikeDraftFinish,
   looksLikeJailbreakProbe,
   looksLikeMarkupOrEmptyProbe,
+  stripDangerousMarkup,
 } from './askNormalize.js';
 import {
   looksLikeNavCommand,
@@ -149,7 +150,7 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
 }
 
 export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> {
-  const trimmed = deps.text.trim();
+  let trimmed = deps.text.trim();
   if (!trimmed) {
     // Never leave a blank turn — whitespace / empty sends need a visible reply.
     deps.pushAssistant('Say a product question, a checklist step, or what’s next.');
@@ -214,6 +215,8 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     });
     return;
   }
+  // Drop inert injection chrome; keep trailing product how-tos for FAQ / steps.
+  trimmed = stripDangerousMarkup(trimmed) || trimmed;
 
   // Jailbreak probes before draft/catalog — must never queue steps or navigate.
   // (General topic-bag OOD stays later so mixed “create X and muffin” can pack.)

@@ -97,7 +97,7 @@ describe('matchFaqEntry', () => {
       {
         id: 'faq-sa-setup',
         aliases: ['explain brackets', 'what are brackets', 'tell me about brackets'],
-        text: 'Side action brackets…',
+        text: 'Optional pot brackets…',
       },
     ];
     expect(

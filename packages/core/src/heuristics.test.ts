@@ -105,6 +105,17 @@ describe('heuristics pack extraction', () => {
       looksLikeMarkupOrEmptyProbe('[Click here](javascript:alert(1))')
     ).toBe(true);
     expect(looksLikeMarkupOrEmptyProbe('how do I lock squads?')).toBe(false);
+    // Injection chrome + product how-to must not refuse the how-to.
+    expect(
+      looksLikeMarkupOrEmptyProbe(
+        '<script>alert(1)</script> how do I lock squads'
+      )
+    ).toBe(false);
+    expect(
+      looksLikeMarkupOrEmptyProbe(
+        '[click me](javascript:alert(1)) explain brackets'
+      )
+    ).toBe(false);
   });
 
   it('slot extractors only apply from pack', () => {

@@ -168,14 +168,29 @@ export function looksLikeJailbreakProbe(utterance: string): boolean {
   return JAILBREAK_PROBE_RE.test(n);
 }
 
+/**
+ * Strip script tags, inline handlers, and javascript: markdown links so a
+ * trailing product how-to can still FAQ-match. Pure markup/empty → probe.
+ */
+export function stripDangerousMarkup(utterance: string): string {
+  return utterance
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/\bon\w+\s*=\s*(['"]).*?\1/gi, ' ')
+    .replace(/\[[^\]]*\]\(\s*javascript\s*:[^)]*\)/gi, ' ')
+    .replace(/javascript\s*:/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Markup / script / empty-after-strip probes — refuse locally, never Laya. */
 export function looksLikeMarkupOrEmptyProbe(utterance: string): boolean {
   const raw = utterance.trim();
   if (!raw) return true;
-  if (/<script\b|javascript\s*:|on\w+\s*=/i.test(raw)) return true;
-  // Markdown javascript links
-  if (/\[[^\]]*\]\(\s*javascript\s*:/i.test(raw)) return true;
-  const n = normalizeAsk(raw);
+  const stripped = stripDangerousMarkup(raw);
+  // Pure injection chrome with no product ask left → refuse.
+  if (!stripped) return true;
+  const n = normalizeAsk(stripped);
   return !n;
 }
 
