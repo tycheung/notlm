@@ -122,6 +122,9 @@ describe('heuristics pack extraction', () => {
     expect(
       looksLikeMarkupOrEmptyProbe('[Click here](javascript:alert(1))')
     ).toBe(true);
+    expect(
+      looksLikeMarkupOrEmptyProbe('[javascript:alert(1)](click)')
+    ).toBe(true);
     expect(looksLikeMarkupOrEmptyProbe('how do I lock squads?')).toBe(false);
     // Injection chrome + product how-to must not refuse the how-to.
     expect(

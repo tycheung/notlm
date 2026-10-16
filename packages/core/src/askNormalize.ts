@@ -189,7 +189,9 @@ export function stripDangerousMarkup(utterance: string): string {
   return utterance
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
     .replace(/\bon\w+\s*=\s*(['"]).*?\1/gi, ' ')
+    // Canonical: [label](javascript:…) and reversed: [javascript:…](label)
     .replace(/\[[^\]]*\]\(\s*javascript\s*:[^)]*\)/gi, ' ')
+    .replace(/\[\s*javascript\s*:[^\]]*\]\([^)]*\)/gi, ' ')
     .replace(/javascript\s*:/gi, ' ')
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
