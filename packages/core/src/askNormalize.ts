@@ -24,6 +24,12 @@ export function normalizeAsk(
     .replace(/[’']/g, "'")
     // Drop HTML/XML tags before tokenizing so markup cannot pollute FAQ match.
     .replace(/<[^>]*>/g, ' ')
+    // Drop markdown emphasis / code spans (keep inner text) so
+    // "**bold** and `code` please explain brackets" still FAQ-matches.
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, ' $1 ')
+    .replace(/\*\*([^*]*)\*\*/g, ' $1 ')
+    .replace(/__([^_]*)__/g, ' $1 ')
     .replace(/[^a-z0-9'\s-]/g, ' ')
     // Path-style tokens ("actions-needed") match spaced product language.
     .replace(/[-_]+/g, ' ')

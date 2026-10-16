@@ -132,15 +132,23 @@ export function isStrongFaqAliasMatch(utterance: string, entry: FaqEntry): boole
     // Training-noise aliases must never strong-match product questions.
     if (/case\d+x\d+n\d+/i.test(label)) continue;
     const coverage = bestAliasContentCoverage(needle, label);
-    const labelTokens = contentTokens(label).length;
-    const needleTokens = contentTokens(needle).length;
+    const labelToks = contentTokens(label);
+    const needleToks = contentTokens(needle);
+    const labelTokens = labelToks.length;
+    const needleTokens = needleToks.length;
     if (coverage < ALIAS_COVERAGE_MIN || labelTokens < 2) continue;
     // Short 2-token aliases must not steal longer asks that merely share those tokens
     // (e.g. "prize money" / "can i prize money thx" vs tax advice).
-    if (labelTokens <= 2 && needleTokens > labelTokens + 1) continue;
+    // Exception: label is an exact ordered suffix (markup/filler noise prefix).
+    const labelIsSuffix =
+      needleTokens >= labelTokens &&
+      labelToks.every((t, i) => needleToks[needleTokens - labelTokens + i] === t);
+    if (labelTokens <= 2 && needleTokens > labelTokens + 1 && !labelIsSuffix) {
+      continue;
+    }
     if (
-      needleTokens >= labelTokens - 1 &&
-      needle.length >= label.length * 0.85
+      labelIsSuffix ||
+      (needleTokens >= labelTokens - 1 && needle.length >= label.length * 0.85)
     ) {
       return true;
     }

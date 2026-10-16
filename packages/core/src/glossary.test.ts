@@ -92,6 +92,22 @@ describe('matchFaqEntry', () => {
     ).toBe('faq-bracket-byes');
   });
 
+  it('strong-matches explain brackets after markdown noise prefix', () => {
+    const faq = [
+      {
+        id: 'faq-sa-setup',
+        aliases: ['explain brackets', 'what are brackets', 'tell me about brackets'],
+        text: 'Side action brackets…',
+      },
+    ];
+    expect(
+      matchStrongFaqEntry(
+        faq,
+        '**bold** and `code` please explain brackets'
+      )?.id
+    ).toBe('faq-sa-setup');
+  });
+
   it('strong-matches bye-limit paraphrases that Laya previously reversed', () => {
     const faq = [
       {
