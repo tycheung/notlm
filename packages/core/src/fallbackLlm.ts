@@ -4,6 +4,7 @@ import {
   aliasContentCoverage,
   contentTokens,
   looksLikeClearOod,
+  looksLikeInformationalQuestion,
   normalizeAsk,
 } from './askNormalize.js';
 import {
@@ -228,6 +229,14 @@ export function isAutoExecutableTrustedGoto(
   const text = (reply ?? '').trim();
   if (text && CANNED_OOD_REFUSE_RE.test(text)) return false;
   if (/\bdo not have the ability\b/i.test(text)) return false;
+  // Status / how-to questions must not auto-navigate (e.g. "whats my subscription?").
+  if (
+    userText &&
+    looksLikeInformationalQuestion(userText) &&
+    !looksLikeNavSniff(userText, null)
+  ) {
+    return false;
+  }
   // Never auto-jump to billing/subscription unless the user asked for it.
   const step = String(proposed.stepId ?? '').toLowerCase();
   if (
@@ -272,6 +281,12 @@ export function shouldSurfaceTrustedGoto(
   if (looksLikeContextAsk(userText)) return false;
   if (looksLikeExplainLast(userText)) return false;
   if (looksLikeFaqQuestion(userText)) return false;
+  if (
+    looksLikeInformationalQuestion(userText) &&
+    !looksLikeNavSniff(userText, null)
+  ) {
+    return false;
+  }
   if (!isTrustedGoto(proposed, knownStepIds)) return false;
   const step = String(proposed!.stepId ?? '').toLowerCase();
   if (

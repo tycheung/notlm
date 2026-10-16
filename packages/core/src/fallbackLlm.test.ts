@@ -133,6 +133,30 @@ describe('isAutoExecutableTrustedGoto', () => {
         'list every bowler email on this roster'
       )
     ).toBe(false);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['subscription'],
+        },
+        ['billing_ready'],
+        'I can take you to “billing_ready”.',
+        'whats my subscription?'
+      )
+    ).toBe(false);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['open subscription'],
+        },
+        ['billing_ready'],
+        'Opening subscription.',
+        'open subscription'
+      )
+    ).toBe(true);
   });
 });
 
