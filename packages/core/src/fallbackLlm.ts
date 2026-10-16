@@ -237,14 +237,17 @@ export function isAutoExecutableTrustedGoto(
   ) {
     return false;
   }
-  // Never auto-jump to billing/subscription unless the user asked for it.
+  // Never auto-jump to billing/subscription unless the user asked to open it.
+  // Bare "plan" / "pass" in status questions ("what is my plan") must not navigate.
   const step = String(proposed.stepId ?? '').toLowerCase();
-  if (
-    /billing|subscription|subscribe/.test(step) &&
-    userText &&
-    !/\b(billing|subscription|subscribe|plan|pass|checkout|cart)\b/i.test(userText)
-  ) {
-    return false;
+  if (/billing|subscription|subscribe/.test(step) && userText) {
+    const askedBillingNoun =
+      /\b(billing|subscription|subscribe|checkout|cart)\b/i.test(userText);
+    const askedPlanOrPassWithNav =
+      /\b(plan|pass)\b/i.test(userText) && looksLikeNavSniff(userText, null);
+    if (!askedBillingNoun && !askedPlanOrPassWithNav) {
+      return false;
+    }
   }
   // Bracket / regenerate questions must never open a create-* step.
   if (

@@ -157,6 +157,30 @@ describe('isAutoExecutableTrustedGoto', () => {
         'open subscription'
       )
     ).toBe(true);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['my plan'],
+        },
+        ['billing_ready'],
+        'Okay — opening “Subscription / access”.',
+        'what is my plan'
+      )
+    ).toBe(false);
+    expect(
+      isAutoExecutableTrustedGoto(
+        {
+          type: 'goto',
+          stepId: 'billing_ready',
+          aliases: ['open my plan'],
+        },
+        ['billing_ready'],
+        'Opening subscription.',
+        'open my plan'
+      )
+    ).toBe(true);
   });
 });
 
