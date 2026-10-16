@@ -1120,6 +1120,63 @@ describe('dispatchUserUtterance', () => {
     expect(assistant.join('\n')).not.toMatch(/Queued Subscription/i);
   });
 
+  it('complete format draft compile stays in chat (no wizard executeStep)', () => {
+    const formatPack = loadPackFromJson({
+      manifest: { id: 'format-draft-complete' },
+      flow: [
+        {
+          id: 'apply_format',
+          title: 'Event format',
+          keywords: ['format'],
+          kind: 'hard',
+          requires: [],
+        },
+      ],
+      controls: [
+        {
+          id: 'nav-format',
+          stepId: 'apply_format',
+          path: '/format',
+          compilerId: 'event_format',
+          draftKey: 'formatDraft',
+        },
+      ],
+      intents: { aliases: { apply_format: ['build a format'] }, meta: [] },
+      binders: {},
+    });
+    let session = emptySession();
+    const assistant: string[] = [];
+    const executed: string[] = [];
+    dispatchUserUtterance({
+      text: 'build a format with qualifying then stepladder',
+      pack: formatPack,
+      session,
+      ctx: { pathname: '/events/1', data: { eventId: 1, eventName: 'QA Event' } },
+      pushAssistant: (msg) => {
+        assistant.push(msg);
+      },
+      executeStep: (stepId) => {
+        executed.push(stepId);
+      },
+      setSession: (updater) => {
+        session = updater(session);
+      },
+      draftCompilers: {
+        event_format: {
+          id: 'event_format',
+          match: (text) => /\bbuild\b.+\bformat\b/i.test(text),
+          compile: () => ({
+            draft: { formatDraft: { rounds: [{ ref: 'q' }, { ref: 's' }] } },
+            summary: 'Built qualifying → stepladder draft.',
+          }),
+          listMissing: () => [],
+        },
+      },
+    });
+    expect(executed).toEqual([]);
+    expect(assistant.join('\n')).toMatch(/Built qualifying|refining in chat|open event format/i);
+  });
+
   it('awaits async capability when parse returns queryId', async () => {
     const capPack = loadPackFromJson({
       manifest: { id: 'cap' },

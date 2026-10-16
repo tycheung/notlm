@@ -128,22 +128,10 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
       );
       return true;
     }
-    // Only open the wizard when an event is focused and the step is available.
-    // Otherwise stay in chat — never bounce through billing/create gates.
-    const eventFocused = live.ctx.data?.eventId != null;
-    const unavailable =
-      typeof live.pack.unavailableReason === 'function'
-        ? live.pack.unavailableReason(id, live.ctx)
-        : null;
-    if (!eventFocused || unavailable) {
-      live.pushAssistant(
-        unavailable
-          ? `${unavailable} I can keep drafting the format in chat — say the next round detail, or open a focused event first.`
-          : 'Focus an event desk first, then say “open event format” (or keep giving format details here in chat).'
-      );
-      return true;
-    }
-    live.executeStep(id, { prefill: run.draft, skipCoach: true, coachCreate: true });
+    // Draft compile without finish/apply: stay in chat (never auto-open wizard).
+    live.pushAssistant(
+      'Keep refining in chat (game counts, cuts, payouts), say save or apply the format when ready, or say open event format for the wizard.'
+    );
     return true;
   }
   return false;
