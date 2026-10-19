@@ -159,11 +159,13 @@ export function NotLMFab() {
       }}
       onSubmit={submit}
       onCancel={cancelNow}
+      onClearChat={newThread}
       busy={fallbackInFlight}
       inputClassName={classNames?.chatInput}
       placeholder={labels?.composerPlaceholder ?? 'Ask or type a step…'}
       sendLabel={labels?.sendLabel ?? 'Send'}
       cancelLabel={labels?.cancelLabel ?? 'Cancel'}
+      clearChatLabel={labels?.clearChatLabel ?? 'Clear Chat'}
       voiceEnabled={voiceEnabled}
       listening={listening}
       voiceSupported={supported}

@@ -20,7 +20,7 @@ import { DEFAULT_FLASH_CLASS } from './fieldFlash.js';
  * - notlm-chat-panel, notlm-chat-header, notlm-chat-close
  * - notlm-chat-messages, notlm-chat-bubble, notlm-chat-bubble-user|assistant
  * - notlm-chat-turn, notlm-chat-choices, notlm-chat-choice
- * - notlm-chat-input-row, notlm-chat-input, notlm-chat-btn, notlm-chat-btn-primary|listening
+ * - notlm-chat-input-row, notlm-chat-input, notlm-chat-toolbar, notlm-chat-btn, notlm-chat-btn-primary|listening|clear
  * - notlm-checklist-root|backdrop|panel|header|close|list|item|row|title|phase|state
  * - notlm-palette-backdrop|scrim|panel|input|list|item|item-active
  * - notlm-spotlight-root|scrim|ring|card
@@ -93,10 +93,15 @@ export const NOTLM_CSS = `
 .notlm-chat-choices { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0 0 0.25rem; max-width: 95%; }
 .notlm-chat-choice { border-radius: var(--notlm-radius-sm); border: 1px solid var(--notlm-accent); background: var(--notlm-surface-muted); color: var(--notlm-accent); padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer; }
 .notlm-chat-choice:hover { background: var(--notlm-accent); color: var(--notlm-on-accent); }
-.notlm-chat-input-row { display: flex; gap: 0.25rem; align-items: flex-end; padding: 0.5rem; border-top: 1px solid var(--notlm-border-muted); background: var(--notlm-surface-muted); }
-.notlm-chat-input { flex: 1; resize: none; border-radius: var(--notlm-radius-sm); border: 1px solid var(--notlm-border); padding: 0.375rem 0.5rem; font-size: 0.8125rem; background: var(--notlm-surface); color: var(--notlm-text); }
+.notlm-chat-input-row { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.5rem; border-top: 1px solid var(--notlm-border-muted); background: var(--notlm-surface-muted); }
+.notlm-chat-input { display: block; width: 100%; box-sizing: border-box; resize: none; border-radius: var(--notlm-radius-sm); border: 1px solid var(--notlm-border); padding: 0.5rem 0.625rem; font-size: 0.8125rem; line-height: 1.4; background: var(--notlm-surface); color: var(--notlm-text); min-height: 2.75rem; }
 .notlm-chat-input::placeholder { color: var(--notlm-text-muted); }
-.notlm-chat-btn { border-radius: var(--notlm-radius-sm); border: 1px solid var(--notlm-border); padding: 0.375rem 0.625rem; cursor: pointer; background: var(--notlm-surface); color: var(--notlm-text); }
+.notlm-chat-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; }
+.notlm-chat-toolbar-left { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+.notlm-chat-toolbar-right { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; }
+.notlm-chat-btn { border-radius: var(--notlm-radius-sm); border: 1px solid var(--notlm-border); padding: 0.375rem 0.625rem; cursor: pointer; background: var(--notlm-surface); color: var(--notlm-text); font-size: 0.75rem; }
+.notlm-chat-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.notlm-chat-btn-clear { font-weight: 500; }
 .notlm-chat-btn-mic { display: inline-flex; align-items: center; justify-content: center; padding: 0.375rem 0.5rem; min-width: 2.25rem; }
 .notlm-mic-icon { display: block; flex-shrink: 0; }
 .notlm-chat-btn-primary { background: var(--notlm-accent); color: var(--notlm-on-accent); border-color: var(--notlm-accent); font-weight: 600; }

@@ -42,6 +42,8 @@ export type NotLMChromeLabels = {
   composerPlaceholder?: string;
   sendLabel?: string;
   cancelLabel?: string;
+  /** Left toolbar control under the composer (Cursor Agent slot). */
+  clearChatLabel?: string;
   checklistTitle?: string;
   regenerateLabel?: string;
   copyLabel?: string;
