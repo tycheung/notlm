@@ -346,6 +346,12 @@ export type AssistantFeatures = {
   voice?: boolean;
   checklist?: boolean;
   /**
+   * Default Ask|Guide|Do when the thread has no `flags.interactionMode`.
+   * Hosts that want desk-safe UX (VB) should set `'ask'`.
+   * @see interactionMode.ts
+   */
+  defaultInteractionMode?: import('./interactionMode.js').InteractionMode;
+  /**
    * When true (or NOTLM_ONNX_RANKER=1), prefer the corpus-trained ONNX/JSON
    * intent+slot ranker instead of rules-only parseUtterance.
    */

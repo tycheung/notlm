@@ -8,6 +8,7 @@ export * from './confidenceBands.js';
 export * from './actionRisk.js';
 export * from './confirmSession.js';
 export * from './intentConflict.js';
+export * from './interactionMode.js';
 export * from './types.js';
 export * from './fuzzyText.js';
 export * from './typoFix.js';

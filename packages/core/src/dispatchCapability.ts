@@ -30,6 +30,12 @@ import {
 } from './confirmSession.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { stepTitle } from './dispatchResolve.js';
+import {
+  askModeInstructCopy,
+  modeBlocksAutoNavigate,
+  modeBlocksMutations,
+  resolveInteractionMode,
+} from './interactionMode.js';
 import { normalizeUtterance } from './normalizeConfig.js';
 
 export type {
@@ -50,15 +56,28 @@ function surfaceStepFromMutationSlots(
 }
 
 function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
+  const mode = resolveInteractionMode(deps.session, deps.features);
+  const blockNav = modeBlocksAutoNavigate(mode);
+  const blockMutate = modeBlocksMutations(mode);
   const hasText = String(answer.text ?? '').trim().length > 0;
   const hasChips =
     (answer.choices?.length ?? 0) > 0 || (answer.links?.length ?? 0) > 0;
-  const willNav = answer.navigatePath != null && answer.autoNavigate === true;
-  const willStep = answer.stepId != null && answer.autoStartStep !== false;
-  const forceOpenSurface =
+  let willNav =
+    answer.navigatePath != null && answer.autoNavigate === true && !blockNav;
+  let willStep =
+    answer.stepId != null && answer.autoStartStep !== false && !blockNav;
+  let forceOpenSurface =
+    !blockMutate &&
     typeof answer.slots?.forceOpenSurface === 'string'
       ? answer.slots.forceOpenSurface
       : undefined;
+  if (blockMutate && typeof answer.slots?.forceOpenSurface === 'string') {
+    const copy = askModeInstructCopy(mode);
+    if (copy && !hasText) {
+      deps.pushAssistant(copy);
+      return;
+    }
+  }
   if (hasText || hasChips) {
     deps.pushAssistant(answer.text, {
       choices: answer.choices,
@@ -74,6 +93,9 @@ function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
     );
   } else if (forceOpenSurface) {
     deps.pushAssistant('Opening…');
+  } else if (blockNav && (answer.navigatePath || answer.stepId)) {
+    const copy = askModeInstructCopy(mode);
+    if (copy) deps.pushAssistant(copy);
   }
   // Auto-nav only when the host opts in. Informational queries must omit this
   // (or set navigatePath without autoNavigate) so answers do not yank the page.

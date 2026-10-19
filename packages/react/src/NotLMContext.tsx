@@ -13,7 +13,11 @@ import {
   utteranceMatchesTypedCatalog,
   mintConversationId,
   createMemoryPhraseLru,
+  askModeInstructCopy,
+  modeBlocksAutoNavigate,
+  resolveInteractionMode,
   type AssistantFeatures,
+  type InteractionMode,
   type ChatChoice,
   type ChatMessage,
   type ConversationLogPipeline,
@@ -533,13 +537,21 @@ export function NotLMProvider({
         writeDraft(pack.id, nav.draftKey, mergedPrefill);
       }
 
+      const mode = resolveInteractionMode(sessionRef.current, features);
+      const instructOnly =
+        Boolean(opts?.forceInstructOnly) || modeBlocksAutoNavigate(mode);
       runBeforeOpen(nav);
-      if (nav.path) navigate(nav.path, nav.search ? { search: nav.search } : undefined);
-      const modalKey =
-        opts?.forceOpenModal ||
-        (!opts?.skipOpenModal ? nav.openModal : undefined);
+      if (!instructOnly && nav.path) {
+        navigate(nav.path, nav.search ? { search: nav.search } : undefined);
+      }
+      const modalKey = instructOnly
+        ? undefined
+        : opts?.forceOpenModal ||
+          (!opts?.skipOpenModal ? nav.openModal : undefined);
       if (modalKey) openModal?.(modalKey);
-      const surfaceKey = opts?.forceOpenSurface || nav.openSurface;
+      const surfaceKey = instructOnly
+        ? undefined
+        : opts?.forceOpenSurface || nav.openSurface;
       const surfaceStep =
         opts?.forceSurfaceStep !== undefined
           ? opts.forceSurfaceStep ?? undefined
@@ -550,10 +562,10 @@ export function NotLMProvider({
       if (surfaceKey) {
         openSurface?.(surfaceKey, surfaceStep);
       }
-      if (nav.wizardId != null && nav.wizardPage != null) {
+      if (!instructOnly && nav.wizardId != null && nav.wizardPage != null) {
         onWizardPage?.(nav.wizardId, nav.wizardPage);
       }
-      if (nav.confirmDialog && !opts?.forceOpenSurface) {
+      if (!instructOnly && nav.confirmDialog && !opts?.forceOpenSurface) {
         queueMicrotask(() => {
           requestAnimationFrame(() => {
             flashGuideField(nav.confirmDialog!);
@@ -562,10 +574,11 @@ export function NotLMProvider({
         });
       }
       const coachCreate = Boolean(
-        opts?.coachCreate ||
-          (!opts?.skipOpenModal && (nav.coachCreate || nav.openModal))
+        !instructOnly &&
+          (opts?.coachCreate ||
+            (!opts?.skipOpenModal && (nav.coachCreate || nav.openModal)))
       );
-      const spotlightOnly = isSpotlightOnly(nav);
+      const spotlightOnly = isSpotlightOnly(nav) || instructOnly;
       const skipCoach =
         Boolean(opts?.skipCoach) ||
         coachCreate ||
@@ -573,7 +586,16 @@ export function NotLMProvider({
         Boolean(surfaceKey);
       const roleCopy = coachCopyForRole(nav, stepId);
       let coached = false;
-      if (!skipCoach && nav.coachMessage) {
+      if (instructOnly && modeBlocksAutoNavigate(mode)) {
+        const askCopy = askModeInstructCopy(mode);
+        const tip =
+          nav.coachMessage ??
+          roleCopy ??
+          askCopy ??
+          `To open “${stepId}”, switch to Guide or Do mode.`;
+        pushAssistant(tip);
+        coached = true;
+      } else if (!skipCoach && nav.coachMessage) {
         pushAssistant(nav.coachMessage);
         coached = true;
       } else if (!skipCoach && roleCopy) {
@@ -619,10 +641,28 @@ export function NotLMProvider({
         );
       }
     },
-    [features.spotlight, getContext, navigate, openModal, openSurface, onWizardPage, pack, pushAssistant, showSpotlight]
+    [
+      features,
+      getContext,
+      navigate,
+      openModal,
+      openSurface,
+      onWizardPage,
+      pack,
+      pushAssistant,
+      showSpotlight,
+    ]
   );
 
   executeStepRef.current = executeStep;
+
+  const interactionMode = resolveInteractionMode(session, features);
+  const setInteractionMode = useCallback((mode: InteractionMode) => {
+    setSession((s) => ({
+      ...s,
+      flags: { ...s.flags, interactionMode: mode },
+    }));
+  }, []);
 
   const notifyStepCompleted = useCallback(
     (stepId: StepId) => {
@@ -888,6 +928,8 @@ export function NotLMProvider({
       activeThreadId,
       selectThread,
       newThread,
+      interactionMode,
+      setInteractionMode,
     }),
     [
       activeThreadId,
@@ -902,6 +944,7 @@ export function NotLMProvider({
       features,
       getContext,
       handleUserUtterance,
+      interactionMode,
       pushAssistant,
       hostRootClassName,
       hostRootStyle,
@@ -915,6 +958,7 @@ export function NotLMProvider({
       regenerateLastFallback,
       selectThread,
       session,
+      setInteractionMode,
       spotlight,
       statuses,
       threads,

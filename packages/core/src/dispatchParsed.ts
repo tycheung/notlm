@@ -52,8 +52,17 @@ import {
   DEFAULT_CONFLICT_DELTA,
 } from './intentConflict.js';
 import { DEFAULT_HEURISTICS } from './heuristics.js';
+import {
+  askModeInstructCopy,
+  modeBlocksAutoNavigate,
+  modeBlocksMutations,
+  resolveInteractionMode,
+} from './interactionMode.js';
 
-function surfaceLaunchOpts(parsed: ParseUtteranceResult): {
+function surfaceLaunchOpts(
+  parsed: ParseUtteranceResult,
+  opts?: { forceInstructOnly?: boolean }
+): {
   forceOpenSurface?: string;
   forceSurfaceStep?: string | null;
   forceOpenModal?: string;
@@ -69,12 +78,20 @@ function surfaceLaunchOpts(parsed: ParseUtteranceResult): {
       : deleteConfirmSurface
         ? null
         : undefined;
+  const instructOnly =
+    Boolean(opts?.forceInstructOnly) || Boolean(parsed.instructOnly);
   return {
-    ...(parsed.openSurface ? { forceOpenSurface: parsed.openSurface } : {}),
-    ...(forceSurfaceStep !== undefined ? { forceSurfaceStep } : {}),
-    ...(parsed.openModal ? { forceOpenModal: parsed.openModal } : {}),
-    ...(parsed.skipOpenModal ? { skipOpenModal: true } : {}),
-    ...(parsed.instructOnly ? { forceInstructOnly: true } : {}),
+    ...(parsed.openSurface && !instructOnly
+      ? { forceOpenSurface: parsed.openSurface }
+      : {}),
+    ...(forceSurfaceStep !== undefined && !instructOnly
+      ? { forceSurfaceStep }
+      : {}),
+    ...(parsed.openModal && !instructOnly
+      ? { forceOpenModal: parsed.openModal }
+      : {}),
+    ...(parsed.skipOpenModal || instructOnly ? { skipOpenModal: true } : {}),
+    ...(instructOnly ? { forceInstructOnly: true } : {}),
   };
 }
 
@@ -86,12 +103,14 @@ export function dispatchParsed(
   const { pack, session, ctx, pushAssistant, executeStep, setSession, flashField, clickField } =
     deps;
   const trimmed = deps.text.trim();
-
   // Action quarantine + conceptual/action conflict → Laya defer (or confirm path).
   // FAQ / answer / refuse / clarify are not gated by confidence floor alone.
   // Use pack.compiledHeuristics (platform + pack overlay), not bare defaults —
   // otherwise host heuristics.json conceptual cues never apply.
   const features = deps.features;
+  const interactionMode = resolveInteractionMode(session, features);
+  const blockNav = modeBlocksAutoNavigate(interactionMode);
+  const blockMutate = modeBlocksMutations(interactionMode);
   if (features?.actionQuarantine !== false) {
     const riskCfg: ActionRiskConfig = {
       actionConfidenceFloor: features?.actionConfidenceFloor,
@@ -136,6 +155,16 @@ export function dispatchParsed(
         return;
       }
     }
+  }
+
+  // Ask/Guide: block mutate catalog heads before capability dispatch.
+  if (
+    blockMutate &&
+    (parsed.mutationId || parsed.rawIntent === 'mutation')
+  ) {
+    const copy = askModeInstructCopy(interactionMode);
+    if (copy) pushAssistant(copy);
+    return;
   }
 
   // Parsed capability catalog ids (ranker / fallback).
@@ -452,7 +481,7 @@ export function dispatchParsed(
             launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
               rawIntent: `goto:${resolved}`,
               confidence: parsed.confidence,
-              ...surfaceLaunchOpts(parsed),
+              ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
             });
             return;
           }
@@ -460,7 +489,7 @@ export function dispatchParsed(
           launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
             rawIntent: parsed.rawIntent,
             confidence: parsed.confidence,
-            ...surfaceLaunchOpts(parsed),
+            ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
           });
           return;
         }
@@ -583,6 +612,22 @@ export function dispatchParsed(
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
     const def = pack.lookups?.find((l) => l.id === lookup.lookupId);
+    if (blockNav) {
+      const hint = askModeInstructCopy(interactionMode);
+      pushAssistant(
+        `Found “${entity.name}”.${hint ? ` ${hint}` : ''}`
+      );
+      setSession((s) => ({
+        ...s,
+        discourse: {
+          ...(s.discourse ?? {}),
+          lastEntityId: entity.id,
+          lastEntityName: entity.name,
+          lastStepId: entity.stepId ?? s.discourse?.lastStepId,
+        },
+      }));
+      return;
+    }
     pushAssistant(`Found “${entity.name}”.`);
     setSession((s) => ({
       ...s,
@@ -793,7 +838,7 @@ export function dispatchParsed(
     launchStep(deps, targetStep, slotPatches, true, {
       rawIntent: parsed.rawIntent,
       confidence: parsed.confidence,
-      ...surfaceLaunchOpts(parsed),
+      ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
     });
     return;
   }
@@ -815,7 +860,7 @@ export function dispatchParsed(
     launchStep(deps, targetStep, slotPatches, false, {
       rawIntent: parsed.rawIntent,
       confidence: parsed.confidence,
-      ...surfaceLaunchOpts(parsed),
+      ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
     });
     return;
   }
@@ -841,7 +886,7 @@ export function dispatchParsed(
         skipGate: true,
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
-        ...surfaceLaunchOpts(parsed),
+        ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
       });
       return;
     }
@@ -854,7 +899,7 @@ export function dispatchParsed(
       launchStep(deps, targetStep, slotPatches, false, {
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
-        ...surfaceLaunchOpts(parsed),
+        ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
       });
       return;
     }
@@ -867,6 +912,6 @@ export function dispatchParsed(
   launchStep(deps, targetStep, slotPatches, false, {
     rawIntent: parsed.rawIntent,
     confidence: parsed.confidence,
-    ...surfaceLaunchOpts(parsed),
+    ...surfaceLaunchOpts(parsed, { forceInstructOnly: blockNav }),
   });
 }

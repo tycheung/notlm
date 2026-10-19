@@ -29,6 +29,8 @@ import {
   looksLikeClearOod,
   looksLikeNavCommand,
   mismatchedGotoClarifyReply,
+  modeBlocksAutoNavigate,
+  resolveInteractionMode,
   retrieveSemantic,
   sanitizeFallbackReply,
   semanticFaqIdHints,
@@ -136,7 +138,12 @@ export function createDecisionFallbackHandler(
     .map((s) => `${s.id}:${s.title}`)
     .join('|')
     .slice(0, 1800);
-  const autoNav = isAutoExecuteTrustedGotoEnabled(deps.features);
+  const liveSession = deps.getSession?.() ?? deps.sessionRef.current;
+  const modeBlocksNav = modeBlocksAutoNavigate(
+    resolveInteractionMode(liveSession, deps.features)
+  );
+  const autoNav =
+    isAutoExecuteTrustedGotoEnabled(deps.features) && !modeBlocksNav;
 
   return (event: CoachEvent) => {
     if (!fallbackEnabled || !deps.fallbackLlm) return;

@@ -11,6 +11,7 @@ import type {
   MissExchangeTransport,
   MissKind,
   MissLogTransport,
+  InteractionMode,
   OpenSearchHitFn,
   PackRuntime,
   ParseUtteranceFn,
@@ -99,6 +100,9 @@ export type NotLMContextValue = {
   activeThreadId: string;
   selectThread: (id: string) => void;
   newThread: () => void;
+  /** Ask | Guide | Do — structural action plane (session-overridable). */
+  interactionMode: InteractionMode;
+  setInteractionMode: (mode: InteractionMode) => void;
 };
 
 export type NotLMProviderProps = {
