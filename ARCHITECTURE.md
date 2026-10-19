@@ -140,6 +140,13 @@ Default NLU is rule-based (`parseUtterance`). Hosts may ship `pack/ranker.json`
 `NOTLM_ONNX_RANKER=1`, passing `parseUtteranceFn` from `@notlm/ranker`.
 Missing ONNX Runtime falls back to JSON inference.
 
+**Hierarchical tree (ADR-011 / G12):** Stage0 `ask|guide|do` (NLU; overrides
+chrome when confident) → Stage1 13 capability lanes (masked) → Stage2 leaves.
+Pack: `routingTree.json` + optional `ranker.plane.json` /
+`ranker.leaves.<lane>.json`. Flat `ranker.json` remains fallback. Training
+`auto` autosplits clashing leaves into the host pack (metric-gated). See
+`docs/adr/011-hierarchical-routing-tree.md`.
+
 ### Laya decision fallback
 
 - **Cold path:** host `fallbackLlm` → backend proxy → one Laya sidecar.

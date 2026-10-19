@@ -37,6 +37,7 @@ docs/adr/*
 !docs/adr/008-gate-policy-and-conversational-maturity.md
 !docs/adr/009-runtime-vs-training-llm-fallback.md
 !docs/adr/010-action-quarantine-and-conflict-defer.md
+!docs/adr/011-hierarchical-routing-tree.md
 
 # Sandbox reference app — local agent/planning noise
 sandboxes/**/.cursor/

@@ -76,6 +76,7 @@ const PACK_FOLDER_KEYS: PackPieceName[] = [
   'faq',
   'lookups',
   'replies',
+  'routingTree',
 ];
 
 /**

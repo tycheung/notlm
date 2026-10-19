@@ -34,6 +34,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     search,
     heuristics,
     routingConflict,
+    routingTree,
     semanticIndex: precomputedIndex,
     semanticIndexCustom,
   } = input;
@@ -141,6 +142,8 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
       routingConflict && typeof routingConflict === 'object'
         ? routingConflict
         : undefined,
+    routingTree:
+      routingTree && typeof routingTree === 'object' ? routingTree : undefined,
     queries: queries?.length ? queries : undefined,
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,

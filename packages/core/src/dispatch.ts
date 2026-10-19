@@ -447,6 +447,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     faqDomainTokens: live.pack.faqDomainTokens,
     heuristics: live.pack.heuristics,
     compiledHeuristics: live.pack.compiledHeuristics,
+    routingTree: live.pack.routingTree,
   };
   // Draft compilers before queue rewrite — otherwise “build a format…” is stolen
   // into a multi-step checklist (billing → create…) and auto-launches the head.
@@ -542,6 +543,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     faqDomainTokens: live.pack.faqDomainTokens,
     heuristics: live.pack.heuristics,
     compiledHeuristics: live.pack.compiledHeuristics,
+    routingTree: live.pack.routingTree,
   };
   const lruKey = phraseLruKey(parseText, live.ctx.pathname);
   if (live.phraseLru) {

@@ -1,7 +1,9 @@
 /**
- * Product interaction modes — structural Ask/Do/Guide contract (ADR-010 UX).
- * Not pack-phrase routing: hosts set default; users override per thread via
- * session.flags.interactionMode.
+ * Product interaction modes — Ask/Guide/Do labels.
+ *
+ * Legacy (features.routingTree off): chrome/session hard gate (ADR-010 UX).
+ * Tree on (ADR-011): NLU InteractionPlane overrides chrome when confident;
+ * chrome is soft bias only — see resolveEffectivePlane in routingTree.ts.
  */
 
 export type InteractionMode = 'ask' | 'guide' | 'do';

@@ -30,12 +30,8 @@ import {
 } from './confirmSession.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { stepTitle } from './dispatchResolve.js';
-import {
-  askModeInstructCopy,
-  modeBlocksAutoNavigate,
-  modeBlocksMutations,
-  resolveInteractionMode,
-} from './interactionMode.js';
+import { askModeInstructCopy } from './interactionMode.js';
+import { resolveDispatchPlane } from './dispatchPlane.js';
 import { normalizeUtterance } from './normalizeConfig.js';
 
 export type {
@@ -56,9 +52,15 @@ function surfaceStepFromMutationSlots(
 }
 
 function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
-  const mode = resolveInteractionMode(deps.session, deps.features);
-  const blockNav = modeBlocksAutoNavigate(mode);
-  const blockMutate = modeBlocksMutations(mode);
+  const planeCtx = resolveDispatchPlane({
+    session: deps.session,
+    features: deps.features,
+    pack: deps.pack,
+    text: String(answer.text ?? ''),
+  });
+  const mode = planeCtx.mode;
+  const blockNav = planeCtx.blockNav;
+  const blockMutate = planeCtx.blockMutate;
   const hasText = String(answer.text ?? '').trim().length > 0;
   const hasChips =
     (answer.choices?.length ?? 0) > 0 || (answer.links?.length ?? 0) > 0;

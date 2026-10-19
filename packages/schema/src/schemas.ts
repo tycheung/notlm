@@ -548,6 +548,29 @@ export const conversationRecordListSchema = {
   },
 } as const;
 
+/** ADR-011 hierarchical routing tree (optional pack piece). */
+export const routingTreeSchema = {
+  $id: 'https://notlm.dev/schemas/routingTree.json',
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    enabled: { type: 'boolean' },
+    planeSoftBiasBelow: { type: 'number', minimum: 0, maximum: 1 },
+    autosplitMaxDepth: { type: 'integer', minimum: 0 },
+    laneMask: {
+      type: 'object',
+      additionalProperties: {
+        type: 'array',
+        items: { type: 'string' },
+      },
+    },
+    leaves: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+    },
+  },
+} as const;
+
 export const PACK_PIECE_SCHEMAS = {
   manifest: manifestSchema,
   flow: flowSchema,
@@ -562,6 +585,7 @@ export const PACK_PIECE_SCHEMAS = {
   faq: faqSchema,
   lookups: lookupsSchema,
   replies: repliesSchema,
+  routingTree: routingTreeSchema,
 } as const;
 
 export type PackPieceName = keyof typeof PACK_PIECE_SCHEMAS;

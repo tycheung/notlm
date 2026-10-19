@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "planeSoftBiasBelow": 0.55,
+  "autosplitMaxDepth": 2,
+  "leaves": {
+    "faq": "ranker.leaves.faq",
+    "goto": "ranker.leaves.goto",
+    "ood": "ranker.leaves.ood",
+    "context": "ranker.leaves.context"
+  }
+}

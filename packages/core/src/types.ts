@@ -273,6 +273,12 @@ export type ParseUtteranceResult = {
   mutationId?: string;
   tourId?: string;
   searchId?: string;
+  /** ADR-011 Stage0 plane (when routingTree parse ran). */
+  plane?: import('./routingTree.js').InteractionPlane;
+  /** ADR-011 Stage1 capability lane. */
+  lane?: import('./routingTree.js').CapabilityLane;
+  /** Plane inference probability when known. */
+  planeProbability?: number;
   /**
    * Host surface key (drawer / confirm / upload). Bridged via executeStep
    * `forceOpenSurface` — not a pack control id.
@@ -415,6 +421,11 @@ export type AssistantFeatures = {
    * Near-tie score gap (1 - second/top) for intent conflict defer. Default 0.15.
    */
   conflictDelta?: number;
+  /**
+   * Hierarchical routing tree (ADR-011): NLU plane overrides chrome Ask/Guide/Do
+   * when confident; lane masks apply. **Default off** when unset.
+   */
+  routingTree?: boolean;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
@@ -456,6 +467,8 @@ export type PackRuntime = {
    * Generic families live in notlm packs; hosts may override conflictDelta via features.
    */
   routingConflict?: import('./intentConflict.js').RoutingConflictConfig;
+  /** Optional hierarchical tree (`routingTree.json`) — ADR-011. */
+  routingTree?: import('./routingTree.js').RoutingTreeConfig;
   queries?: import('./capabilityCatalog.js').QueryDef[];
   /** Confirm-gated write catalog (host preview/executeMutation). */
   mutations?: import('./capabilityCatalog.js').MutationDef[];
@@ -661,6 +674,8 @@ export type PackJsonInput = {
   heuristics?: HeuristicsConfig;
   /** Optional routing-conflict overlay (`routingConflict.json`). */
   routingConflict?: import('./intentConflict.js').RoutingConflictConfig;
+  /** Optional hierarchical tree (`routingTree.json`) — ADR-011. */
+  routingTree?: import('./routingTree.js').RoutingTreeConfig;
   queries?: import('./capabilityCatalog.js').QueryDef[];
   mutations?: import('./capabilityCatalog.js').MutationDef[];
   tours?: import('./capabilityCatalog.js').TourDef[];
@@ -706,6 +721,10 @@ export type IntentParsePack = {
   /** Compiled heuristics (or raw overlay compiled inside parse). */
   heuristics?: HeuristicsConfig;
   compiledHeuristics?: import('./heuristics.js').CompiledHeuristics;
+  /** Optional tree config for Stage0/1 annotation during parse. */
+  routingTree?: import('./routingTree.js').RoutingTreeConfig;
+  /** Optional mutations catalog (risk → mutation_high_risk lane). */
+  mutations?: import('./capabilityCatalog.js').MutationDef[];
 };
 
 export type PackedUtteranceResult = {

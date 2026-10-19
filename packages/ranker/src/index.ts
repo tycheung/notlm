@@ -34,6 +34,15 @@ export {
   extractHeuristicSlots,
   type UtteranceParser,
 } from './hybrid.js';
+export {
+  createTreeUtteranceParser,
+  createTreeHybridUtteranceParser,
+  createJsonTreeHybridParser,
+  createTreeRulesParser,
+  pickLeafModel,
+  leafModelsFromPackLeaves,
+  type TreeParserOptions,
+} from './tree.js';
 
 export function isOnnxRankerEnabled(
   features?: { onnxRanker?: boolean },

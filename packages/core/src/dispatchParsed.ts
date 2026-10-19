@@ -52,12 +52,11 @@ import {
   DEFAULT_CONFLICT_DELTA,
 } from './intentConflict.js';
 import { DEFAULT_HEURISTICS } from './heuristics.js';
+import { askModeInstructCopy } from './interactionMode.js';
 import {
-  askModeInstructCopy,
-  modeBlocksAutoNavigate,
-  modeBlocksMutations,
-  resolveInteractionMode,
-} from './interactionMode.js';
+  applyLaneMaskToParsed,
+  resolveDispatchPlane,
+} from './dispatchPlane.js';
 
 function surfaceLaunchOpts(
   parsed: ParseUtteranceResult,
@@ -108,9 +107,53 @@ export function dispatchParsed(
   // Use pack.compiledHeuristics (platform + pack overlay), not bare defaults —
   // otherwise host heuristics.json conceptual cues never apply.
   const features = deps.features;
-  const interactionMode = resolveInteractionMode(session, features);
-  const blockNav = modeBlocksAutoNavigate(interactionMode);
-  const blockMutate = modeBlocksMutations(interactionMode);
+  const planeCtx = resolveDispatchPlane({
+    session,
+    features,
+    pack,
+    text: trimmed,
+    parsed,
+  });
+  if (planeCtx.treeEnabled) {
+    const masked = applyLaneMaskToParsed(parsed, planeCtx.plane, pack);
+    Object.assign(parsed, masked);
+  }
+  const interactionMode = planeCtx.mode;
+  const blockNav = planeCtx.blockNav;
+  const blockMutate = planeCtx.blockMutate;
+
+  // Meta rewind / cancel must not be swallowed by navigate quarantine.
+  if (parsed.goBack || parsed.rawIntent === 'go_back') {
+    const prevStep = resolveGoBackStep(session);
+    if (!prevStep) {
+      pushAssistant('There is no earlier step to go back to yet.');
+      return;
+    }
+    setSession((s) => goBackToStep(s, prevStep, []));
+    pushAssistant(`Going back to “${stepTitle(pack, prevStep)}”.`);
+    executeStep(prevStep);
+    return;
+  }
+  if (parsed.rawIntent === 'cancel_all') {
+    setSession((s) => {
+      const cleared = clearActionQueue(s);
+      const flags = { ...cleared.flags };
+      delete flags.pendingMutation;
+      delete flags.pendingDraftApply;
+      return {
+        ...cleared,
+        flags,
+        discourse: {
+          ...(cleared.discourse ?? {}),
+          lastChoiceIds: undefined,
+          lastOfferedSteps: undefined,
+        },
+      };
+    });
+    pushAssistant('Cleared the queue.');
+    return;
+  }
+
   if (features?.actionQuarantine !== false) {
     const riskCfg: ActionRiskConfig = {
       actionConfidenceFloor: features?.actionConfidenceFloor,
@@ -145,13 +188,13 @@ export function dispatchParsed(
       if (deps.deferLowConfidenceToFallback) {
         return;
       }
-      // No Laya defer: fall through to existing mid/low Yes/No confirm when a
-      // step target exists; otherwise stop without launching navigate/mutate.
+      // No Laya defer: fall through to mid/low Yes/No confirm when a step target
+      // exists. Conceptual conflicts and action-less parses stop here.
       const hasStep =
         Boolean(parsed.stepId) ||
         Boolean(parsed.mutationId) ||
         Boolean(parsed.openSurface);
-      if (!hasStep || parsed.confidence === 'low' || conceptualConflict) {
+      if (!hasStep || conceptualConflict) {
         return;
       }
     }
@@ -252,38 +295,6 @@ export function dispatchParsed(
       pushFaqHit(pack, faqHit, pushAssistant, setSession);
       return;
     }
-  }
-
-  if (parsed.goBack || parsed.rawIntent === 'go_back') {
-    const prevStep = resolveGoBackStep(session);
-    if (!prevStep) {
-      pushAssistant('There is no earlier step to go back to yet.');
-      return;
-    }
-    setSession((s) => goBackToStep(s, prevStep, []));
-    pushAssistant(`Going back to “${stepTitle(pack, prevStep)}”.`);
-    executeStep(prevStep);
-    return;
-  }
-
-  if (parsed.rawIntent === 'cancel_all') {
-    setSession((s) => {
-      const cleared = clearActionQueue(s);
-      const flags = { ...cleared.flags };
-      delete flags.pendingMutation;
-      delete flags.pendingDraftApply;
-      return {
-        ...cleared,
-        flags,
-        discourse: {
-          ...(cleared.discourse ?? {}),
-          lastChoiceIds: undefined,
-          lastOfferedSteps: undefined,
-        },
-      };
-    });
-    pushAssistant('Cleared the queue.');
-    return;
   }
 
   if (parsed.rawIntent === 'do_it') {

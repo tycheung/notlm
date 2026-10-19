@@ -109,6 +109,10 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
   const routingConflictRaw = existsSync(routingConflictPath)
     ? readJsonFile(routingConflictPath)
     : undefined;
+  const routingTreePath = join(pack, 'routingTree.json');
+  const routingTreeRaw = existsSync(routingTreePath)
+    ? readJsonFile(routingTreePath)
+    : undefined;
   const subgraphsPath = join(pack, 'subgraphs.json');
   const subgraphsRaw = existsSync(subgraphsPath) ? readJsonFile(subgraphsPath) : undefined;
   const semanticIndexPath = join(pack, SEMANTIC_INDEX_BASE_FILE);
@@ -184,6 +188,12 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
       typeof routingConflictRaw === 'object' &&
       !Array.isArray(routingConflictRaw)
         ? (routingConflictRaw as RoutingConflictConfig)
+        : undefined,
+    routingTree:
+      routingTreeRaw != null &&
+      typeof routingTreeRaw === 'object' &&
+      !Array.isArray(routingTreeRaw)
+        ? (routingTreeRaw as import('./routingTree.js').RoutingTreeConfig)
         : undefined,
     subgraphs:
       subgraphsRaw != null &&

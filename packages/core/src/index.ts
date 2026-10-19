@@ -9,6 +9,8 @@ export * from './actionRisk.js';
 export * from './confirmSession.js';
 export * from './intentConflict.js';
 export * from './interactionMode.js';
+export * from './routingTree.js';
+export * from './dispatchPlane.js';
 export * from './types.js';
 export * from './fuzzyText.js';
 export * from './typoFix.js';

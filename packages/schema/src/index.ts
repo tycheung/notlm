@@ -23,6 +23,7 @@ export {
   missRecordSchema,
   PACK_PIECE_SCHEMAS,
   repliesSchema,
+  routingTreeSchema,
   scenariosSchema,
 } from './schemas.js';
 export type { PackPieceName } from './schemas.js';
