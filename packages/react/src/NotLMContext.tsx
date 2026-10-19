@@ -459,13 +459,21 @@ export function NotLMProvider({
     const id = mintConversationId();
     conversationIdRef.current = id;
     setActiveThreadId(id);
-    setThreads((prev) => [{ id, title: 'Chat', updatedAt: Date.now() }, ...prev]);
+    const fresh = { id, title: 'Chat', updatedAt: Date.now() };
+    // When thread history UI is off, Clear Chat / New chat is a full restart.
+    if (features.threads === false) {
+      setThreads([fresh]);
+      setMessagesByThread({ [id]: [newChatMessage('assistant', welcome)] });
+      setSessionByThread({ [id]: emptySession() });
+      return;
+    }
+    setThreads((prev) => [fresh, ...prev]);
     setMessagesByThread((prev) => ({
       ...prev,
       [id]: [newChatMessage('assistant', welcome)],
     }));
     setSessionByThread((prev) => ({ ...prev, [id]: emptySession() }));
-  }, [cancelFallback, welcome]);
+  }, [cancelFallback, features.threads, welcome]);
 
   const chrome = useMemo<NotLMChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
