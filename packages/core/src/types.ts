@@ -279,6 +279,8 @@ export type ParseUtteranceResult = {
   lane?: import('./routingTree.js').CapabilityLane;
   /** Plane inference probability when known. */
   planeProbability?: number;
+  /** True when low plane confidence used chrome Ask/Guide/Do soft bias. */
+  usedChromeBias?: boolean;
   /**
    * Host surface key (drawer / confirm / upload). Bridged via executeStep
    * `forceOpenSurface` — not a pack control id.

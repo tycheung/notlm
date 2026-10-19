@@ -1,5 +1,6 @@
 import { bindersToCompleteness } from './binders.js';
 import { compileHeuristics } from './heuristics.js';
+import { normalizeRoutingTree } from './routingTree.js';
 import {
   DEFAULT_SEMANTIC_DIM,
   buildSemanticIndex,
@@ -143,7 +144,9 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
         ? routingConflict
         : undefined,
     routingTree:
-      routingTree && typeof routingTree === 'object' ? routingTree : undefined,
+      routingTree && typeof routingTree === 'object'
+        ? normalizeRoutingTree(routingTree)
+        : undefined,
     queries: queries?.length ? queries : undefined,
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,

@@ -213,7 +213,7 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     return;
   }
 
-  // Stale Yes/Cancel must not steal the next product ask (e.g. "Confirm USBC…").
+  // Stale Yes/Cancel must not steal the next product ask (e.g. "Confirm license…").
   clearStalePendingConfirms(live, trimmed);
 
   if (tryHandlePendingDraftApplyPick(live, trimmed)) return;

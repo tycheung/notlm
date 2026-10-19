@@ -348,7 +348,7 @@ export function tryHandleOrphanConfirmNo(
 
 /**
  * Drop stale Yes/Cancel gates when the user clearly changed topic.
- * Prevents "Confirm USBC…" from matching a pending delete via confirmYes.
+ * Prevents "Confirm license…" from matching a pending delete via confirmYes.
  */
 export function clearStalePendingConfirms(
   deps: DispatchDeps,
@@ -707,7 +707,7 @@ export function tryDispatchCapabilityCatalog(
       } else {
       const packWouldForceConfirm =
         mutationHit.risk === 'high' || Boolean(mutationHit.confirmPrompt);
-      // Host veto of high-risk / confirmPrompt only (USBC → Actions Needed).
+      // Host veto of high-risk / confirmPrompt only (license → Actions Needed).
       // Low-risk needsConfirm:false still uses the executeMutation path below.
       if (preview.needsConfirm === false && packWouldForceConfirm) {
         const answer: QueryAnswer = {

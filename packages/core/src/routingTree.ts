@@ -37,11 +37,46 @@ export type RoutingTreeConfig = {
   planeSoftBiasBelow?: number;
   /** Override platform plane→lane mask. */
   laneMask?: Partial<Record<InteractionPlane, CapabilityLane[]>>;
-  /** Optional leaf model ids keyed by lane (file stems under pack/). */
-  leaves?: Partial<Record<CapabilityLane, string>>;
+  /**
+   * Optional leaf model stems keyed by lane or autosplit child id (`goto__a`).
+   * Values are pack file stems, e.g. `ranker.leaves.goto`.
+   */
+  leaves?: Record<string, string>;
   /** Max autosplit depth recorded for this pack (training). */
   autosplitMaxDepth?: number;
+  /**
+   * Doc/ops remap table (catalog → lane). Not read at runtime except
+   * `remap.plane`, which is normalized into {@link laneMask} when mask absent.
+   */
+  remap?: {
+    plane?: Partial<Record<InteractionPlane, string[]>>;
+    catalog?: Record<string, string>;
+  };
 };
+
+/**
+ * Normalize pack JSON: promote `remap.plane` → `laneMask` when mask missing.
+ * Keeps packs that only documented masks under remap.plane working.
+ */
+export function normalizeRoutingTree(
+  raw: RoutingTreeConfig | null | undefined
+): RoutingTreeConfig | undefined {
+  if (raw == null || typeof raw !== 'object') return undefined;
+  const out: RoutingTreeConfig = { ...raw };
+  if (!out.laneMask || Object.keys(out.laneMask).length === 0) {
+    const plane = raw.remap?.plane;
+    if (plane && typeof plane === 'object') {
+      const mask: Partial<Record<InteractionPlane, CapabilityLane[]>> = {};
+      for (const p of ['ask', 'guide', 'do'] as const) {
+        const list = plane[p];
+        if (!Array.isArray(list) || !list.length) continue;
+        mask[p] = list.filter(isCapabilityLane);
+      }
+      if (Object.keys(mask).length) out.laneMask = mask;
+    }
+  }
+  return out;
+}
 
 export const DEFAULT_PLANE_SOFT_BIAS_BELOW = 0.55;
 

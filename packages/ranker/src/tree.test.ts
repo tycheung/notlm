@@ -28,7 +28,7 @@ describe('tree leaf helpers', () => {
     const picked = pickLeafModel(
       'goto',
       { goto: parent, goto__a: a, goto__b: b },
-      'open side actions'
+      'open the checklist'
     );
     expect(picked === a || picked === b).toBe(true);
   });

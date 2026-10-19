@@ -45,7 +45,7 @@ describe('fallbackReplySanitize', () => {
 
   it('keeps product refuse copy that does not echo the user line', () => {
     const reply =
-      'No — I am a bowling tournament guide. I only cover in-product workflow steps and product questions — not that request.';
+      'No — I am a product workflow guide. I only cover in-product workflow steps and product questions — not that request.';
     expect(
       sanitizeFallbackReply(
         reply,

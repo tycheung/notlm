@@ -249,7 +249,7 @@ describe('capability dispatch', () => {
     expect(deps.session.flags.pendingMutation).toBeUndefined();
   });
 
-  it('does not treat Confirm USBC… as yes for a pending delete', async () => {
+  it('does not treat Confirm license… as yes for a pending delete', async () => {
     const executeMutation = vi.fn(async () => ({ text: 'Deleted.' }));
     const deps = makeDeps({ executeMutation });
     deps.setSession((s) => ({
@@ -264,7 +264,7 @@ describe('capability dispatch', () => {
       },
     }));
     expect(
-      await tryHandlePendingMutationConfirm(deps, 'Confirm USBC for all pending')
+      await tryHandlePendingMutationConfirm(deps, 'Confirm license for all pending')
     ).toBe(false);
     expect(executeMutation).not.toHaveBeenCalled();
     expect(deps.session.flags.pendingMutation).toBeDefined();
@@ -283,7 +283,7 @@ describe('capability dispatch', () => {
         },
       },
     }));
-    expect(clearStalePendingConfirms(deps, 'Confirm USBC for all pending')).toBe(
+    expect(clearStalePendingConfirms(deps, 'Confirm license for all pending')).toBe(
       true
     );
     expect(deps.session.flags.pendingMutation).toBeUndefined();

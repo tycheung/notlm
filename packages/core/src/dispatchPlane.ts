@@ -76,8 +76,7 @@ export function annotateParseWithTree(
   parsed.plane = plane;
   parsed.planeProbability = inferred.probability;
   if (lane) parsed.lane = lane;
-  // Soft-bias telemetry only; chrome override already applied.
-  void usedChromeBias;
+  parsed.usedChromeBias = usedChromeBias;
   return parsed;
 }
 
@@ -147,7 +146,7 @@ export function resolveDispatchPlane(input: {
   return {
     mode: plane,
     plane,
-    usedChromeBias: false,
+    usedChromeBias: Boolean(parsed.usedChromeBias),
     blockNav: modeBlocksAutoNavigate(plane),
     blockMutate: modeBlocksMutations(plane),
     treeEnabled: true,

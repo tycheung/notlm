@@ -2,6 +2,11 @@
   "enabled": true,
   "planeSoftBiasBelow": 0.55,
   "autosplitMaxDepth": 3,
+  "laneMask": {
+    "ask": ["faq", "query", "context", "compare", "handoff", "audit", "ood", "disambiguation"],
+    "guide": ["faq", "query", "context", "compare", "handoff", "audit", "ood", "disambiguation", "goto", "tour", "search"],
+    "do": ["faq", "query", "context", "compare", "handoff", "audit", "ood", "disambiguation", "goto", "tour", "search", "mutation", "mutation_high_risk"]
+  },
   "leaves": {
     "faq": "ranker.leaves.faq",
     "goto": "ranker.leaves.goto",
