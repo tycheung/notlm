@@ -130,6 +130,9 @@ describe('createConversationLogPipeline', () => {
       stepId: 'create_list',
       text: 'create list',
       confidence: 'high',
+      plane: 'do',
+      lane: 'goto',
+      leaf: 'goto',
     });
     pipe.logChat('assistant', 'Opening create list');
     pipe.logChat('user', 'asdfgh');
@@ -137,6 +140,9 @@ describe('createConversationLogPipeline', () => {
       type: 'repair',
       kind: 'unknown',
       text: 'asdfgh',
+      plane: 'ask',
+      lane: 'disambiguation',
+      leaf: 'disambiguation',
     });
     // Repair miss is deferred until Laya starts / settle.
     expect(mem.snapshot().some((t) => t.outcome === 'miss')).toBe(false);
@@ -144,12 +150,25 @@ describe('createConversationLogPipeline', () => {
 
     const snap = mem.snapshot();
     expect(snap.every((t) => t.conversationId === id)).toBe(true);
-    expect(snap.some((t) => t.outcome === 'hit' && t.stepId === 'create_list')).toBe(
-      true
-    );
-    expect(snap.some((t) => t.outcome === 'miss' && t.missKind === 'unknown')).toBe(
-      true
-    );
+    expect(
+      snap.some(
+        (t) =>
+          t.outcome === 'hit' &&
+          t.stepId === 'create_list' &&
+          t.plane === 'do' &&
+          t.lane === 'goto' &&
+          t.leaf === 'goto'
+      )
+    ).toBe(true);
+    expect(
+      snap.some(
+        (t) =>
+          t.outcome === 'miss' &&
+          t.missKind === 'unknown' &&
+          t.plane === 'ask' &&
+          t.lane === 'disambiguation'
+      )
+    ).toBe(true);
     expect(snap.some((t) => t.role === 'assistant')).toBe(true);
 
     const records = mem.snapshotRecords();

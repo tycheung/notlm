@@ -183,6 +183,9 @@ describe('createMissLogPipeline', () => {
       kind: 'unknown',
       text: 'xyzzy nonsense',
       rawIntent: 'unknown',
+      plane: 'ask',
+      lane: 'faq',
+      leaf: 'faq',
     });
     expect(mem.snapshot()).toEqual([
       {
@@ -191,6 +194,9 @@ describe('createMissLogPipeline', () => {
         packId: 'demo',
         pathname: '/lists',
         rawIntent: 'unknown',
+        plane: 'ask',
+        lane: 'faq',
+        leaf: 'faq',
         at: new Date(1_700_000_000_000).toISOString(),
       },
     ]);

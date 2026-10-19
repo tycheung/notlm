@@ -34,6 +34,12 @@ export type ConversationTurn = {
   missKind?: ConversationMissKind;
   rawIntent?: string | null;
   confidence?: 'high' | 'mid' | 'low';
+  /** ADR-011 Stage0 plane the utterance sorted into. */
+  plane?: 'ask' | 'guide' | 'do';
+  /** ADR-011 Stage1 capability lane. */
+  lane?: string;
+  /** ADR-011 Stage2 leaf id (lane or autosplit child). */
+  leaf?: string;
   pathname?: string;
   packId?: string;
 };
@@ -141,6 +147,11 @@ function coerceTurn(row: unknown, index: number): ConversationTurn {
   if (obj.confidence === 'high' || obj.confidence === 'mid' || obj.confidence === 'low') {
     turn.confidence = obj.confidence;
   }
+  if (obj.plane === 'ask' || obj.plane === 'guide' || obj.plane === 'do') {
+    turn.plane = obj.plane;
+  }
+  if (typeof obj.lane === 'string' && obj.lane.trim()) turn.lane = obj.lane.trim();
+  if (typeof obj.leaf === 'string' && obj.leaf.trim()) turn.leaf = obj.leaf.trim();
   if (typeof obj.pathname === 'string') turn.pathname = obj.pathname;
   if (typeof obj.packId === 'string') turn.packId = obj.packId;
   return turn;
@@ -366,6 +377,9 @@ export function createConversationLogPipeline(
     missKind: ConversationMissKind;
     rawIntent?: string | null;
     confidence?: 'high' | 'mid' | 'low';
+    plane?: 'ask' | 'guide' | 'do';
+    lane?: string;
+    leaf?: string;
   } | null = null;
   /** Next repair emits as regenerate (skip deferred miss). */
   let nextRepairAsRegenerate = false;
@@ -399,6 +413,9 @@ export function createConversationLogPipeline(
       missKind?: ConversationMissKind;
       rawIntent?: string | null;
       confidence?: 'high' | 'mid' | 'low';
+      plane?: 'ask' | 'guide' | 'do';
+      lane?: string;
+      leaf?: string;
     }
   ) => {
     const t = now();
@@ -417,6 +434,9 @@ export function createConversationLogPipeline(
       missKind: fields.missKind,
       rawIntent: fields.rawIntent,
       confidence: fields.confidence,
+      plane: fields.plane,
+      lane: fields.lane,
+      leaf: fields.leaf,
       ...baseMeta(),
     });
   };
@@ -431,6 +451,9 @@ export function createConversationLogPipeline(
         missKind: pending.missKind,
         rawIntent: pending.rawIntent,
         confidence: pending.confidence,
+        plane: pending.plane,
+        lane: pending.lane,
+        leaf: pending.leaf,
       });
     } catch {
       /* pipeline must never break chat */
@@ -474,6 +497,9 @@ export function createConversationLogPipeline(
             missKind: pending.missKind,
             rawIntent: pending.rawIntent,
             confidence: pending.confidence,
+            plane: pending.plane,
+            lane: pending.lane,
+            leaf: pending.leaf,
           });
           return;
         }
@@ -506,6 +532,9 @@ export function createConversationLogPipeline(
           missKind: pending.missKind,
           rawIntent: pending.rawIntent,
           confidence: pending.confidence,
+          plane: pending.plane,
+          lane: pending.lane,
+          leaf: pending.leaf,
         });
       } else if (lastUserText) {
         emitUserOutcome('regenerate', { text: lastUserText });
@@ -533,6 +562,9 @@ export function createConversationLogPipeline(
             stepId: event.stepId,
             rawIntent: event.rawIntent,
             confidence: event.confidence,
+            plane: event.plane,
+            lane: event.lane,
+            leaf: event.leaf,
             ...meta,
           });
           return;
@@ -555,6 +587,9 @@ export function createConversationLogPipeline(
               missKind: 'blocked',
               rawIntent: event.rawIntent,
               confidence: event.confidence,
+              plane: event.plane,
+              lane: event.lane,
+              leaf: event.leaf,
               ...meta,
             });
             return;
@@ -575,6 +610,9 @@ export function createConversationLogPipeline(
               missKind: event.kind,
               rawIntent: event.rawIntent,
               confidence: event.confidence,
+              plane: event.plane,
+              lane: event.lane,
+              leaf: event.leaf,
             });
             return;
           }
@@ -584,6 +622,9 @@ export function createConversationLogPipeline(
             missKind: event.kind,
             rawIntent: event.rawIntent,
             confidence: event.confidence,
+            plane: event.plane,
+            lane: event.lane,
+            leaf: event.leaf,
           };
           if (!lastUserText) lastUserText = cleaned;
           return;

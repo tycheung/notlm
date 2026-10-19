@@ -55,7 +55,9 @@ import { DEFAULT_HEURISTICS } from './heuristics.js';
 import { askModeInstructCopy } from './interactionMode.js';
 import {
   applyLaneMaskToParsed,
+  rememberTreeRouting,
   resolveDispatchPlane,
+  treeRoutingFromParsed,
 } from './dispatchPlane.js';
 
 function surfaceLaunchOpts(
@@ -118,6 +120,7 @@ export function dispatchParsed(
     const masked = applyLaneMaskToParsed(parsed, planeCtx.plane, pack);
     Object.assign(parsed, masked);
   }
+  rememberTreeRouting(setSession, treeRoutingFromParsed(parsed));
   const interactionMode = planeCtx.mode;
   const blockNav = planeCtx.blockNav;
   const blockMutate = planeCtx.blockMutate;

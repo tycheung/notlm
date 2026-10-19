@@ -4,7 +4,10 @@ import { emptySession } from './slots.js';
 import type { FlowStepDef } from './types.js';
 import {
   applyLaneMaskToParsed,
+  rememberTreeRouting,
   resolveDispatchPlane,
+  treeRoutingFromParsed,
+  treeRoutingFromSession,
 } from './dispatchPlane.js';
 import { normalizeRoutingTree } from './routingTree.js';
 
@@ -134,5 +137,28 @@ describe('dispatchPlane + routingTree', () => {
     expect(masked.stepId).toBeNull();
     expect(masked.faqId).toBe('how-lists');
     expect(masked.lane).toBe('faq');
+  });
+
+  it('rememberTreeRouting stores plane/lane/leaf for log sinks', () => {
+    let session = emptySession();
+    rememberTreeRouting(
+      (updater) => {
+        session = updater(session) as typeof session;
+      },
+      treeRoutingFromParsed({
+        stepId: null,
+        slotPatches: {},
+        isCorrection: false,
+        goBack: false,
+        plane: 'do',
+        lane: 'goto',
+        leaf: 'goto__a',
+      })
+    );
+    expect(treeRoutingFromSession(session)).toEqual({
+      plane: 'do',
+      lane: 'goto',
+      leaf: 'goto__a',
+    });
   });
 });

@@ -17,6 +17,12 @@ export type MissRecord = {
   pathname?: string;
   rawIntent?: string | null;
   confidence?: 'high' | 'mid' | 'low';
+  /** ADR-011 Stage0 plane the utterance sorted into. */
+  plane?: 'ask' | 'guide' | 'do';
+  /** ADR-011 Stage1 capability lane. */
+  lane?: string;
+  /** ADR-011 Stage2 leaf id (lane or autosplit child). */
+  leaf?: string;
   at: string;
 };
 
@@ -145,6 +151,11 @@ function coerceMissRecord(row: unknown, index: number): MissRecord {
   if (obj.confidence === 'high' || obj.confidence === 'mid' || obj.confidence === 'low') {
     record.confidence = obj.confidence;
   }
+  if (obj.plane === 'ask' || obj.plane === 'guide' || obj.plane === 'do') {
+    record.plane = obj.plane;
+  }
+  if (typeof obj.lane === 'string' && obj.lane.trim()) record.lane = obj.lane.trim();
+  if (typeof obj.leaf === 'string' && obj.leaf.trim()) record.leaf = obj.leaf.trim();
   return record;
 }
 
@@ -306,6 +317,9 @@ export function createMissLogPipeline(opts: MissLogPipelineOpts): MissLogPipelin
         if (pathname) record.pathname = pathname;
         if (event.rawIntent !== undefined) record.rawIntent = event.rawIntent;
         if (event.confidence) record.confidence = event.confidence;
+        if (event.plane) record.plane = event.plane;
+        if (event.lane) record.lane = event.lane;
+        if (event.leaf) record.leaf = event.leaf;
 
         fireAndForget(Promise.resolve(opts.transport.log(record)), 'missLog.transport');
       } catch {

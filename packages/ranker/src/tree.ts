@@ -73,25 +73,37 @@ function laneFromModel(
 
 /**
  * Prefer autosplit children (`lane__a` / `lane__b`) by top intent probability;
- * else the parent leaf model.
+ * else the parent leaf id.
  */
+export function pickLeafModelId(
+  lane: string,
+  models: Record<string, RankerModelJson>,
+  raw: string
+): string | null {
+  const childAKey = `${lane}__a`;
+  const childBKey = `${lane}__b`;
+  const childA = models[childAKey];
+  const childB = models[childBKey];
+  if (childA && childB) {
+    try {
+      const ra = inferRankerJson(childA, raw);
+      const rb = inferRankerJson(childB, raw);
+      return ra.intent.probability >= rb.intent.probability ? childAKey : childBKey;
+    } catch {
+      return childAKey;
+    }
+  }
+  return models[lane] ? lane : null;
+}
+
+/** Prefer autosplit children by top intent probability; else the parent leaf model. */
 export function pickLeafModel(
   lane: string,
   models: Record<string, RankerModelJson>,
   raw: string
 ): RankerModelJson | null {
-  const childA = models[`${lane}__a`];
-  const childB = models[`${lane}__b`];
-  if (childA && childB) {
-    try {
-      const ra = inferRankerJson(childA, raw);
-      const rb = inferRankerJson(childB, raw);
-      return ra.intent.probability >= rb.intent.probability ? childA : childB;
-    } catch {
-      return childA;
-    }
-  }
-  return models[lane] ?? null;
+  const id = pickLeafModelId(lane, models, raw);
+  return id ? (models[id] ?? null) : null;
 }
 
 function annotateTree(
@@ -151,7 +163,7 @@ function annotateTree(
     ...parsed,
     plane,
     planeProbability: inferred.probability,
-    ...(lane ? { lane } : {}),
+    ...(lane ? { lane, leaf: parsed.leaf ?? lane } : {}),
   };
 }
 
@@ -168,13 +180,14 @@ export function createTreeUtteranceParser(
     let parsed = await Promise.resolve(inner(raw, pack, opts));
     parsed = annotateTree(raw, pack, parsed, treeOpts);
     const lane = parsed.lane;
-    const leaf =
+    const leafId =
       lane && treeOpts?.leafModels
-        ? pickLeafModel(lane, treeOpts.leafModels, raw)
+        ? pickLeafModelId(lane, treeOpts.leafModels, raw)
         : null;
-    if (leaf) {
+    const leafModel = leafId && treeOpts?.leafModels ? treeOpts.leafModels[leafId] : null;
+    if (leafId && leafModel) {
       try {
-        const leafParser = createJsonHybridParser(leaf);
+        const leafParser = createJsonHybridParser(leafModel);
         const leafParsed = await Promise.resolve(leafParser(raw, pack, opts));
         parsed = annotateTree(
           raw,
@@ -187,8 +200,9 @@ export function createTreeUtteranceParser(
           },
           treeOpts
         );
+        parsed = { ...parsed, leaf: leafId };
       } catch {
-        /* keep annotated inner */
+        parsed = { ...parsed, leaf: leafId };
       }
     }
     return parsed;

@@ -277,6 +277,11 @@ export type ParseUtteranceResult = {
   plane?: import('./routingTree.js').InteractionPlane;
   /** ADR-011 Stage1 capability lane. */
   lane?: import('./routingTree.js').CapabilityLane;
+  /**
+   * ADR-011 Stage2 leaf id (lane or autosplit child, e.g. `goto__a`).
+   * Set when a leaf specialist ran; else omit / equals lane.
+   */
+  leaf?: string;
   /** Plane inference probability when known. */
   planeProbability?: number;
   /** True when low plane confidence used chrome Ask/Guide/Do soft bias. */
@@ -306,6 +311,10 @@ export type CoachEvent =
       text?: string;
       rawIntent?: string | null;
       confidence?: 'high' | 'mid' | 'low';
+      /** ADR-011 tree sort track (for training / mislabel review). */
+      plane?: import('./routingTree.js').InteractionPlane;
+      lane?: import('./routingTree.js').CapabilityLane;
+      leaf?: string;
       /**
        * Shadow telemetry: quarantine/conflict would have deferred to Laya
        * (features.shadowActionDefer). Does not change UX by itself.
@@ -321,6 +330,10 @@ export type CoachEvent =
       text?: string;
       rawIntent?: string | null;
       confidence?: 'high' | 'mid' | 'low';
+      /** ADR-011 tree sort track (for training / mislabel review). */
+      plane?: import('./routingTree.js').InteractionPlane;
+      lane?: import('./routingTree.js').CapabilityLane;
+      leaf?: string;
     }
   | { type: 'confirm_ask'; stepId: StepId }
   | { type: 'slot_ask'; stepId: StepId; slotKey: string };

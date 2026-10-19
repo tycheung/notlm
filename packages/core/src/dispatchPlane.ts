@@ -37,6 +37,52 @@ export function isRoutingTreeEnabled(
   return Boolean(pack?.routingTree?.enabled);
 }
 
+/** Session flag: last plane/lane/leaf for miss + conversation logging. */
+export const LAST_TREE_ROUTING_FLAG = 'lastTreeRouting';
+
+export type TreeRoutingLog = {
+  plane?: InteractionPlane;
+  lane?: CapabilityLane;
+  leaf?: string;
+};
+
+export function treeRoutingFromParsed(
+  parsed: ParseUtteranceResult | null | undefined
+): TreeRoutingLog {
+  const out: TreeRoutingLog = {};
+  if (parsed?.plane) out.plane = parsed.plane;
+  if (parsed?.lane) out.lane = parsed.lane;
+  if (parsed?.leaf) out.leaf = parsed.leaf;
+  else if (parsed?.lane) out.leaf = parsed.lane;
+  return out;
+}
+
+export function rememberTreeRouting<T extends { flags?: Record<string, unknown> }>(
+  setSession: (updater: (session: T) => T) => void,
+  routing: TreeRoutingLog
+): void {
+  if (!routing.plane && !routing.lane && !routing.leaf) return;
+  setSession((s) => ({
+    ...s,
+    flags: { ...(s.flags ?? {}), [LAST_TREE_ROUTING_FLAG]: routing },
+  }));
+}
+
+export function treeRoutingFromSession(
+  session: { flags?: Record<string, unknown> } | null | undefined
+): TreeRoutingLog | null {
+  const raw = session?.flags?.[LAST_TREE_ROUTING_FLAG];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  const out: TreeRoutingLog = {};
+  if (o.plane === 'ask' || o.plane === 'guide' || o.plane === 'do') {
+    out.plane = o.plane;
+  }
+  if (typeof o.lane === 'string' && o.lane) out.lane = o.lane as CapabilityLane;
+  if (typeof o.leaf === 'string' && o.leaf) out.leaf = o.leaf;
+  return out.plane || out.lane || out.leaf ? out : null;
+}
+
 /** Attach plane/lane onto a parse result (mutates + returns). */
 export function annotateParseWithTree(
   parsed: ParseUtteranceResult,
@@ -75,7 +121,10 @@ export function annotateParseWithTree(
     (parsed.tourId ? 'tour' : parsed.searchId ? 'search' : null);
   parsed.plane = plane;
   parsed.planeProbability = inferred.probability;
-  if (lane) parsed.lane = lane;
+  if (lane) {
+    parsed.lane = lane;
+    if (!parsed.leaf) parsed.leaf = lane;
+  }
   parsed.usedChromeBias = usedChromeBias;
   return parsed;
 }

@@ -36,6 +36,7 @@ export {
 } from './hybrid.js';
 export {
   createTreeUtteranceParser,
+  pickLeafModelId,
   pickLeafModel,
   leafModelsFromPackLeaves,
   type TreeParserOptions,
