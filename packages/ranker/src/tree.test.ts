@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { pickLeafModel, leafModelsFromPackLeaves } from './tree.js';
+import { parseUtterance } from '@notlm/core';
+import {
+  createTreeUtteranceParser,
+  pickLeafModel,
+  leafModelsFromPackLeaves,
+} from './tree.js';
 import type { RankerModelJson } from './types.js';
 
 function stubModel(labels: string[]): RankerModelJson {
@@ -49,5 +54,35 @@ describe('tree leaf helpers', () => {
     );
     expect(map.goto).toBe(model);
     expect(map.goto__a).toBe(model);
+  });
+});
+
+describe('createTreeUtteranceParser', () => {
+  const pack = {
+    steps: [
+      {
+        id: 'create_list',
+        title: 'Create list',
+        keywords: ['create list'],
+        kind: 'hard' as const,
+        requires: [],
+      },
+    ],
+    aliases: { create_list: ['make a list'] },
+    meta: [] as string[],
+    routingTree: { enabled: true, planeSoftBiasBelow: 0.55 },
+  };
+
+  it('annotates ask plane on how-to utterances', async () => {
+    const parse = createTreeUtteranceParser(parseUtterance);
+    const r = await parse('how do I create a list?', pack);
+    expect(r.plane).toBe('ask');
+    expect(r.planeProbability).toBeGreaterThan(0.5);
+  });
+
+  it('annotates do plane on create commands', async () => {
+    const parse = createTreeUtteranceParser(parseUtterance);
+    const r = await parse('create a new list named groceries', pack);
+    expect(r.plane).toBe('do');
   });
 });
