@@ -133,6 +133,12 @@ export function NotLMProvider({
   const conversationIdRef = useRef(mintConversationId());
   const turnThreadIdRef = useRef<string | null>(null);
   const asyncFallbackOwnsPinRef = useRef(false);
+  /** Sync gate so rapid multi-send cannot start overlapping turns. */
+  const turnInFlightRef = useRef(false);
+  const queuedUtteranceRef = useRef<{
+    text: string;
+    opts?: { skipUserAppend?: boolean };
+  } | null>(null);
   const fallbackGenRef = useRef(0);
   const conversationPipelineRef = useRef<ConversationLogPipeline | null>(null);
   const phraseLruRef = useRef<PhraseLruStore>(createMemoryPhraseLru());
@@ -141,6 +147,9 @@ export function NotLMProvider({
   );
   const abortRef = useRef<AbortController | null>(null);
   const lastFallbackTextByThreadRef = useRef<Record<string, string>>({});
+  const handleUserUtteranceRef = useRef<
+    (text: string, opts?: { skipUserAppend?: boolean }) => void
+  >(() => {});
   const [fallbackBusy, setFallbackBusy] = useState(false);
   const [fallbackOwnsPin, setFallbackOwnsPin] = useState(false);
   const [composerQueueBustGen, setComposerQueueBustGen] = useState(0);
@@ -360,6 +369,14 @@ export function NotLMProvider({
         setFallbackOwnsPin(false);
         setFallbackBusy(false);
         clearTurnThreadPin();
+        turnInFlightRef.current = false;
+        const queued = queuedUtteranceRef.current;
+        queuedUtteranceRef.current = null;
+        if (queued) {
+          queueMicrotask(() =>
+            handleUserUtteranceRef.current(queued.text, queued.opts)
+          );
+        }
       },
       getRecentTurns: () => {
         const tid = turnThreadIdRef.current ?? conversationIdRef.current;
@@ -408,6 +425,8 @@ export function NotLMProvider({
     abortRef.current?.abort();
     abortRef.current = null;
     fallbackGenRef.current += 1;
+    queuedUtteranceRef.current = null;
+    turnInFlightRef.current = false;
     setFallbackBusy(false);
     setFallbackOwnsPin(false);
     setComposerQueueBustGen((n) => n + 1);
@@ -443,10 +462,6 @@ export function NotLMProvider({
     }));
     setSessionByThread((prev) => ({ ...prev, [id]: emptySession() }));
   }, [cancelFallback, welcome]);
-
-  const handleUserUtteranceRef = useRef<
-    (text: string, opts?: { skipUserAppend?: boolean }) => void
-  >(() => {});
 
   const chrome = useMemo<NotLMChromeConfig>(
     () => ({ appearance, className, classNames, components, labels, style }),
@@ -642,10 +657,35 @@ export function NotLMProvider({
     [getContext, pack, pushAssistant]
   );
 
+  const releaseTurnGate = useCallback(() => {
+    turnInFlightRef.current = false;
+    if (!asyncFallbackOwnsPinRef.current) {
+      setFallbackBusy(false);
+    }
+    clearTurnThreadPin();
+    const queued = queuedUtteranceRef.current;
+    queuedUtteranceRef.current = null;
+    if (queued) {
+      queueMicrotask(() =>
+        handleUserUtteranceRef.current(queued.text, queued.opts)
+      );
+    }
+  }, [clearTurnThreadPin]);
+
   const handleUserUtterance = useCallback(
     (text: string, opts?: { skipUserAppend?: boolean }) => {
       const trimmed = text.trim();
-      if (fallbackBusy || asyncFallbackOwnsPinRef.current) cancelFallback();
+      // Serialize overlapping sends — never cancel+restart (crosses replies).
+      if (
+        turnInFlightRef.current ||
+        fallbackBusy ||
+        asyncFallbackOwnsPinRef.current
+      ) {
+        queuedUtteranceRef.current = { text, opts };
+        return;
+      }
+      turnInFlightRef.current = true;
+      setFallbackBusy(true);
       turnThreadIdRef.current = conversationIdRef.current;
       if (!opts?.skipUserAppend) {
         conversationPipelineRef.current?.logChat('user', trimmed || text);
@@ -661,6 +701,7 @@ export function NotLMProvider({
       if (!trimmed) {
         // Core also handles empty, but never drop the turn before dispatch.
         pushAssistant('Say a product question, a checklist step, or what’s next.');
+        releaseTurnGate();
         return;
       }
 
@@ -668,7 +709,8 @@ export function NotLMProvider({
         const turnId = turnThreadIdRef.current ?? conversationIdRef.current;
         const turnSession = sessionByThreadRef.current[turnId] ?? emptySession();
         const finishTurn = () => {
-          if (!asyncFallbackOwnsPinRef.current) clearTurnThreadPin();
+          // Async Laya owns the pin — release when onAsyncFallbackFinished fires.
+          if (!asyncFallbackOwnsPinRef.current) releaseTurnGate();
         };
         const decisionFallbackOn =
           Boolean(fallbackLlm) && isDecisionFallbackEnabled(features);
@@ -737,7 +779,7 @@ export function NotLMProvider({
             void (intercepted as Promise<boolean>).then((handled) => {
               if (handled) {
                 conversationPipelineRef.current?.markLastUserOutcome('adapter');
-                clearTurnThreadPin();
+                releaseTurnGate();
               } else {
                 runCore();
               }
@@ -746,7 +788,7 @@ export function NotLMProvider({
           }
           if (intercepted) {
             conversationPipelineRef.current?.markLastUserOutcome('adapter');
-            clearTurnThreadPin();
+            releaseTurnGate();
             return;
           }
         }
@@ -759,7 +801,7 @@ export function NotLMProvider({
           void (picked as Promise<boolean>).then((handled) => {
             if (handled) {
               conversationPipelineRef.current?.markLastUserOutcome('adapter');
-              clearTurnThreadPin();
+              releaseTurnGate();
             } else {
               runAfterPending();
             }
@@ -768,7 +810,7 @@ export function NotLMProvider({
         }
         if (picked) {
           conversationPipelineRef.current?.markLastUserOutcome('adapter');
-          clearTurnThreadPin();
+          releaseTurnGate();
           return;
         }
       }
@@ -795,10 +837,9 @@ export function NotLMProvider({
       openSearchHit,
       resolveContextAsk,
       setMessages,
-      clearTurnThreadPin,
+      releaseTurnGate,
       openSurface,
       fallbackBusy,
-      cancelFallback,
     ]
   );
 
