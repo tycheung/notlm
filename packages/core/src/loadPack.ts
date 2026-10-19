@@ -33,6 +33,7 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     tours,
     search,
     heuristics,
+    routingConflict,
     semanticIndex: precomputedIndex,
     semanticIndexCustom,
   } = input;
@@ -136,6 +137,10 @@ export function loadPackFromJson(input: PackJsonInput): LoadedPack {
     ),
     heuristics: heuristics && Object.keys(heuristics).length ? heuristics : undefined,
     compiledHeuristics,
+    routingConflict:
+      routingConflict && typeof routingConflict === 'object'
+        ? routingConflict
+        : undefined,
     queries: queries?.length ? queries : undefined,
     mutations: mutations?.length ? mutations : undefined,
     tours: tours?.length ? tours : undefined,

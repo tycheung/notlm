@@ -358,10 +358,14 @@
     ],
     "conceptualQuestionPatterns": [
       "^(can you )?(explain|tell me|describe|clarify)\\b",
-      "\\bhow (do|does|are|is|to|can)\\b",
-      "\\bwhat('s| is| are) (the )?(difference|relationship)\\b",
+      "\\bhow (do|does|are|is|to|can|should)\\b",
+      "\\bwhat('s| is| are) (the )?(difference|relationship|way|steps?)\\b",
       "\\b(relate(d)? (to|each)|relationship between)\\b",
-      "\\bdifference between\\b"
+      "\\bdifference between\\b",
+      "\\bshould i (open|use|run)\\b",
+      "\\bwhere (do|does|can|should) i\\b",
+      "\\bwhat does .* mean\\b",
+      "\\bwhy (do|does|can't|cannot|won't)\\b"
     ],
     "askDisfluencyLead": [
       "uh",

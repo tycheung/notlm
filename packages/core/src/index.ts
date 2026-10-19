@@ -5,6 +5,8 @@ export * from './semanticRetrieve.js';
 export * from './metricsF1.js';
 export * from './capabilityCatalog.js';
 export * from './confidenceBands.js';
+export * from './actionRisk.js';
+export * from './intentConflict.js';
 export * from './types.js';
 export * from './fuzzyText.js';
 export * from './typoFix.js';

@@ -252,6 +252,11 @@ export type ParseUtteranceResult = {
   stepId: StepId | null;
   /** Near-tied step matches when the utterance is ambiguous across contexts. */
   candidates?: StepId[];
+  /**
+   * Raw phrase scores aligned with `candidates` (same order) when available.
+   * Used with `conflictDelta` for near-tie defer.
+   */
+  candidateScores?: number[];
   slotPatches: SlotBag;
   isCorrection: boolean;
   goBack: boolean;
@@ -293,6 +298,11 @@ export type CoachEvent =
       text?: string;
       rawIntent?: string | null;
       confidence?: 'high' | 'mid' | 'low';
+      /**
+       * Shadow telemetry: quarantine/conflict would have deferred to Laya
+       * (features.shadowActionDefer). Does not change UX by itself.
+       */
+      wouldHaveGoneToLaya?: boolean;
     }
   | {
       type: 'launch';
@@ -374,6 +384,30 @@ export type AssistantFeatures = {
    * **Default on** when unset; set `false` to disable.
    */
   semanticRetrieve?: boolean;
+  /**
+   * Gate navigate/mutate intents below `actionConfidenceFloor` (defer to Laya
+   * or confirm). FAQ/answer paths unchanged. **Default on** when unset.
+   */
+  actionQuarantine?: boolean;
+  /**
+   * Min calibrated probability to allow navigate/mutate without defer.
+   * Default = CONFIDENCE_HIGH_MIN (0.85) when quarantine is on.
+   */
+  actionConfidenceFloor?: number;
+  /**
+   * Treat mid-confidence navigate/mutate like low (defer) while mid FAQ
+   * still answers / chips. Default off.
+   */
+  treatMidAsLowForActions?: boolean;
+  /**
+   * When quarantine would defer, still emit a shadow telemetry field
+   * `wouldHaveGoneToLaya` on the repair coach event (S4). Default off.
+   */
+  shadowActionDefer?: boolean;
+  /**
+   * Near-tie score gap (1 - second/top) for intent conflict defer. Default 0.15.
+   */
+  conflictDelta?: number;
 };
 
 export type CompletenessFn = (ctx: RuntimeContextBase) => boolean;
@@ -410,6 +444,11 @@ export type PackRuntime = {
   heuristics?: HeuristicsConfig;
   /** Compiled heuristics (platform + pack + normalize fillers). */
   compiledHeuristics?: import('./heuristics.js').CompiledHeuristics;
+  /**
+   * Optional routing-conflict overlay (`routingConflict.json`).
+   * Generic families live in notlm packs; hosts may override conflictDelta via features.
+   */
+  routingConflict?: import('./intentConflict.js').RoutingConflictConfig;
   queries?: import('./capabilityCatalog.js').QueryDef[];
   /** Confirm-gated write catalog (host preview/executeMutation). */
   mutations?: import('./capabilityCatalog.js').MutationDef[];
@@ -613,6 +652,8 @@ export type PackJsonInput = {
   faqDomainTokens?: string[];
   /** Trainable heuristics overlay (`heuristics.json`). */
   heuristics?: HeuristicsConfig;
+  /** Optional routing-conflict overlay (`routingConflict.json`). */
+  routingConflict?: import('./intentConflict.js').RoutingConflictConfig;
   queries?: import('./capabilityCatalog.js').QueryDef[];
   mutations?: import('./capabilityCatalog.js').MutationDef[];
   tours?: import('./capabilityCatalog.js').TourDef[];

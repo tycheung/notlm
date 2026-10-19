@@ -41,6 +41,17 @@ import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 import { isConceptualQuestion } from './utteranceIntent.js';
 import { tryDispatchCapabilityCatalog } from './dispatchCapability.js';
 import { pickReply } from './replies.js';
+import {
+  actionRiskFromParsed,
+  shouldDeferAction,
+  type ActionRiskConfig,
+} from './actionRisk.js';
+import {
+  conceptualActionConflict,
+  scoresNearTie,
+  DEFAULT_CONFLICT_DELTA,
+} from './intentConflict.js';
+import { DEFAULT_HEURISTICS } from './heuristics.js';
 
 function surfaceLaunchOpts(parsed: ParseUtteranceResult): {
   forceOpenSurface?: string;
@@ -75,6 +86,57 @@ export function dispatchParsed(
   const { pack, session, ctx, pushAssistant, executeStep, setSession, flashField, clickField } =
     deps;
   const trimmed = deps.text.trim();
+
+  // Action quarantine + conceptual/action conflict → Laya defer (or confirm path).
+  // FAQ / answer / refuse / clarify are not gated by confidence floor alone.
+  // Use pack.compiledHeuristics (platform + pack overlay), not bare defaults —
+  // otherwise host heuristics.json conceptual cues never apply.
+  const features = deps.features;
+  if (features?.actionQuarantine !== false) {
+    const riskCfg: ActionRiskConfig = {
+      actionConfidenceFloor: features?.actionConfidenceFloor,
+      treatMidAsLowForActions: features?.treatMidAsLowForActions,
+      intentMap: pack.routingConflict?.intentMap,
+    };
+    const risk = actionRiskFromParsed(parsed, riskCfg);
+    const heuristics =
+      pack.compiledHeuristics ?? DEFAULT_HEURISTICS;
+    const conceptualConflict = conceptualActionConflict({
+      isConceptual: isConceptualQuestion(
+        trimmed,
+        pack.faqDomainTokens,
+        heuristics
+      ),
+      risk,
+      faqId: parsed.faqId,
+      queryId: parsed.queryId,
+    });
+    if (
+      conceptualConflict ||
+      shouldDeferAction(risk, parsed.confidence, parsed.probability, riskCfg)
+    ) {
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'low_confidence',
+        text: trimmed,
+        rawIntent: parsed.rawIntent,
+        confidence: parsed.confidence,
+        ...(features?.shadowActionDefer ? { wouldHaveGoneToLaya: true } : {}),
+      });
+      if (deps.deferLowConfidenceToFallback) {
+        return;
+      }
+      // No Laya defer: fall through to existing mid/low Yes/No confirm when a
+      // step target exists; otherwise stop without launching navigate/mutate.
+      const hasStep =
+        Boolean(parsed.stepId) ||
+        Boolean(parsed.mutationId) ||
+        Boolean(parsed.openSurface);
+      if (!hasStep || parsed.confidence === 'low' || conceptualConflict) {
+        return;
+      }
+    }
+  }
 
   // Parsed capability catalog ids (ranker / fallback).
   if (
@@ -327,14 +389,82 @@ export function dispatchParsed(
       (typeof parsed.rawIntent === 'string' && parsed.rawIntent.startsWith('goto:')));
 
   if (parsed.rawIntent === 'ambiguous' && parsed.candidates && parsed.candidates.length >= 2) {
-    const resolved = resolveKeywordCollision(parsed.candidates, pack, ctx, session);
-    if (resolved) {
-      launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
+    // Near-tie among steps: do not winner-take-all via page bias when quarantine
+    // is on — defer to Laya (or chips) instead of auto-launching one candidate.
+    const conflictDelta =
+      features?.conflictDelta ??
+      pack.routingConflict?.conflictDelta ??
+      DEFAULT_CONFLICT_DELTA;
+    const scores = parsed.candidateScores;
+    const nearTie =
+      Boolean(scores && scores.length >= 2) &&
+      scoresNearTie(scores![0]!, scores![1]!, conflictDelta);
+    if (nearTie && features?.actionQuarantine !== false) {
+      emitCoachEvent(deps, {
+        type: 'repair',
+        kind: 'low_confidence',
+        text: trimmed,
         rawIntent: parsed.rawIntent,
         confidence: parsed.confidence,
-        ...surfaceLaunchOpts(parsed),
+        ...(features?.shadowActionDefer ? { wouldHaveGoneToLaya: true } : {}),
       });
-      return;
+      if (deps.deferLowConfidenceToFallback) {
+        return;
+      }
+      // Fall through to chip disambiguation below (no auto-resolve).
+    } else {
+      const resolved = resolveKeywordCollision(
+        parsed.candidates,
+        pack,
+        ctx,
+        session
+      );
+      if (resolved) {
+        // Collision pick is navigate — re-apply action floor before launch.
+        if (features?.actionQuarantine !== false) {
+          const riskCfg: ActionRiskConfig = {
+            actionConfidenceFloor: features?.actionConfidenceFloor,
+            treatMidAsLowForActions: features?.treatMidAsLowForActions,
+            intentMap: pack.routingConflict?.intentMap,
+          };
+          if (
+            shouldDeferAction(
+              'navigate',
+              parsed.confidence,
+              parsed.probability,
+              riskCfg
+            )
+          ) {
+            emitCoachEvent(deps, {
+              type: 'repair',
+              kind: 'low_confidence',
+              text: trimmed,
+              rawIntent: parsed.rawIntent,
+              confidence: parsed.confidence,
+              ...(features?.shadowActionDefer
+                ? { wouldHaveGoneToLaya: true }
+                : {}),
+            });
+            if (deps.deferLowConfidenceToFallback) {
+              return;
+            }
+          } else {
+            launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
+              rawIntent: `goto:${resolved}`,
+              confidence: parsed.confidence,
+              ...surfaceLaunchOpts(parsed),
+            });
+            return;
+          }
+        } else {
+          launchStep(deps, resolved, parsed.slotPatches, parsed.isCorrection, {
+            rawIntent: parsed.rawIntent,
+            confidence: parsed.confidence,
+            ...surfaceLaunchOpts(parsed),
+          });
+          return;
+        }
+      }
     }
     const picked = disambiguationPrompt(pack, session, parsed.candidates);
     setSession(() => ({
@@ -426,6 +556,30 @@ export function dispatchParsed(
   }
 
   const lookup = preferStepOverLookup ? ({ kind: 'none' } as const) : lookupResult;
+  // Conceptual how-to must not open/miss via entity lookup (audit: reports how-to
+  // → open-by-name). Quarantine at parse time only sees clarify/unknown risk.
+  if (
+    features?.actionQuarantine !== false &&
+    lookup.kind !== 'none' &&
+    isConceptualQuestion(
+      trimmed,
+      pack.faqDomainTokens,
+      pack.compiledHeuristics ?? DEFAULT_HEURISTICS
+    )
+  ) {
+    emitCoachEvent(deps, {
+      type: 'repair',
+      kind: 'low_confidence',
+      text: trimmed,
+      rawIntent: parsed.rawIntent,
+      confidence: parsed.confidence,
+      ...(features?.shadowActionDefer ? { wouldHaveGoneToLaya: true } : {}),
+    });
+    if (deps.deferLowConfidenceToFallback) {
+      return;
+    }
+    return;
+  }
   if (lookup.kind === 'hit') {
     const { entity } = lookup;
     const def = pack.lookups?.find((l) => l.id === lookup.lookupId);

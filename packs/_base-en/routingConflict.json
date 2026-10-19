@@ -1,0 +1,37 @@
+{
+  "id": "base-en-routing-conflict",
+  "description": "Generic (non-product) conflict families for action quarantine. Core consumes via ActionRisk + IntentConflictConfig; packs supply cues only.",
+  "conflictDelta": 0.15,
+  "conflictPairs": [
+    ["answer", "navigate"],
+    ["answer", "mutate"],
+    ["navigate", "mutate"],
+    ["clarify", "navigate"],
+    ["clarify", "mutate"]
+  ],
+  "families": [
+    {
+      "id": "howto_vs_open",
+      "cues": [
+        "how do i",
+        "how can i",
+        "where do i",
+        "should i open",
+        "what is the difference"
+      ],
+      "preferRisk": "answer",
+      "avoidRisk": "navigate"
+    },
+    {
+      "id": "apply_vs_settings",
+      "cues": [
+        "apply this",
+        "save and apply",
+        "apply the format",
+        "apply draft"
+      ],
+      "preferRisk": "mutate",
+      "conflictWithCues": ["subscription", "billing", "cart", "checkout"]
+    }
+  ]
+}

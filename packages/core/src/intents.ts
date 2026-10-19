@@ -259,6 +259,10 @@ export function parseUtterance(
   let stepId: StepId | null = stepHits.length === 1 ? (stepHits[0]?.id ?? null) : null;
   const candidates =
     !metaBlocksStep && stepHits.length >= 2 ? stepHits.map((h) => h.id) : undefined;
+  const candidateScores =
+    candidates && candidates.length >= 2
+      ? stepHits.map((h) => h.score)
+      : undefined;
 
   if (isCorrection && stepId) {
     const phrases = [
@@ -301,6 +305,7 @@ export function parseUtterance(
   return {
     stepId,
     candidates,
+    candidateScores,
     slotPatches: {},
     isCorrection,
     goBack,

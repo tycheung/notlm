@@ -12,6 +12,7 @@ import {
   SEMANTIC_INDEX_CUSTOM_FILE,
   type SemanticIndex,
 } from './semanticRetrieve.js';
+import type { RoutingConflictConfig } from './intentConflict.js';
 import type {
   FaqEntry,
   HeuristicsConfig,
@@ -104,6 +105,10 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
   const normalize = existsSync(normalizePath) ? readJsonFile(normalizePath) : undefined;
   const heuristicsPath = join(pack, 'heuristics.json');
   const heuristics = existsSync(heuristicsPath) ? readJsonFile(heuristicsPath) : undefined;
+  const routingConflictPath = join(pack, 'routingConflict.json');
+  const routingConflictRaw = existsSync(routingConflictPath)
+    ? readJsonFile(routingConflictPath)
+    : undefined;
   const subgraphsPath = join(pack, 'subgraphs.json');
   const subgraphsRaw = existsSync(subgraphsPath) ? readJsonFile(subgraphsPath) : undefined;
   const semanticIndexPath = join(pack, SEMANTIC_INDEX_BASE_FILE);
@@ -173,6 +178,12 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
     heuristics:
       heuristics != null && typeof heuristics === 'object' && !Array.isArray(heuristics)
         ? (heuristics as HeuristicsConfig)
+        : undefined,
+    routingConflict:
+      routingConflictRaw != null &&
+      typeof routingConflictRaw === 'object' &&
+      !Array.isArray(routingConflictRaw)
+        ? (routingConflictRaw as RoutingConflictConfig)
         : undefined,
     subgraphs:
       subgraphsRaw != null &&

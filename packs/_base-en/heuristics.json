@@ -1,0 +1,10 @@
+{
+  "_comment": "Conceptual how-to patterns live in @notlm/core heuristicsDefaults.json (platform SSOT). This pack file only carries base-en FAQ cue overlays for folder-loaded demos.",
+  "faqQuestionPatterns": [
+    "\\bhow (do|does|can|to)\\b",
+    "\\bwhat (is|are|does)\\b",
+    "\\bwhere (do|does|can)\\b",
+    "\\bwhen (do|does|should)\\b",
+    "\\bwhy (do|does|is|are)\\b"
+  ]
+}
