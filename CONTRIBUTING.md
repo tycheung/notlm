@@ -48,6 +48,10 @@ Human wire-up guide — what each pack JSON file means and the per-step checklis
 
 → **[`docs/PACK_COOKBOOK.md`](docs/PACK_COOKBOOK.md)**
 
+Planning / epic status (idle after G12 hierarchical tree):
+[`docs/PROGRESS.md`](docs/PROGRESS.md), [`docs/PLAN_GAP.md`](docs/PLAN_GAP.md),
+[`docs/SLICE_BACKLOG.md`](docs/SLICE_BACKLOG.md), [`docs/PLAN.md`](docs/PLAN.md).
+
 Also see `ARCHITECTURE.md` and `SECURITY.md`.
 
 ## Host project layout

@@ -7,6 +7,7 @@ import {
   CAPABILITY_LANES,
   inferPlaneHeuristic,
   isCapabilityLane,
+  laneAllowed,
   laneFromRawIntent,
   type CapabilityLane,
   type IntentParsePack,
@@ -121,12 +122,19 @@ function annotateTree(
     opts?.laneModel != null
       ? laneFromModel(raw, opts.laneModel, minLane)
       : null;
+  // Stage1 must respect Stage0 plane mask when pack ships routingTree.
+  const maskedLaneModel =
+    fromLaneModel &&
+    (!pack.routingTree?.enabled ||
+      laneAllowed(plane, fromLaneModel.lane, pack.routingTree))
+      ? fromLaneModel
+      : null;
   const mutationRisk =
     parsed.mutationId && Array.isArray(pack.mutations)
       ? pack.mutations.find((m) => m.id === parsed.mutationId)?.risk
       : undefined;
   const lane =
-    fromLaneModel?.lane ??
+    maskedLaneModel?.lane ??
     laneFromRawIntent(parsed.rawIntent, {
       faqId: parsed.faqId,
       queryId: parsed.queryId,

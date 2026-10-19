@@ -29,9 +29,13 @@ import {
   type PendingMutationConfirm,
 } from './confirmSession.js';
 import type { DispatchDeps } from './dispatchDeps.js';
-import { stepTitle } from './dispatchResolve.js';
 import { askModeInstructCopy } from './interactionMode.js';
 import { resolveDispatchPlane } from './dispatchPlane.js';
+import { gateEarlyCatalogByPlane } from './dispatchCatalogPlane.js';
+import {
+  recordCoachAction,
+  settleCatalogAnswer,
+} from './dispatchCatalogSettle.js';
 import { normalizeUtterance } from './normalizeConfig.js';
 
 export type {
@@ -40,143 +44,7 @@ export type {
   PendingMutationConfirm,
 } from './confirmSession.js';
 
-function surfaceStepFromMutationSlots(
-  slots: Record<string, unknown> | undefined
-): string | undefined {
-  if (!slots) return undefined;
-  for (const key of ['tournamentName', 'centerName', 'tournamentId', 'centerId']) {
-    const v = slots[key];
-    if (v != null && String(v).trim() !== '') return String(v).trim();
-  }
-  return undefined;
-}
-
-function pushAnswer(deps: DispatchDeps, answer: QueryAnswer): void {
-  const planeCtx = resolveDispatchPlane({
-    session: deps.session,
-    features: deps.features,
-    pack: deps.pack,
-    text: String(answer.text ?? ''),
-  });
-  const mode = planeCtx.mode;
-  const blockNav = planeCtx.blockNav;
-  const blockMutate = planeCtx.blockMutate;
-  const hasText = String(answer.text ?? '').trim().length > 0;
-  const hasChips =
-    (answer.choices?.length ?? 0) > 0 || (answer.links?.length ?? 0) > 0;
-  let willNav =
-    answer.navigatePath != null && answer.autoNavigate === true && !blockNav;
-  let willStep =
-    answer.stepId != null && answer.autoStartStep !== false && !blockNav;
-  let forceOpenSurface =
-    !blockMutate &&
-    typeof answer.slots?.forceOpenSurface === 'string'
-      ? answer.slots.forceOpenSurface
-      : undefined;
-  if (blockMutate && typeof answer.slots?.forceOpenSurface === 'string') {
-    const copy = askModeInstructCopy(mode);
-    if (copy && !hasText) {
-      deps.pushAssistant(copy);
-      return;
-    }
-  }
-  if (hasText || hasChips) {
-    deps.pushAssistant(answer.text, {
-      choices: answer.choices,
-      links: answer.links,
-    });
-  } else if (willNav || willStep) {
-    // Side-effect-only answers need a visible ack so Laya empty-bubble guard
-    // does not replace the turn with FALLBACK_UNAVAILABLE_REPLY.
-    deps.pushAssistant(
-      willStep
-        ? `Opening “${stepTitle(deps.pack, answer.stepId!)}”.`
-        : 'Opening…'
-    );
-  } else if (forceOpenSurface) {
-    deps.pushAssistant('Opening…');
-  } else if (blockNav && (answer.navigatePath || answer.stepId)) {
-    const copy = askModeInstructCopy(mode);
-    if (copy) deps.pushAssistant(copy);
-  }
-  // Auto-nav only when the host opts in. Informational queries must omit this
-  // (or set navigatePath without autoNavigate) so answers do not yank the page.
-  if (willNav) {
-    deps.navigate?.(answer.navigatePath!);
-  }
-  // skipCoach: avoid a second bubble from executeStep coach/form nudges.
-  // Tours / desk handoffs may return stepId as a chip-only offer (autoStartStep: false).
-  if (willStep) {
-    const prefill = answer.slots
-      ? Object.fromEntries(
-          Object.entries(answer.slots).filter(([k]) => k !== 'forceOpenSurface')
-        )
-      : undefined;
-    const surfaceStep = surfaceStepFromMutationSlots(
-      answer.slots as Record<string, unknown> | undefined
-    );
-    deps.executeStep(answer.stepId!, {
-      skipCoach: true,
-      ...(prefill && Object.keys(prefill).length ? { prefill } : {}),
-      ...(forceOpenSurface
-        ? {
-            forceOpenSurface,
-            ...(surfaceStep !== undefined ? { forceSurfaceStep: surfaceStep } : {}),
-          }
-        : {}),
-    });
-  } else if (forceOpenSurface && deps.openSurface) {
-    deps.openSurface(
-      forceOpenSurface,
-      surfaceStepFromMutationSlots(answer.slots as Record<string, unknown> | undefined)
-    );
-  }
-}
-
-function recordCoachAction(
-  deps: DispatchDeps,
-  action: { kind: string; id: string; summary: string }
-): void {
-  deps.setSession((s) => ({
-    ...s,
-    discourse: {
-      ...(s.discourse ?? {}),
-      lastCoachAction: action,
-    },
-    flags: {
-      ...s.flags,
-      lastCoachActions: [
-        action,
-        ...((Array.isArray(s.flags.lastCoachActions)
-          ? s.flags.lastCoachActions
-          : []) as unknown[]),
-      ].slice(0, 8),
-    },
-  }));
-}
-
-async function settleAnswer(
-  deps: DispatchDeps,
-  pending: QueryAnswer | null | Promise<QueryAnswer | null>
-): Promise<boolean> {
-  const answer = await Promise.resolve(pending);
-  if (!answer) return false;
-  const hasText = String(answer.text ?? '').trim().length > 0;
-  const forceOpenSurface =
-    typeof answer.slots?.forceOpenSurface === 'string'
-      ? answer.slots.forceOpenSurface
-      : undefined;
-  const hasUi =
-    (answer.choices?.length ?? 0) > 0 ||
-    (answer.links?.length ?? 0) > 0 ||
-    (answer.navigatePath != null && answer.autoNavigate === true) ||
-    (answer.stepId != null && answer.autoStartStep !== false) ||
-    Boolean(forceOpenSurface && deps.openSurface);
-  // Empty `{ text: '' }` must not claim handled (blank bubble / double Laya reply).
-  if (!hasText && !hasUi) return false;
-  pushAnswer(deps, answer);
-  return true;
-}
+const settleAnswer = settleCatalogAnswer;
 
 /**
  * Numbered / exact-name pick after ambiguous draft-apply resolve.
@@ -606,6 +474,24 @@ export function tryDispatchCapabilityCatalog(
   if (!needsAsync) return false;
 
   return (async (): Promise<boolean> => {
+  const gated = gateEarlyCatalogByPlane({
+    deps,
+    trimmed,
+    mutationHit,
+    tourWork,
+    searchWork,
+    forcedMutationId: opts?.mutationId,
+    forcedTourId: opts?.tourId,
+    forcedSearchId: opts?.searchId,
+  });
+  if (gated.instructCopy) {
+    deps.pushAssistant(gated.instructCopy);
+    return true;
+  }
+  mutationHit = gated.mutationHit;
+  tourWork = gated.tourWork;
+  searchWork = gated.searchWork;
+
   // Forced queryId must alias-match that entry only — never trust id-only proposals.
   if (opts?.queryId) {
     const byId = queries.find((q) => q.id === opts.queryId);
@@ -675,28 +561,45 @@ export function tryDispatchCapabilityCatalog(
   // Otherwise a forced id can open the wrong step when a short-circuit global hit wins
   // (or the reverse: right forced id blocked by a global hit).
   if (mutationHit) {
+      const hit = mutationHit;
       const requiresConfirm =
-        mutationHit.risk === 'high' || Boolean(mutationHit.confirmPrompt);
+        hit.risk === 'high' || Boolean(hit.confirmPrompt);
       if (!deps.previewMutation) {
         // High-risk / confirmPrompt mutations must not skip the confirm gate
         // when the host left previewMutation unwired.
         if (requiresConfirm) {
           deps.pushAssistant(
-            `I can help with “${mutationHit.title}” once it’s wired.`
+            `I can help with “${hit.title}” once it’s wired.`
           );
           return true;
         }
-        if (mutationHit.stepId) {
-          deps.pushAssistant(`Opening “${mutationHit.title}”.`);
-          deps.executeStep(mutationHit.stepId, { skipCoach: true });
+        if (hit.stepId) {
+          const gate = resolveDispatchPlane({
+            session: deps.session,
+            features: deps.features,
+            pack: deps.pack,
+            text: trimmed,
+          });
+          if (gate.blockMutate || gate.blockNav) {
+            const copy = askModeInstructCopy(gate.mode);
+            if (copy) deps.pushAssistant(copy);
+            else {
+              deps.pushAssistant(
+                `I can explain “${hit.title}” — switch to Do to open it.`
+              );
+            }
+            return true;
+          }
+          deps.pushAssistant(`Opening “${hit.title}”.`);
+          deps.executeStep(hit.stepId, { skipCoach: true });
           return true;
         }
-        deps.pushAssistant(`I can help with “${mutationHit.title}” once it’s wired.`);
+        deps.pushAssistant(`I can help with “${hit.title}” once it’s wired.`);
         return true;
       }
       const preview = await Promise.resolve(
         deps.previewMutation({
-          mutationId: mutationHit.id,
+          mutationId: hit.id,
           text: trimmed,
           slots: {},
           ctx: deps.ctx,
@@ -706,7 +609,7 @@ export function tryDispatchCapabilityCatalog(
         // Catalog alias hit but host declined — fall through to tour/search in this call.
       } else {
       const packWouldForceConfirm =
-        mutationHit.risk === 'high' || Boolean(mutationHit.confirmPrompt);
+        hit.risk === 'high' || Boolean(hit.confirmPrompt);
       // Host veto of high-risk / confirmPrompt only (license → Actions Needed).
       // Low-risk needsConfirm:false still uses the executeMutation path below.
       if (preview.needsConfirm === false && packWouldForceConfirm) {
@@ -732,18 +635,18 @@ export function tryDispatchCapabilityCatalog(
           (typeof slots.tournamentName === 'string' && slots.tournamentName) ||
           (typeof slots.centerName === 'string' && slots.centerName) ||
           (typeof slots.eventName === 'string' && slots.eventName) ||
-          mutationHit.title;
+          hit.title;
         deps.setSession((s) => ({
           ...s,
           flags: {
             ...s.flags,
             pendingMutation: {
-              mutationId: mutationHit.id,
+              mutationId: hit.id,
               slots,
               text: trimmed,
               targetIds,
               actionIntent: actionIntentFromMutation({
-                mutationId: mutationHit.id,
+                mutationId: hit.id,
                 slots,
                 displayLabel,
               }),
@@ -752,8 +655,8 @@ export function tryDispatchCapabilityCatalog(
         }));
         deps.pushAssistant(
           preview.text ||
-            mutationHit.confirmPrompt ||
-            `Confirm: ${mutationHit.title}?`,
+            hit.confirmPrompt ||
+            `Confirm: ${hit.title}?`,
           {
             choices: [
               { id: 'confirm_yes', label: 'Yes, do it' },
@@ -769,7 +672,7 @@ export function tryDispatchCapabilityCatalog(
         text: preview.text ?? '',
         navigatePath: preview.navigatePath,
         autoNavigate: preview.autoNavigate === true,
-        stepId: preview.stepId ?? mutationHit.stepId,
+        stepId: preview.stepId ?? hit.stepId,
         slots: preview.slots,
       };
       let executedRan = false;
@@ -777,7 +680,7 @@ export function tryDispatchCapabilityCatalog(
         try {
           const executed = await Promise.resolve(
             deps.executeMutation({
-              mutationId: mutationHit.id,
+              mutationId: hit.id,
               text: trimmed,
               slots: preview.slots ?? {},
               ctx: deps.ctx,
@@ -811,8 +714,8 @@ export function tryDispatchCapabilityCatalog(
             deps.pushAssistant('Done.');
             recordCoachAction(deps, {
               kind: 'mutation',
-              id: mutationHit.id,
-              summary: `Opened ${mutationHit.title}`,
+              id: hit.id,
+              summary: `Opened ${hit.title}`,
             });
             return true;
           }
@@ -832,8 +735,8 @@ export function tryDispatchCapabilityCatalog(
           deps.pushAssistant('Done.');
           recordCoachAction(deps, {
             kind: 'mutation',
-            id: mutationHit.id,
-            summary: `Opened ${mutationHit.title}`,
+            id: hit.id,
+            summary: `Opened ${hit.title}`,
           });
           return true;
         }
@@ -842,10 +745,10 @@ export function tryDispatchCapabilityCatalog(
       }
       recordCoachAction(deps, {
         kind: 'mutation',
-        id: mutationHit.id,
+        id: hit.id,
         summary:
           String(answer.text ?? '').trim().slice(0, 160) ||
-          `Opened ${mutationHit.title}`,
+          `Opened ${hit.title}`,
       });
       return true;
       }

@@ -36,7 +36,9 @@ runtime still used one softmax / alias soup.
 
 ## Consequences
 
+- **Shipped** (Ledger `ht-00`…`ht-16`, 2026-10-19). Idle between epics — see
+  `docs/PROGRESS.md`.
 - Dispatch uses `resolveEffectivePlane` when `routingTree` is enabled.
 - Hosts (VB) enable via `.notlm/config.json` `features.routingTree` and ship tree
-  artifacts; remap catalogs onto leaves.
-- Flat `ranker.json` remains fallback until leaves exist.
+  artifacts; remap catalogs onto leaves (`TREE_REMAP.md`).
+- Flat `ranker.json` remains the hybrid leaf fallback when a lane has no specialist.

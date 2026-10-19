@@ -39,7 +39,9 @@ Where the words live: FAQ → `faq.json`; goto/tour → flow + aliases; query/mu
 
 ```text
 User utterance
-  → pack smart cache (intents / FAQ / catalogs / discourse)   ← most traffic
+  → optional hierarchical tree (ADR-011): plane → lane → leaf
+       (or flat hybrid ranker / rules)                              ← most traffic
+  → pack smart cache (intents / FAQ / catalogs / discourse)
   → semantic retrieve (hashed n-gram FAQ/query; high-bar accept
        or constrained faqIds into Laya) — base + optional custom layers
   → on miss: Laya (/decide)

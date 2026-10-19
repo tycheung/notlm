@@ -80,17 +80,53 @@ export function annotateParseWithTree(
   return parsed;
 }
 
+function scrubActionHeads(parsed: ParseUtteranceResult): ParseUtteranceResult {
+  return {
+    ...parsed,
+    stepId: null,
+    candidates: undefined,
+    candidateScores: undefined,
+    mutationId: undefined,
+    tourId: undefined,
+    searchId: undefined,
+    openSurface: undefined,
+    rawIntent:
+      parsed.faqId || parsed.queryId ? parsed.rawIntent : 'unknown',
+    lane: (parsed.faqId
+      ? 'faq'
+      : parsed.queryId
+        ? 'query'
+        : 'disambiguation') as CapabilityLane,
+    confidence: parsed.faqId || parsed.queryId ? parsed.confidence : 'low',
+  };
+}
+
 /**
  * When tree on: mask illegal lane outcomes (strip mutate/goto under ask, etc.).
+ * Also scrub action heads when the annotated lane is ask-safe but co-attached
+ * goto/mutation/tour/search ids remain (lane/model disagreement).
  */
 export function applyLaneMaskToParsed(
   parsed: ParseUtteranceResult,
   plane: InteractionPlane,
   pack: LoadedPack
 ): ParseUtteranceResult {
+  const tree = pack.routingTree;
+  const gotoOk = laneAllowed(plane, 'goto', tree);
+  const mutOk =
+    laneAllowed(plane, 'mutation', tree) ||
+    laneAllowed(plane, 'mutation_high_risk', tree);
+  const tourOk = laneAllowed(plane, 'tour', tree);
+  const searchOk = laneAllowed(plane, 'search', tree);
+  const hasIllegalHeads =
+    (Boolean(parsed.stepId) && !gotoOk) ||
+    (Boolean(parsed.mutationId) && !mutOk) ||
+    (Boolean(parsed.tourId) && !tourOk) ||
+    (Boolean(parsed.searchId) && !searchOk);
+  if (hasIllegalHeads) return scrubActionHeads(parsed);
+
   const lane = parsed.lane;
-  if (!lane || laneAllowed(plane, lane, pack.routingTree)) return parsed;
-  // Demote disallowed action to clarify/unknown — do not launch.
+  if (!lane || laneAllowed(plane, lane, tree)) return parsed;
   if (
     lane === 'goto' ||
     lane === 'mutation' ||
@@ -98,19 +134,7 @@ export function applyLaneMaskToParsed(
     lane === 'tour' ||
     lane === 'search'
   ) {
-    return {
-      ...parsed,
-      stepId: null,
-      candidates: undefined,
-      candidateScores: undefined,
-      mutationId: undefined,
-      tourId: undefined,
-      searchId: undefined,
-      openSurface: undefined,
-      rawIntent: 'unknown',
-      lane: 'disambiguation' as CapabilityLane,
-      confidence: 'low',
-    };
+    return scrubActionHeads(parsed);
   }
   return parsed;
 }

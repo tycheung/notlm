@@ -62,6 +62,11 @@ User says “add a todo” / picks a palette row
     heuristics.json           # OOD / discourse / context / nav / correction patterns
     semantic-index.json       # base hashed n-gram FAQ/query index (regenerable)
     semantic-index.custom.json # optional training overlay (never overwritten by embed-index)
+    routingTree.json          # optional ADR-011 plane→lane→leaf config + laneMask
+    ranker.json               # optional flat hybrid leaf fallback
+    ranker.plane.json         # optional Stage0 ask|guide|do
+    ranker.lane.json          # optional Stage1 capability lanes
+    ranker.leaves.<lane>.json # optional Stage2 (+ __a/__b size/FP children)
   drafts/                     # CLI/LLM proposals before --accept
 ```
 
@@ -466,11 +471,34 @@ Drafts land under `.notlm/drafts/scenarios-pool-*/` with `scenarios.json` plus o
 
 4. Review: merge labeled scenarios into `.notlm/scenarios.json`; merge/edit `faq.json` into `pack/faq.json`.
 5. `notlmCLI intents tune` → alias/corpus draft; `intents check` green; `pack accept`.
-6. Optional: ship `pack/ranker.json` (+ `ranker.onnx`) then enable `features.onnxRanker` / `NOTLM_ONNX_RANKER=1` and pass prebuilt `onnxBytes` into `createRankerSession` (JSON infer always available).
+6. Optional: ship flat `pack/ranker.json` (+ `ranker.onnx`) and/or the
+   hierarchical tree (`routingTree.json` + `ranker.plane.json` /
+   `ranker.lane.json` / `ranker.leaves.*`). Enable with `features.onnxRanker` /
+   `NOTLM_ONNX_RANKER=1`. Offline training writes those artifacts (autosplit
+   applies leaf children without `--accept`). See ADR-011.
 7. Optional: pass `missLog={{ transport: createLocalStorageMissLogTransport({ key: 'notlm:misses' }) }}` (or `createHttpMissLogTransport`) so unknown utterances are captured for later tuning. Host HTTP sinks must honor the **HTTP Miss Sink Contract** (POST + GET = portable `MissRecord` / `MissRecord[]` — see ARCHITECTURE). Offline recalibration of misses / exchanges is out of scope for this repo.
 8. **Decision fallback (optional):** wire host `fallbackLlm` when `features.layaDecisionFallback` is not `false`. See ARCHITECTURE.
 
 Runtime: unmatched utterances try `faq` aliases before “I didn’t catch that.” FAQ replies can offer a related step chip when `stepId` is set.
+
+---
+
+## Hierarchical routing tree (optional, ADR-011)
+
+When `pack/routingTree.json` is present (and plane/lane/leaf rankers are wired),
+dispatch uses **Stage0 → Stage1 → Stage2** instead of a single flat ranker:
+
+| Stage | What | Pack artifacts |
+|-------|------|----------------|
+| 0 | Interaction plane `ask \| guide \| do` | `ranker.plane.json` |
+| 1 | 13 capability lanes (masked by plane) | `ranker.lane.json` + `laneMask` |
+| 2 | Leaf classifiers | `ranker.leaves.<lane>.json` (+ `__a`/`__b`) |
+
+- Confident NLU plane **overrides** chrome Ask/Guide/Do; chrome is soft bias only.
+- Quarantine / ConfirmSession (ADR-010) still applies **inside** the plane mask.
+- Flat `ranker.json` remains the leaf fallback when a lane has no specialist.
+- Remap host FAQ/query/goto/mutation semantics onto lanes (see host
+  `TREE_REMAP.md` if present). Do not grow flat synonym banks as the clash fix.
 
 ---
 
@@ -536,6 +564,8 @@ so `notlmCLI intents check` gates fuzzy / prefix matches used by Web Speech.
 | Doc | Role |
 |-----|------|
 | `ARCHITECTURE.md` | Bundle boundaries, folder contract |
+| `docs/adr/011-hierarchical-routing-tree.md` | Plane → lane → leaf (shipped) |
+| `docs/PROGRESS.md` / `PLAN_GAP.md` | Current epic status (idle after G12) |
 | `CONTRIBUTING.md` | Setup and contribution norms |
 | `SECURITY.md` | Secrets, BYO LLM, production checklist |
 | `docs/REACT_GUIDE.md` | Host chrome and theming |

@@ -114,4 +114,25 @@ describe('dispatchPlane + routingTree', () => {
     expect(masked.faqId).toBe('how-lists');
     expect(masked.lane).toBe('faq');
   });
+
+  it('applyLaneMaskToParsed scrubs goto heads even when lane says faq', () => {
+    const pack = demoPack({ enabled: true });
+    const masked = applyLaneMaskToParsed(
+      {
+        stepId: 'create_list',
+        slotPatches: {},
+        isCorrection: false,
+        goBack: false,
+        rawIntent: 'faq',
+        faqId: 'how-lists',
+        lane: 'faq',
+        confidence: 'high',
+      },
+      'ask',
+      pack
+    );
+    expect(masked.stepId).toBeNull();
+    expect(masked.faqId).toBe('how-lists');
+    expect(masked.lane).toBe('faq');
+  });
 });

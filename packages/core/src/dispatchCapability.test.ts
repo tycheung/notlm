@@ -349,6 +349,61 @@ describe('capability dispatch', () => {
     expect(deps.executed).toContain('create_record');
   });
 
+  it('tree ask plane: does not open low-risk mutation via early catalog', async () => {
+    // Alias wording avoids mutate/nav heuristics so Stage0 stays ask.
+    const treePack = loadPackFromJson({
+      manifest: { id: 'cap-tree' },
+      flow: pack.steps,
+      controls: [],
+      intents: { aliases: {}, meta: [] },
+      binders: {},
+      queries: pack.queries,
+      mutations: [
+        {
+          id: 'crm.prefill_low',
+          title: 'Prefill create',
+          aliases: ['run the prefill helper'],
+          risk: 'low',
+          stepId: 'create_record',
+        },
+      ],
+      routingTree: { enabled: true, planeSoftBiasBelow: 0.55 },
+    });
+    const deps = makeDeps({
+      pack: treePack,
+      features: { routingTree: true, defaultInteractionMode: 'ask' },
+      text: 'run the prefill helper',
+    });
+    deps.setSession((s) => ({
+      ...s,
+      flags: { ...s.flags, interactionMode: 'ask' },
+    }));
+    const handled = await tryDispatchCapabilityCatalog(
+      deps,
+      'run the prefill helper'
+    );
+    expect(handled).toBe(true);
+    expect(deps.executed).toHaveLength(0);
+    expect(deps.assistant.join(' ')).toMatch(/Ask mode|Guide mode|switch to Do/i);
+  });
+
+  it('conceptual how-to does not early-open mutation aliases', async () => {
+    const deps = makeDeps({
+      previewMutation: async () => ({
+        text: 'should not run',
+        needsConfirm: false,
+        stepId: 'create_record',
+      }),
+    });
+    const handled = await tryDispatchCapabilityCatalog(
+      deps,
+      'how do I prefill create form?'
+    );
+    // Fall through (false) or instruct — must not execute step.
+    if (handled) expect(deps.executed).toHaveLength(0);
+    else expect(deps.executed).toHaveLength(0);
+  });
+
   it('executes low-risk mutation preview without confirm', async () => {
     const navigate = vi.fn();
     const deps = makeDeps({
