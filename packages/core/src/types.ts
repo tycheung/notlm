@@ -401,7 +401,8 @@ export type AssistantFeatures = {
   treatMidAsLowForActions?: boolean;
   /**
    * When quarantine would defer, still emit a shadow telemetry field
-   * `wouldHaveGoneToLaya` on the repair coach event (S4). Default off.
+   * `wouldHaveGoneToLaya` on the repair coach event (S4).
+   * Platform default off; hosts may enable (VB `.notlm/config.json` defaults on).
    */
   shadowActionDefer?: boolean;
   /**

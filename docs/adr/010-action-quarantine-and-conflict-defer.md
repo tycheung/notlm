@@ -28,3 +28,17 @@ Live QA of host packs (e.g. Victory Bowling `vb-director`) showed systematic fai
 - Navigate/mutate below the action floor, or conceptual utterances parsed as goto/mutate without FAQ/query heads, emit `low_confidence` and defer to Laya when `deferLowConfidenceToFallback` is on.
 - Hosts wire flags (VB: `DirectorGuideHost` + `VITE_NOTLM_*` env knobs).
 - Future specialist Laya heads may attach later; they are not required to ship quarantine.
+
+## Follow-up (2026-10-19) — ConfirmSession / action plane
+
+Quarantine alone does not stop **confident wrong targets**. Format-apply confirms must
+**freeze opaque `eventId` / `tournamentId` at propose** (`confirmSession.ts` +
+`pendingDraftApply` / unified `ActionIntent`). Yes injects those ids into the draft;
+hosts must not re-resolve by fuzzy name. Scoped lists use tournament-filtered APIs
+(`tournament_id_filter`). Ambiguous scoped names store `pendingDraftApplyPick` and
+ask for a **numbered** reply before the Yes/Cancel confirm. Host
+`needsConfirm: false` is an explicit veto of pack `risk=high` / `confirmPrompt`
+(e.g. USBC assign → Actions Needed; tournament delete → page Confirm dialog only).
+Typo-corrected strong FAQ runs **before** Clear-OOD so near-miss how-tos never refuse.
+Ship gate: host `actionPlaneFixtures.json` + `npm run test:action-plane` asserting
+**target id** and write-fired / Cancel-no-write — not FAQ copy.

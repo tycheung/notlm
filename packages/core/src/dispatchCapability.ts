@@ -18,9 +18,25 @@ import {
   type SearchSurfaceDef,
   type TourDef,
 } from './capabilityCatalog.js';
+import {
+  actionIntentFromMutation,
+  mergeFrozenMutationSlots,
+  parseNumberedPick,
+  targetIdsFromMutationSlots,
+  type ActionIntent,
+  type PendingDraftApply,
+  type PendingDraftApplyPick,
+  type PendingMutationConfirm,
+} from './confirmSession.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { stepTitle } from './dispatchResolve.js';
 import { normalizeUtterance } from './normalizeConfig.js';
+
+export type {
+  PendingDraftApply,
+  PendingDraftApplyPick,
+  PendingMutationConfirm,
+} from './confirmSession.js';
 
 function surfaceStepFromMutationSlots(
   slots: Record<string, unknown> | undefined
@@ -138,12 +154,86 @@ async function settleAnswer(
   return true;
 }
 
-export type PendingDraftApply = {
-  draftKey: string;
-  draft: Record<string, unknown>;
-  text?: string;
-  eventLabel?: string;
-};
+/**
+ * Numbered / exact-name pick after ambiguous draft-apply resolve.
+ * Freezes the chosen opaque eventId onto pendingDraftApply (Yes still required).
+ */
+export function tryHandlePendingDraftApplyPick(
+  deps: DispatchDeps,
+  trimmed: string
+): boolean {
+  const pending = deps.session.flags.pendingDraftApplyPick as
+    | PendingDraftApplyPick
+    | undefined;
+  if (!pending?.candidates?.length || !pending.draftKey || !pending.draft) {
+    return false;
+  }
+
+  if (looksLikeConfirmNo(trimmed, deps.pack.compiledHeuristics)) {
+    deps.setSession((s) => {
+      const flags = { ...s.flags };
+      delete flags.pendingDraftApplyPick;
+      return { ...s, flags };
+    });
+    deps.pushAssistant('Canceled — nothing was changed.');
+    return true;
+  }
+
+  let idx = parseNumberedPick(trimmed, pending.candidates.length);
+  if (idx == null) {
+    const needle = trimmed.trim().toLowerCase();
+    const byName = pending.candidates.findIndex(
+      (c) => c.name.toLowerCase() === needle
+    );
+    if (byName >= 0) idx = byName;
+  }
+  if (idx == null) return false;
+
+  const chosen = pending.candidates[idx]!;
+  const tournamentId =
+    pending.tournamentId != null && Number.isFinite(Number(pending.tournamentId))
+      ? Math.trunc(Number(pending.tournamentId))
+      : undefined;
+  const actionIntent: ActionIntent = {
+    kind: 'draft_apply',
+    targetIds: {
+      eventId: chosen.id,
+      ...(tournamentId != null ? { tournamentId } : {}),
+    },
+    displayLabel: chosen.name,
+    risk: 'mutate',
+  };
+  const frozenDraft: Record<string, unknown> = {
+    ...pending.draft,
+    formatApplyEventId: chosen.id,
+    formatApplyEventName: chosen.name,
+    ...(tournamentId != null ? { formatApplyTournamentId: tournamentId } : {}),
+  };
+  deps.setSession((s) => {
+    const flags = { ...s.flags };
+    delete flags.pendingDraftApplyPick;
+    flags.pendingDraftApply = {
+      draftKey: pending.draftKey,
+      draft: frozenDraft,
+      text: pending.text,
+      eventLabel: chosen.name,
+      eventId: chosen.id,
+      tournamentId,
+      actionIntent,
+    } satisfies PendingDraftApply;
+    return { ...s, flags };
+  });
+  deps.pushAssistant(
+    `Ready to save this format and apply it to “${chosen.name}” (event ${chosen.id}). This replaces the current rounds, squads, and advancement links on that event. Continue?`,
+    {
+      choices: [
+        { id: 'confirm_yes', label: 'Yes, do it' },
+        { id: 'confirm_no', label: 'Cancel' },
+      ],
+    }
+  );
+  return true;
+}
 
 /** Confirm-gated draft apply (format / structured drafts). */
 export function tryHandlePendingDraftApply(
@@ -176,8 +266,19 @@ export function tryHandlePendingDraftApply(
       deps.pushAssistant('I can’t apply that draft from here.');
       return true;
     }
+    // Yes path: inject frozen ids only — host must not re-resolve by name.
+    const draft: Record<string, unknown> = { ...pending.draft };
+    if (pending.eventId != null) {
+      draft.formatApplyEventId = pending.eventId;
+    }
+    if (pending.eventLabel) {
+      draft.formatApplyEventName = pending.eventLabel;
+    }
+    if (pending.tournamentId != null) {
+      draft.formatApplyTournamentId = pending.tournamentId;
+    }
     try {
-      await Promise.resolve(deps.onApplyDraft(pending.draftKey, pending.draft));
+      await Promise.resolve(deps.onApplyDraft(pending.draftKey, draft));
       deps.pushAssistant(
         pending.eventLabel
           ? `Format saved and applied to “${pending.eventLabel}”.`
@@ -186,7 +287,9 @@ export function tryHandlePendingDraftApply(
       recordCoachAction(deps, {
         kind: 'draft_apply',
         id: pending.draftKey,
-        summary: `Applied draft ${pending.draftKey}`,
+        summary: `Applied draft ${pending.draftKey}${
+          pending.eventId != null ? ` → event ${pending.eventId}` : ''
+        }`,
       });
     } catch (err) {
       const msg =
@@ -213,7 +316,8 @@ export function tryHandleOrphanConfirmNo(
   if (!/^(cancel|stop|never mind|nevermind)$/.test(n)) return false;
   const pendingMut = deps.session.flags.pendingMutation;
   const pendingDraft = deps.session.flags.pendingDraftApply;
-  if (pendingMut || pendingDraft) return false;
+  const pendingPick = deps.session.flags.pendingDraftApplyPick;
+  if (pendingMut || pendingDraft || pendingPick) return false;
   deps.pushAssistant('Nothing pending to cancel.');
   return true;
 }
@@ -228,9 +332,20 @@ export function clearStalePendingConfirms(
 ): boolean {
   const pendingMut = deps.session.flags.pendingMutation;
   const pendingDraft = deps.session.flags.pendingDraftApply;
-  if (!pendingMut && !pendingDraft) return false;
+  const pendingPick = deps.session.flags.pendingDraftApplyPick;
+  if (!pendingMut && !pendingDraft && !pendingPick) return false;
   if (looksLikeConfirmYes(trimmed, deps.pack.compiledHeuristics)) return false;
   if (looksLikeConfirmNo(trimmed, deps.pack.compiledHeuristics)) return false;
+  // Numbered picks while a draft-apply picker is open stay in pick mode.
+  if (
+    pendingPick &&
+    parseNumberedPick(
+      trimmed,
+      (pendingPick as PendingDraftApplyPick).candidates?.length ?? 0
+    ) != null
+  ) {
+    return false;
+  }
   // Short chip-ish replies stay in confirm mode; longer product asks supersede.
   const words = trimmed.trim().split(/\s+/).filter(Boolean);
   if (words.length < 3 && trimmed.trim().length < 18) return false;
@@ -238,6 +353,7 @@ export function clearStalePendingConfirms(
     const flags = { ...s.flags };
     delete flags.pendingMutation;
     delete flags.pendingDraftApply;
+    delete flags.pendingDraftApplyPick;
     return { ...s, flags };
   });
   deps.pushAssistant('Canceled the previous confirmation — nothing was changed.');
@@ -250,7 +366,7 @@ export function tryHandlePendingMutationConfirm(
   trimmed: string
 ): boolean | Promise<boolean> {
   const pending = deps.session.flags.pendingMutation as
-    | { mutationId: string; slots: Record<string, unknown>; text: string }
+    | PendingMutationConfirm
     | undefined;
   if (!pending?.mutationId) return false;
 
@@ -284,11 +400,15 @@ export function tryHandlePendingMutationConfirm(
       return { ...s, flags };
     });
     try {
+      const frozenSlots = mergeFrozenMutationSlots(
+        pending.slots ?? {},
+        pending.targetIds
+      );
       const answer = await Promise.resolve(
         deps.executeMutation!({
           mutationId: pending.mutationId,
           text: pending.text,
-          slots: pending.slots,
+          slots: frozenSlots,
           ctx: deps.ctx,
         })
       );
@@ -561,29 +681,49 @@ export function tryDispatchCapabilityCatalog(
       if (!preview) {
         // Catalog alias hit but host declined — fall through to tour/search in this call.
       } else {
-      const hostDeclinedHighRiskConfirm =
-        preview.needsConfirm === false &&
-        !preview.stepId &&
-        String(preview.text ?? '').trim().length > 0 &&
-        (mutationHit.risk === 'high' || Boolean(mutationHit.confirmPrompt));
-      if (hostDeclinedHighRiskConfirm) {
-        deps.pushAssistant(String(preview.text).trim());
+      const packWouldForceConfirm =
+        mutationHit.risk === 'high' || Boolean(mutationHit.confirmPrompt);
+      // Host veto of high-risk / confirmPrompt only (USBC → Actions Needed).
+      // Low-risk needsConfirm:false still uses the executeMutation path below.
+      if (preview.needsConfirm === false && packWouldForceConfirm) {
+        const answer: QueryAnswer = {
+          text: preview.text ?? '',
+          navigatePath: preview.navigatePath,
+          autoNavigate: preview.autoNavigate === true,
+          stepId: preview.stepId,
+          autoStartStep: false,
+          slots: preview.slots,
+        };
+        const ok = await settleAnswer(deps, answer);
+        if (!ok && String(preview.text ?? '').trim()) {
+          deps.pushAssistant(String(preview.text).trim());
+        }
         return true;
       }
-      const needsConfirm =
-        preview.needsConfirm ||
-        mutationHit.risk === 'high' ||
-        Boolean(mutationHit.confirmPrompt);
+      const needsConfirm = preview.needsConfirm || packWouldForceConfirm;
       if (needsConfirm) {
+        const slots = preview.slots ?? {};
+        const targetIds = targetIdsFromMutationSlots(slots);
+        const displayLabel =
+          (typeof slots.tournamentName === 'string' && slots.tournamentName) ||
+          (typeof slots.centerName === 'string' && slots.centerName) ||
+          (typeof slots.eventName === 'string' && slots.eventName) ||
+          mutationHit.title;
         deps.setSession((s) => ({
           ...s,
           flags: {
             ...s.flags,
             pendingMutation: {
               mutationId: mutationHit.id,
-              slots: preview.slots ?? {},
+              slots,
               text: trimmed,
-            },
+              targetIds,
+              actionIntent: actionIntentFromMutation({
+                mutationId: mutationHit.id,
+                slots,
+                displayLabel,
+              }),
+            } satisfies PendingMutationConfirm,
           },
         }));
         deps.pushAssistant(

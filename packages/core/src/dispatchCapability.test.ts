@@ -5,6 +5,8 @@ import {
   tryHandleContextAsk,
   tryHandleExplainLast,
   tryHandleOrphanConfirmNo,
+  tryHandlePendingDraftApply,
+  tryHandlePendingDraftApplyPick,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
 import { dispatchParsed } from './dispatchParsed.js';
@@ -927,5 +929,103 @@ describe('capability dispatch', () => {
     expect(previewMutation).toHaveBeenCalledWith(
       expect.objectContaining({ mutationId: 'crm.assign_badge_confirm' })
     );
+  });
+
+  it('Yes on pendingDraftApply injects frozen eventId (no re-resolve)', async () => {
+    const onApplyDraft = vi.fn(async () => undefined);
+    const deps = makeDeps({ onApplyDraft });
+    deps.setSession((s) => ({
+      ...s,
+      flags: {
+        ...s.flags,
+        pendingDraftApply: {
+          draftKey: 'formatDraft',
+          draft: { formatDraft: { rounds: [] } },
+          eventLabel: 'BOT E2',
+          eventId: 219,
+          tournamentId: 161,
+        },
+      },
+    }));
+    expect(await tryHandlePendingDraftApply(deps, 'Yes, do it')).toBe(true);
+    expect(onApplyDraft).toHaveBeenCalledWith(
+      'formatDraft',
+      expect.objectContaining({
+        formatApplyEventId: 219,
+        formatApplyEventName: 'BOT E2',
+        formatApplyTournamentId: 161,
+      })
+    );
+    expect(deps.session.flags.pendingDraftApply).toBeUndefined();
+  });
+
+  it('Cancel on pendingDraftApply does not fire write', async () => {
+    const onApplyDraft = vi.fn(async () => undefined);
+    const deps = makeDeps({ onApplyDraft });
+    deps.setSession((s) => ({
+      ...s,
+      flags: {
+        ...s.flags,
+        pendingDraftApply: {
+          draftKey: 'formatDraft',
+          draft: { formatDraft: { rounds: [] } },
+          eventLabel: 'BOT E2',
+          eventId: 219,
+          tournamentId: 161,
+        },
+      },
+    }));
+    expect(tryHandlePendingDraftApply(deps, 'Cancel')).toBe(true);
+    expect(onApplyDraft).not.toHaveBeenCalled();
+    expect(deps.session.flags.pendingDraftApply).toBeUndefined();
+  });
+
+  it('numbered pick freezes eventId then Yes fires write once', async () => {
+    const onApplyDraft = vi.fn(async () => undefined);
+    const deps = makeDeps({ onApplyDraft });
+    deps.setSession((s) => ({
+      ...s,
+      flags: {
+        ...s.flags,
+        pendingDraftApplyPick: {
+          kind: 'draft_apply_event',
+          query: 'BOT E',
+          candidates: [
+            { id: 218, name: 'BOT E1' },
+            { id: 219, name: 'BOT E2' },
+          ],
+          draftKey: 'formatDraft',
+          draft: { formatDraft: { rounds: [] } },
+          tournamentId: 161,
+        },
+      },
+    }));
+    expect(tryHandlePendingDraftApplyPick(deps, '2')).toBe(true);
+    expect(deps.session.flags.pendingDraftApplyPick).toBeUndefined();
+    expect(deps.session.flags.pendingDraftApply).toMatchObject({
+      eventId: 219,
+      eventLabel: 'BOT E2',
+      tournamentId: 161,
+    });
+    expect(onApplyDraft).not.toHaveBeenCalled();
+    expect(await tryHandlePendingDraftApply(deps, 'Yes, do it')).toBe(true);
+    expect(onApplyDraft).toHaveBeenCalledTimes(1);
+    expect(onApplyDraft).toHaveBeenCalledWith(
+      'formatDraft',
+      expect.objectContaining({ formatApplyEventId: 219 })
+    );
+  });
+
+  it('high-risk host needsConfirm:false does not open Yes chip', async () => {
+    const deps = makeDeps({
+      previewMutation: async () => ({
+        text: 'Use Actions Needed — no chat confirm.',
+        needsConfirm: false,
+        stepId: 'create_record',
+      }),
+    });
+    expect(await tryDispatchCapabilityCatalog(deps, 'Assign badge')).toBe(true);
+    expect(deps.session.flags.pendingMutation).toBeUndefined();
+    expect(deps.assistant[0]).toMatch(/Actions Needed/);
   });
 });

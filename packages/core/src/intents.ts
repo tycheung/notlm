@@ -226,10 +226,12 @@ export function parseUtterance(
   const meta = matchMetaIntent(normalized, pack.meta, pack.metaPatterns);
 
   // Strong FAQ only at parse time — weak fuzzy must not claim high confidence
-  // and block Laya/LLM. Strong/near-exact FAQ aliases win even for nav-shaped
-  // verbs ("create high game pot", "lock and generate brackets meaning").
+  // and block Laya/LLM. Match against typo-corrected text so near-miss how-tos
+  // do not fall through to Clear-OOD / Laya refuse.
   if (pack.faq?.length && !looksLikeClearOod(text, heuristics)) {
-    const faqHit = matchStrongFaqEntry(pack.faq, text);
+    const faqHit =
+      matchStrongFaqEntry(pack.faq, normalized) ||
+      matchStrongFaqEntry(pack.faq, text);
     if (faqHit) {
       return {
         stepId: null,

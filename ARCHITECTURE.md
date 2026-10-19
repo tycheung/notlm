@@ -115,6 +115,17 @@ spotlight / prefill. Pack `queries` / `mutations` / `tours` / `search` are match
 in core; hosts inject `resolveQuery` / `previewMutation` / `executeMutation` /
 `runTour` / `openSearchHit`. The runtime must not import host API clients.
 
+### Two-plane dispatch (FAQ vs actions)
+
+| Plane | Behavior |
+|-------|----------|
+| **FAQ / answer** | Pack-hot when confidence is high; typo-correct before Clear-OOD |
+| **Actions (mutate / draft apply)** | Resolve once → freeze opaque ids on `ActionIntent` / `pendingDraftApply` / `pendingMutation` → Yes executes **only** those ids |
+
+- Ambiguous scoped names → `pendingDraftApplyPick` + “reply with a number”, then Yes/Cancel.
+- Host `needsConfirm: false` vetoes pack `risk=high` / `confirmPrompt` (instruct-only / navigate).
+- See ADR-010 follow-up. Do not fix wrong targets by adding pack synonym aliases.
+
 **Chrome:** brand FAB/chat via CSS variables (`appearance`), `notlm-*` classes, and
 optional component slots. Pack JSON does not store brand colors.
 

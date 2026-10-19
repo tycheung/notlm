@@ -12,6 +12,7 @@ import { runDraftCompiler } from './draftCompiler.js';
 import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import { dispatchParsed } from './dispatchParsed.js';
+import { resolveDraftApplyTarget } from './confirmSession.js';
 import {
   clearStalePendingConfirms,
   tryDispatchCapabilityCatalog,
@@ -19,6 +20,7 @@ import {
   tryHandleExplainLast,
   tryHandleOrphanConfirmNo,
   tryHandlePendingDraftApply,
+  tryHandlePendingDraftApplyPick,
   tryHandlePendingMutationConfirm,
 } from './dispatchCapability.js';
 import {
@@ -32,6 +34,7 @@ import {
   looksLikeNavCommand,
   matchStrongFaqEntry,
 } from './glossary.js';
+import { normalizeUtterance } from './normalizeConfig.js';
 import { assembleOodReply } from './oodReply.js';
 import { phraseLruKey, phraseLruLookup, phraseLruPromote } from './phraseLru.js';
 import {
@@ -39,6 +42,7 @@ import {
   retrieveSemantic,
 } from './semanticRetrieve.js';
 import { activeFlowSteps } from './subgraph.js';
+import { buildTypoLexicon, correctTypos } from './typoFix.js';
 import type { IntentParsePack, ParseUtteranceResult } from './types.js';
 
 export type { DispatchDeps, ParseUtteranceFn } from './dispatchDeps.js';
@@ -102,30 +106,65 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
       return true;
     }
     if (run.finishRequested && run.draftKey && run.draft) {
-      // Prefer host-resolved named target (formatApplyEventName) over focused desk.
-      const eventLabel =
-        String(
-          (run.draft as { formatApplyEventName?: unknown }).formatApplyEventName ||
-            live.ctx.data?.eventName ||
-            live.ctx.data?.eventLabel ||
-            (live.ctx.data?.eventId != null
-              ? `event ${live.ctx.data.eventId}`
-              : '')
-        ).trim() || 'the current event';
+      // Resolve once → freeze opaque eventId on the confirm session.
+      const target = resolveDraftApplyTarget({
+        draft: run.draft,
+        ctxData: live.ctx.data as Record<string, unknown> | undefined,
+        nameHint:
+          typeof (run.draft as { formatApplyEventName?: unknown })
+            .formatApplyEventName === 'string'
+            ? String(
+                (run.draft as { formatApplyEventName?: unknown })
+                  .formatApplyEventName
+              )
+            : null,
+      });
+      if (!target.ok) {
+        if (target.ambiguous?.candidates.length) {
+          live.setSession((s) => ({
+            ...s,
+            flags: {
+              ...s.flags,
+              pendingDraftApplyPick: {
+                kind: 'draft_apply_event',
+                query: target.ambiguous!.query,
+                candidates: target.ambiguous!.candidates,
+                draftKey: run.draftKey!,
+                draft: run.draft!,
+                text: live.text,
+                tournamentId: target.ambiguous!.tournamentId,
+              },
+            },
+          }));
+        }
+        live.pushAssistant(target.message);
+        return true;
+      }
+      const frozenDraft: Record<string, unknown> = {
+        ...run.draft,
+        formatApplyEventId: target.eventId,
+        formatApplyEventName: target.eventLabel,
+        ...(target.tournamentId != null
+          ? { formatApplyTournamentId: target.tournamentId }
+          : {}),
+      };
       live.setSession((s) => ({
         ...s,
         flags: {
           ...s.flags,
           pendingDraftApply: {
             draftKey: run.draftKey,
-            draft: run.draft,
+            draft: frozenDraft,
             text: live.text,
-            eventLabel,
+            eventLabel: target.eventLabel,
+            eventId: target.eventId,
+            tournamentId: target.tournamentId ?? undefined,
+            actionIntent: target.actionIntent,
           },
         },
       }));
       live.pushAssistant(
-        `Ready to save this format and apply it to “${eventLabel}”. This replaces the current rounds, squads, and advancement links on that event. Continue?`,
+        `Ready to save this format and apply it to “${target.eventLabel}” (event ${target.eventId}). This replaces the current rounds, squads, and advancement links on that event. Continue?`,
         {
           choices: [
             { id: 'confirm_yes', label: 'Yes, do it' },
@@ -176,6 +215,8 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
 
   // Stale Yes/Cancel must not steal the next product ask (e.g. "Confirm USBC…").
   clearStalePendingConfirms(live, trimmed);
+
+  if (tryHandlePendingDraftApplyPick(live, trimmed)) return;
 
   const pendingDraft = tryHandlePendingDraftApply(live, trimmed);
   if (pendingDraft === true) return;
@@ -271,6 +312,27 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
   if (tryHandleContextAsk(live, trimmed)) return;
 
+  // Typo-corrected how-tos before Clear-OOD — never refuse a near-miss FAQ as OOD.
+  {
+    const corrected = correctTypos(
+      normalizeUtterance(trimmed, live.pack.normalize),
+      buildTypoLexicon(live.pack)
+    );
+    if (
+      corrected &&
+      corrected !== normalizeUtterance(trimmed, live.pack.normalize)
+    ) {
+      const faqHit = matchStrongFaqEntry(live.pack.faq ?? [], corrected);
+      if (
+        faqHit &&
+        !looksLikeNavCommand(corrected, live.pack.compiledHeuristics)
+      ) {
+        pushFaqHit(live.pack, faqHit, live.pushAssistant, live.setSession);
+        return;
+      }
+    }
+  }
+
   // Clear OOD before FAQ — meta FAQ aliases must never swallow trivia / jokes.
   if (looksLikeClearOod(trimmed, live.pack.compiledHeuristics)) {
     const assembled = assembleOodReply(trimmed, {
@@ -294,8 +356,19 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   if (looksLikeDraftFinish(trimmed) && tryDraftCompilers(live)) return;
 
   // Strong FAQ only — weak fuzzy hits must fall through to parse → Laya/LLM.
+  // Also retry typo-corrected text so edit-distance near-misses answer.
   {
-    const faqHit = matchStrongFaqEntry(live.pack.faq ?? [], trimmed);
+    const faqHit =
+      matchStrongFaqEntry(live.pack.faq ?? [], trimmed) ||
+      (() => {
+        const corrected = correctTypos(
+          normalizeUtterance(trimmed, live.pack.normalize),
+          buildTypoLexicon(live.pack)
+        );
+        return corrected && corrected !== trimmed
+          ? matchStrongFaqEntry(live.pack.faq ?? [], corrected)
+          : null;
+      })();
     if (faqHit && !looksLikeNavCommand(trimmed, live.pack.compiledHeuristics)) {
       pushFaqHit(live.pack, faqHit, live.pushAssistant, live.setSession);
       return;

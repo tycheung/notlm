@@ -6,6 +6,7 @@ export * from './metricsF1.js';
 export * from './capabilityCatalog.js';
 export * from './confidenceBands.js';
 export * from './actionRisk.js';
+export * from './confirmSession.js';
 export * from './intentConflict.js';
 export * from './types.js';
 export * from './fuzzyText.js';
@@ -34,7 +35,13 @@ export * from './loadPack.js';
 export * from './coachEvents.js';
 export * from './fireAndForget.js';
 // Hosts that call typed catalog dispatch before handleUtterance:
-export { tryDispatchCapabilityCatalog } from './dispatchCapability.js';
+export {
+  tryDispatchCapabilityCatalog,
+  tryHandlePendingDraftApply,
+  tryHandlePendingDraftApplyPick,
+  tryHandlePendingMutationConfirm,
+  clearStalePendingConfirms,
+} from './dispatchCapability.js';
 export type { DraftCompiler } from './types.js';
 export {
   advanceAfterStepCompleted,
