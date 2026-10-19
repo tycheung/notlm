@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { normalizeBindersMap } from './binders.js';
 import { mergeFaqEntries } from './glossary.js';
 import { loadPackFromJson } from './loadPack.js';
+import { normalizeRoutingTree } from './routingTree.js';
 import {
   SEMANTIC_INDEX_BASE_FILE,
   SEMANTIC_INDEX_CUSTOM_FILE,
@@ -193,7 +194,9 @@ export function loadPackJsonFromNotlmHome(home: string): PackJsonInput {
       routingTreeRaw != null &&
       typeof routingTreeRaw === 'object' &&
       !Array.isArray(routingTreeRaw)
-        ? (routingTreeRaw as import('./routingTree.js').RoutingTreeConfig)
+        ? normalizeRoutingTree(
+            routingTreeRaw as import('./routingTree.js').RoutingTreeConfig
+          ) ?? undefined
         : undefined,
     subgraphs:
       subgraphsRaw != null &&

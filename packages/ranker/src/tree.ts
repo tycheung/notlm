@@ -17,7 +17,7 @@ import {
 } from '@notlm/core';
 import type { UtteranceParser } from './hybrid.js';
 import type { RankerModelJson } from './types.js';
-import { createHybridUtteranceParser, createJsonHybridParser } from './hybrid.js';
+import { createJsonHybridParser } from './hybrid.js';
 import { createRankerSession, type RankerSession } from './onnxLazy.js';
 import { inferRankerJson } from './infer.js';
 
@@ -193,37 +193,6 @@ export function createTreeUtteranceParser(
     }
     return parsed;
   };
-}
-
-/** Hybrid leaf + tree annotation. */
-export function createTreeHybridUtteranceParser(
-  session: RankerSession,
-  opts?: { minProbability?: number } & TreeParserOptions
-): UtteranceParser {
-  const { minProbability, ...treeOpts } = opts ?? {};
-  return createTreeUtteranceParser(
-    createHybridUtteranceParser(session, { minProbability }),
-    treeOpts
-  );
-}
-
-export function createJsonTreeHybridParser(
-  model: RankerModelJson,
-  opts?: { minProbability?: number } & TreeParserOptions
-): UtteranceParser {
-  const { minProbability, ...treeOpts } = opts ?? {};
-  return createTreeUtteranceParser(
-    createJsonHybridParser(model, { minProbability }),
-    treeOpts
-  );
-}
-
-/** Rules-only tree parser (no ranker weights). */
-export function createTreeRulesParser(
-  rulesParse: UtteranceParser,
-  treeOpts?: TreeParserOptions
-): UtteranceParser {
-  return createTreeUtteranceParser(rulesParse, treeOpts);
 }
 
 /** Host helper: build leafModels map from pack `routingTree.leaves` stems + JSON blobs. */

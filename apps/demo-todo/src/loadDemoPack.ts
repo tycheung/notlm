@@ -5,6 +5,7 @@ import type {
   IntentConfig,
   LookupDef,
   ReplyBank,
+  RoutingTreeConfig,
 } from '@notlm/core';
 import { loadPackFromJson, mergeFaqEntries, normalizeBindersMap } from '@notlm/core';
 
@@ -18,6 +19,7 @@ import intentsJson from '../../../packs/demo-todo/.notlm/pack/intents.json';
 import lookupsJson from '../../../packs/demo-todo/.notlm/pack/lookups.json';
 import manifestJson from '../../../packs/demo-todo/.notlm/pack/manifest.json';
 import repliesJson from '../../../packs/demo-todo/.notlm/pack/replies.json';
+import routingTreeJson from '../../../packs/demo-todo/.notlm/pack/routingTree.json';
 
 export function loadDemoTodoPack() {
   return loadPackFromJson({
@@ -30,5 +32,6 @@ export function loadDemoTodoPack() {
     faq: mergeFaqEntries(baseFaqJson as FaqEntry[], faqJson as FaqEntry[]),
     lookups: lookupsJson as LookupDef[],
     replies: repliesJson as ReplyBank,
+    routingTree: routingTreeJson as RoutingTreeConfig,
   });
 }

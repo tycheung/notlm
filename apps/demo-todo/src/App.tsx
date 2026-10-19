@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RuntimeContextBase } from '@notlm/core';
-import { createLocalStorageMissLogTransport } from '@notlm/core';
+import { createLocalStorageMissLogTransport, parseUtterance } from '@notlm/core';
 import {
   NotLMHost,
   createGuideNavigate,
@@ -12,6 +12,7 @@ import {
 import {
   createHybridUtteranceParser,
   createRankerSession,
+  createTreeUtteranceParser,
   isOnnxRankerEnabled,
   type RankerModelJson,
 } from '@notlm/ranker';
@@ -444,10 +445,14 @@ export function App() {
         ?.VITE_NOTLM_ONNX_RANKER === '1',
   });
   const parseUtteranceFn = useMemo(() => {
-    if (!onnxRanker) return undefined;
-    // Hybrid JSON ranker (no onnxBytes in this demo). Env flag enables hybrid, not ONNX.
-    const session = createRankerSession(rankerJson as RankerModelJson);
-    return createHybridUtteranceParser(session, { minProbability: 0.35 });
+    // ADR-011: always annotate plane/lane; optional flat hybrid leaf when flag on.
+    const inner = onnxRanker
+      ? createHybridUtteranceParser(
+          createRankerSession(rankerJson as RankerModelJson),
+          { minProbability: 0.35 }
+        )
+      : parseUtterance;
+    return createTreeUtteranceParser(inner);
   }, [onnxRanker]);
 
   const getContext = useCallback((): RuntimeContextBase => {
@@ -487,6 +492,7 @@ export function App() {
         spotlight: true,
         voice: true,
         onnxRanker,
+        routingTree: true,
       }}
       appearance={{
         accent: '#0f766e',

@@ -75,6 +75,9 @@ export const PACK_PIECES = [
   'faq.json',
   'lookups.json',
   'replies.json',
+  'heuristics.json',
+  'normalize.json',
+  'routingTree.json',
 ] as const;
 
 export function loadPackFolderJson(home: string): Record<string, unknown> {
