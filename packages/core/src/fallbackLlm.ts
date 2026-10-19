@@ -79,7 +79,8 @@ export type LlmFallbackFn = (
   | Promise<LlmFallbackResult | null | AsyncIterable<LlmStreamChunk>>
   | AsyncIterable<LlmStreamChunk>;
 
-export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 12_000;
+/** Laya cold path often lands ~10–15s; 12s caused panel soft-fail while XHR still 200. */
+export const DEFAULT_LLM_FALLBACK_TIMEOUT_MS = 25_000;
 
 export function isDecisionFallbackEnabled(features?: AssistantFeatures | null): boolean {
   if (!features) return true;

@@ -43,6 +43,17 @@ describe('fallbackReplySanitize', () => {
     );
   });
 
+  it('keeps product refuse copy that does not echo the user line', () => {
+    const reply =
+      'No — I am a bowling tournament guide. I only cover in-product workflow steps and product questions — not that request.';
+    expect(
+      sanitizeFallbackReply(
+        reply,
+        'Is it legal for me to take a cut of the side pot?'
+      )
+    ).toBe(reply);
+  });
+
   it('strips leaked snake_case step id lines from otherwise good replies', () => {
     expect(
       sanitizeFallbackReply(

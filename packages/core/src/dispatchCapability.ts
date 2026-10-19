@@ -218,6 +218,32 @@ export function tryHandleOrphanConfirmNo(
   return true;
 }
 
+/**
+ * Drop stale Yes/Cancel gates when the user clearly changed topic.
+ * Prevents "Confirm USBC…" from matching a pending delete via confirmYes.
+ */
+export function clearStalePendingConfirms(
+  deps: DispatchDeps,
+  trimmed: string
+): boolean {
+  const pendingMut = deps.session.flags.pendingMutation;
+  const pendingDraft = deps.session.flags.pendingDraftApply;
+  if (!pendingMut && !pendingDraft) return false;
+  if (looksLikeConfirmYes(trimmed, deps.pack.compiledHeuristics)) return false;
+  if (looksLikeConfirmNo(trimmed, deps.pack.compiledHeuristics)) return false;
+  // Short chip-ish replies stay in confirm mode; longer product asks supersede.
+  const words = trimmed.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 3 && trimmed.trim().length < 18) return false;
+  deps.setSession((s) => {
+    const flags = { ...s.flags };
+    delete flags.pendingMutation;
+    delete flags.pendingDraftApply;
+    return { ...s, flags };
+  });
+  deps.pushAssistant('Canceled the previous confirmation — nothing was changed.');
+  return true;
+}
+
 /** Handle pending mutation confirm chip / yes-no. */
 export function tryHandlePendingMutationConfirm(
   deps: DispatchDeps,

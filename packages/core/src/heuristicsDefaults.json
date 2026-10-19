@@ -268,10 +268,11 @@
       "ok",
       "okay",
       "sure",
-      "confirm",
       "do it",
       "go ahead",
-      "proceed"
+      "proceed",
+      "yes, do it",
+      "yes do it"
     ],
     "confirmNo": [
       "no",

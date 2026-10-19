@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  clearStalePendingConfirms,
   tryDispatchCapabilityCatalog,
   tryHandleContextAsk,
   tryHandleExplainLast,
@@ -244,6 +245,47 @@ describe('capability dispatch', () => {
     expect(tryHandlePendingMutationConfirm(deps, 'no')).toBe(true);
     expect(deps.assistant[0]).toMatch(/Canceled/);
     expect(deps.session.flags.pendingMutation).toBeUndefined();
+  });
+
+  it('does not treat Confirm USBC… as yes for a pending delete', async () => {
+    const executeMutation = vi.fn(async () => ({ text: 'Deleted.' }));
+    const deps = makeDeps({ executeMutation });
+    deps.setSession((s) => ({
+      ...s,
+      flags: {
+        ...s.flags,
+        pendingMutation: {
+          mutationId: 'td.delete_tournament_confirm',
+          slots: {},
+          text: 'Delete this tournament',
+        },
+      },
+    }));
+    expect(
+      await tryHandlePendingMutationConfirm(deps, 'Confirm USBC for all pending')
+    ).toBe(false);
+    expect(executeMutation).not.toHaveBeenCalled();
+    expect(deps.session.flags.pendingMutation).toBeDefined();
+  });
+
+  it('clearStalePendingConfirms drops pending on a new product ask', () => {
+    const deps = makeDeps();
+    deps.setSession((s) => ({
+      ...s,
+      flags: {
+        ...s.flags,
+        pendingMutation: {
+          mutationId: 'td.delete_tournament_confirm',
+          slots: {},
+          text: 'Delete this tournament',
+        },
+      },
+    }));
+    expect(clearStalePendingConfirms(deps, 'Confirm USBC for all pending')).toBe(
+      true
+    );
+    expect(deps.session.flags.pendingMutation).toBeUndefined();
+    expect(deps.assistant.at(-1)).toMatch(/previous confirmation/i);
   });
 
   it('orphan Cancel without pending confirm does not fall through', () => {

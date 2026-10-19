@@ -289,8 +289,10 @@ export function compileHeuristics(
       (cfg.explainLastExact ?? []).map((s) => s.trim().toLowerCase()).filter(Boolean)
     ),
     deskHandoff: compileMany(cfg.deskHandoffPatterns),
+    // Whole-utterance (plus trailing punct) — prefix `confirm\b` falsely matched
+    // "Confirm USBC…" and executed a stale pending delete.
     confirmYes: yes.length
-      ? new RegExp(`^(${yes.join('|')})\\b`, 'i')
+      ? new RegExp(`^(${yes.join('|')})(?:[.!?\\s]*)$`, 'i')
       : null,
     confirmNo: no.length
       ? new RegExp(`^(${no.join('|')})\\b`, 'i')

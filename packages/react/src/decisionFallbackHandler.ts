@@ -509,6 +509,10 @@ export function createDecisionFallbackHandler(
         replaceThinking(FALLBACK_UNAVAILABLE_REPLY);
         return;
       }
+      // Prefer a usable refuse reply from the provider over OOD rewrite / soft-fail.
+      const preferProviderRefuse =
+        result.proposed?.type === 'refuse' &&
+        Boolean(sanitizeFallbackReply(result.reply, text));
       const proposed = result.proposed;
       if (
         proposed &&
@@ -684,6 +688,9 @@ export function createDecisionFallbackHandler(
         ) {
           const stepId = result.proposed!.stepId!;
           replaceThinking(result.reply, stepChoices(deps.pack, [stepId]));
+        } else if (preferProviderRefuse) {
+          // Keep Laya/LLM refuse copy (audit P1: soft-fail when OOD rewrite discarded).
+          replaceThinking(result.reply);
         } else if (
           looksLikeClearOod(text) ||
           (/i can take you to/i.test(result.reply) &&

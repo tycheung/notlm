@@ -13,6 +13,7 @@ import type { DispatchDeps } from './dispatchDeps.js';
 import { launchStep } from './dispatchLaunch.js';
 import { dispatchParsed } from './dispatchParsed.js';
 import {
+  clearStalePendingConfirms,
   tryDispatchCapabilityCatalog,
   tryHandleContextAsk,
   tryHandleExplainLast,
@@ -101,9 +102,11 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
       return true;
     }
     if (run.finishRequested && run.draftKey && run.draft) {
+      // Prefer host-resolved named target (formatApplyEventName) over focused desk.
       const eventLabel =
         String(
-          live.ctx.data?.eventName ||
+          (run.draft as { formatApplyEventName?: unknown }).formatApplyEventName ||
+            live.ctx.data?.eventName ||
             live.ctx.data?.eventLabel ||
             (live.ctx.data?.eventId != null
               ? `event ${live.ctx.data.eventId}`
@@ -170,6 +173,9 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
     }
     return;
   }
+
+  // Stale Yes/Cancel must not steal the next product ask (e.g. "Confirm USBC…").
+  clearStalePendingConfirms(live, trimmed);
 
   const pendingDraft = tryHandlePendingDraftApply(live, trimmed);
   if (pendingDraft === true) return;
