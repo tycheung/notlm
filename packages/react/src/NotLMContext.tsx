@@ -139,10 +139,10 @@ export function NotLMProvider({
   const asyncFallbackOwnsPinRef = useRef(false);
   /** Sync gate so rapid multi-send cannot start overlapping turns. */
   const turnInFlightRef = useRef(false);
-  const queuedUtteranceRef = useRef<{
-    text: string;
-    opts?: { skipUserAppend?: boolean };
-  } | null>(null);
+  /** FIFO — rapid multi-send must not drop trailing prompts (single-slot overwrite). */
+  const queuedUtteranceRef = useRef<
+    Array<{ text: string; opts?: { skipUserAppend?: boolean } }>
+  >([]);
   const fallbackGenRef = useRef(0);
   const conversationPipelineRef = useRef<ConversationLogPipeline | null>(null);
   const phraseLruRef = useRef<PhraseLruStore>(createMemoryPhraseLru());
@@ -374,8 +374,7 @@ export function NotLMProvider({
         setFallbackBusy(false);
         clearTurnThreadPin();
         turnInFlightRef.current = false;
-        const queued = queuedUtteranceRef.current;
-        queuedUtteranceRef.current = null;
+        const queued = queuedUtteranceRef.current.shift();
         if (queued) {
           queueMicrotask(() =>
             handleUserUtteranceRef.current(queued.text, queued.opts)
@@ -429,7 +428,7 @@ export function NotLMProvider({
     abortRef.current?.abort();
     abortRef.current = null;
     fallbackGenRef.current += 1;
-    queuedUtteranceRef.current = null;
+    queuedUtteranceRef.current = [];
     turnInFlightRef.current = false;
     setFallbackBusy(false);
     setFallbackOwnsPin(false);
@@ -610,7 +609,13 @@ export function NotLMProvider({
         pushAssistant(roleCopy);
         coached = true;
       }
-      if (!coachCreate && nav.spotlight && features.spotlight !== false) {
+      // Ask-blocked: do not coachmark controls on the wrong page (false “opened”).
+      if (
+        !instructOnly &&
+        !coachCreate &&
+        nav.spotlight &&
+        features.spotlight !== false
+      ) {
         showSpotlight(nav.spotlight, nav.coachMessage ?? roleCopy ?? `Focus: ${stepId}`);
       }
       if (nav.spotlight) {
@@ -711,8 +716,7 @@ export function NotLMProvider({
       setFallbackBusy(false);
     }
     clearTurnThreadPin();
-    const queued = queuedUtteranceRef.current;
-    queuedUtteranceRef.current = null;
+    const queued = queuedUtteranceRef.current.shift();
     if (queued) {
       queueMicrotask(() =>
         handleUserUtteranceRef.current(queued.text, queued.opts)
@@ -729,7 +733,7 @@ export function NotLMProvider({
         fallbackBusy ||
         asyncFallbackOwnsPinRef.current
       ) {
-        queuedUtteranceRef.current = { text, opts };
+        queuedUtteranceRef.current.push({ text, opts });
         return;
       }
       turnInFlightRef.current = true;

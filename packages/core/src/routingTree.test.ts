@@ -40,6 +40,7 @@ describe('routingTree', () => {
     expect(inferPlaneHeuristic('How do I lock records?').plane).toBe('ask');
     expect(inferPlaneHeuristic('Open the checklist').plane).toBe('guide');
     expect(inferPlaneHeuristic('Create a new list named QA').plane).toBe('do');
+    expect(inferPlaneHeuristic('Yes, do it').plane).toBe('do');
   });
 
   it('laneFromRawIntent maps catalog shapes', () => {

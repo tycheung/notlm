@@ -305,7 +305,10 @@ export function tryHandlePendingMutationConfirm(
         })
       );
       if (answer) {
-        const ok = await settleAnswer(deps, answer);
+        // Plane must come from the original ask ("create tournament…"), not
+        // chip text ("Yes, do it") — otherwise soft-bias Ask blocks navigate.
+        const settleDeps = { ...deps, text: pending.text || deps.text };
+        const ok = await settleAnswer(settleDeps, answer);
         if (!ok) {
           // Write already ran — empty UI must not look like failure.
           deps.pushAssistant('Done.');

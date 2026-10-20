@@ -49,7 +49,19 @@ export function pushCatalogAnswer(deps: DispatchDeps, answer: QueryAnswer): void
     }
   }
   if (hasText || hasChips) {
-    deps.pushAssistant(answer.text, {
+    let textOut = answer.text;
+    // Never claim “Opening…” when Ask/plane gates block the actual navigate.
+    if (
+      blockNav &&
+      !willNav &&
+      !willStep &&
+      (answer.navigatePath || answer.stepId) &&
+      /^Opening\b/i.test(String(textOut ?? '').trim())
+    ) {
+      const copy = askModeInstructCopy(mode);
+      if (copy) textOut = copy;
+    }
+    deps.pushAssistant(textOut, {
       choices: answer.choices,
       links: answer.links,
     });

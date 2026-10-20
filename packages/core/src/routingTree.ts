@@ -162,6 +162,10 @@ export function inferPlaneHeuristic(
   ) {
     return { plane: 'ask', probability: 0.9, source: 'heuristic' };
   }
+  // Confirm chips continue the pending action plane (not Ask soft-bias).
+  if (/^(yes(?:[,\s]+do it)?|confirm|ok(?:ay)?|proceed|do it)\.?$/i.test(t)) {
+    return { plane: 'do', probability: 0.8, source: 'heuristic' };
+  }
   // Mutate-shaped commands
   if (
     /\b(create|delete|remove|apply|assign|save|regenerate|generate|lock|unlock|confirm)\b/i.test(

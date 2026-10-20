@@ -49,9 +49,8 @@ export function ChatComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            // Always submit (including whitespace-only) so the host can show a
-            // clarification instead of a silent no-op when Send is disabled.
-            if (!busy) onSubmit();
+            // Submit even while busy so rapid multi-send can FIFO-queue.
+            onSubmit();
           }
         }}
         rows={2}
@@ -120,17 +119,16 @@ export function ChatComposer({
             >
               {cancelLabel}
             </button>
-          ) : (
-            <button
-              type="button"
-              className="notlm-chat-btn notlm-chat-btn-primary"
-              onClick={onSubmit}
-              disabled={busy || !value.trim()}
-              data-testid="notlm-chat-send"
-            >
-              {sendLabel}
-            </button>
-          )}
+          ) : null}
+          <button
+            type="button"
+            className="notlm-chat-btn notlm-chat-btn-primary"
+            onClick={onSubmit}
+            disabled={!value.trim()}
+            data-testid="notlm-chat-send"
+          >
+            {sendLabel}
+          </button>
         </div>
       </div>
       {voiceEnabled && voiceError ? (

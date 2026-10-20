@@ -29,7 +29,8 @@ export function NotLMFab() {
     newThread,
   } = useNotLM();
   const [draft, setDraft] = useState('');
-  const queuedWhileBusy = useRef<string | null>(null);
+  /** FIFO composer queue while fallback/turn busy — do not overwrite. */
+  const queuedWhileBusy = useRef<string[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const voiceEnabled = features.voice !== false;
@@ -41,14 +42,14 @@ export function NotLMFab() {
   /** Direct utterance (chip/voice) supersedes any composer queue waiting on busy. */
   const utterNow = useCallback(
     (text: string) => {
-      queuedWhileBusy.current = null;
+      queuedWhileBusy.current = [];
       handleUserUtterance(text);
     },
     [handleUserUtterance]
   );
 
   const cancelNow = useCallback(() => {
-    queuedWhileBusy.current = null;
+    queuedWhileBusy.current = [];
     cancelFallback();
   }, [cancelFallback]);
 
@@ -63,14 +64,13 @@ export function NotLMFab() {
 
   // Drop queued composer text on thread switch or fallback cancel/preempt.
   useEffect(() => {
-    queuedWhileBusy.current = null;
+    queuedWhileBusy.current = [];
   }, [activeThreadId, composerQueueBustGen]);
 
   useEffect(() => {
     if (fallbackInFlight) return;
-    const queued = queuedWhileBusy.current?.trim();
+    const queued = queuedWhileBusy.current.shift()?.trim();
     if (!queued) return;
-    queuedWhileBusy.current = null;
     handleUserUtterance(queued);
   }, [fallbackInFlight, handleUserUtterance]);
 
@@ -96,12 +96,8 @@ export function NotLMFab() {
       handleUserUtterance(' ');
       return;
     }
-    if (fallbackInFlight) {
-      queuedWhileBusy.current = text;
-      setDraft('');
-      return;
-    }
     setDraft('');
+    // Context FIFO-queues when a turn/fallback is in flight (no single-slot drop).
     handleUserUtterance(text);
   };
 
@@ -142,7 +138,7 @@ export function NotLMFab() {
         void navigator.clipboard?.writeText?.(text);
       }}
       onRegenerate={() => {
-        queuedWhileBusy.current = null;
+        queuedWhileBusy.current = [];
         regenerateLastFallback();
       }}
       regenerateLabel={labels?.regenerateLabel}
