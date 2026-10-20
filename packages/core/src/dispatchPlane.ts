@@ -4,8 +4,10 @@
 
 import {
   askModeInstructCopy,
+  elevatePlane,
   modeBlocksAutoNavigate,
   modeBlocksMutations,
+  planeRequiredByHeads,
   resolveInteractionMode,
   type InteractionMode,
 } from './interactionMode.js';
@@ -101,11 +103,20 @@ export function annotateParseWithTree(
           faqDomainTokens: pack.faqDomainTokens,
           heuristics: pack.compiledHeuristics,
         });
-  const { plane, usedChromeBias } = resolveEffectivePlane(
+  let { plane, usedChromeBias } = resolveEffectivePlane(
     inferred,
     chrome,
     pack.routingTree
   );
+  // Silent elevate: matched action heads force the plane needed to run them.
+  const required = planeRequiredByHeads(parsed);
+  if (required) {
+    const elevated = elevatePlane(plane, required);
+    if (elevated !== plane) {
+      plane = elevated;
+      usedChromeBias = false;
+    }
+  }
   const mutationRisk =
     parsed.mutationId && Array.isArray(pack.mutations)
       ? pack.mutations.find((m) => m.id === parsed.mutationId)?.risk
@@ -197,16 +208,6 @@ export function resolveDispatchPlane(input: {
 }): DispatchPlaneContext {
   const chrome = resolveInteractionMode(input.session, input.features);
   const treeEnabled = isRoutingTreeEnabled(input.features, input.pack);
-  if (!treeEnabled) {
-    return {
-      mode: chrome,
-      plane: chrome,
-      usedChromeBias: false,
-      blockNav: modeBlocksAutoNavigate(chrome),
-      blockMutate: modeBlocksMutations(chrome),
-      treeEnabled: false,
-    };
-  }
   let parsed = input.parsed ?? {
     stepId: null,
     slotPatches: {},
@@ -214,6 +215,18 @@ export function resolveDispatchPlane(input: {
     goBack: false,
     rawIntent: null,
   };
+  if (!treeEnabled) {
+    const required = planeRequiredByHeads(parsed);
+    const mode = required ? elevatePlane(chrome, required) : chrome;
+    return {
+      mode,
+      plane: mode,
+      usedChromeBias: false,
+      blockNav: modeBlocksAutoNavigate(mode),
+      blockMutate: modeBlocksMutations(mode),
+      treeEnabled: false,
+    };
+  }
   parsed = annotateParseWithTree(parsed, input.text, input.pack, chrome);
   const plane = parsed.plane ?? 'ask';
   return {

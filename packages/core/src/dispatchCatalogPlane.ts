@@ -1,6 +1,9 @@
 /**
  * ADR-011: early capability-catalog hits must honor plane masks and not steal
  * conceptual how-tos into mutation opens.
+ *
+ * Matched mutations/tours silently elevate the plane for the turn — never
+ * preach Ask/Guide/Do switch copy to the user.
  */
 import type { MutationDef } from './capabilityCatalog.js';
 import type { DispatchDeps } from './dispatchDeps.js';
@@ -9,7 +12,6 @@ import {
   resolveDispatchPlane,
   type DispatchPlaneContext,
 } from './dispatchPlane.js';
-import { askModeInstructCopy } from './interactionMode.js';
 import { DEFAULT_HEURISTICS } from './heuristics.js';
 import { laneAllowed } from './routingTree.js';
 import { isConceptualQuestion } from './utteranceIntent.js';
@@ -18,7 +20,7 @@ export type EarlyCatalogPlaneGate = {
   mutationHit: MutationDef | undefined;
   tourWork: boolean;
   searchWork: boolean;
-  /** When set, caller should pushAssistant and return true (handled). */
+  /** @deprecated Always null — planes elevate silently. */
   instructCopy: string | null;
 };
 
@@ -35,12 +37,22 @@ export function gateEarlyCatalogByPlane(input: {
   let { mutationHit, tourWork, searchWork } = input;
   const { deps, trimmed } = input;
   const treeOn = isRoutingTreeEnabled(deps.features, deps.pack);
-  const planeCtx: DispatchPlaneContext | null = treeOn
+  let planeCtx: DispatchPlaneContext | null = treeOn
     ? resolveDispatchPlane({
         session: deps.session,
         features: deps.features,
         pack: deps.pack,
         text: trimmed,
+        parsed: mutationHit
+          ? {
+              stepId: null,
+              slotPatches: {},
+              isCorrection: false,
+              goBack: false,
+              rawIntent: 'mutation',
+              mutationId: mutationHit.id,
+            }
+          : undefined,
       })
     : null;
   const heuristics = deps.pack.compiledHeuristics ?? DEFAULT_HEURISTICS;
@@ -54,30 +66,57 @@ export function gateEarlyCatalogByPlane(input: {
   if (mutationHit && planeCtx?.treeEnabled) {
     const mutLane =
       mutationHit.risk === 'high' ? 'mutation_high_risk' : 'mutation';
+    // Silent elevate already applied via parsed.mutationId; keep hit.
     if (
-      planeCtx.blockMutate ||
-      !laneAllowed(planeCtx.plane, mutLane, deps.pack.routingTree)
+      !laneAllowed(planeCtx.plane, mutLane, deps.pack.routingTree) &&
+      !input.forcedMutationId
     ) {
-      if (!input.forcedMutationId) {
-        const copy = askModeInstructCopy(planeCtx.mode);
-        if (copy) {
-          return {
-            mutationHit: undefined,
-            tourWork,
-            searchWork,
-            instructCopy: copy,
-          };
-        }
-        mutationHit = undefined;
-      }
+      // Re-resolve at do if mask still rejects (custom pack masks).
+      planeCtx = resolveDispatchPlane({
+        session: deps.session,
+        features: deps.features,
+        pack: deps.pack,
+        text: trimmed,
+        parsed: {
+          stepId: null,
+          slotPatches: {},
+          isCorrection: false,
+          goBack: false,
+          rawIntent: 'mutation',
+          mutationId: mutationHit.id,
+          plane: 'do',
+          planeProbability: 1,
+        },
+      });
     }
+    void planeCtx;
   }
   if (tourWork && planeCtx?.treeEnabled && !input.forcedTourId) {
     if (
       planeCtx.blockNav ||
       !laneAllowed(planeCtx.plane, 'tour', deps.pack.routingTree)
     ) {
-      tourWork = false;
+      // Elevate for tour: re-check with guide head.
+      const elevated = resolveDispatchPlane({
+        session: deps.session,
+        features: deps.features,
+        pack: deps.pack,
+        text: trimmed,
+        parsed: {
+          stepId: null,
+          slotPatches: {},
+          isCorrection: false,
+          goBack: false,
+          rawIntent: 'tour',
+          tourId: 'tour',
+        },
+      });
+      if (
+        elevated.blockNav ||
+        !laneAllowed(elevated.plane, 'tour', deps.pack.routingTree)
+      ) {
+        tourWork = false;
+      }
     }
   }
   if (searchWork && planeCtx?.treeEnabled && !input.forcedSearchId) {
@@ -85,7 +124,26 @@ export function gateEarlyCatalogByPlane(input: {
       planeCtx.blockNav ||
       !laneAllowed(planeCtx.plane, 'search', deps.pack.routingTree)
     ) {
-      searchWork = false;
+      const elevated = resolveDispatchPlane({
+        session: deps.session,
+        features: deps.features,
+        pack: deps.pack,
+        text: trimmed,
+        parsed: {
+          stepId: null,
+          slotPatches: {},
+          isCorrection: false,
+          goBack: false,
+          rawIntent: 'search',
+          searchId: 'search',
+        },
+      });
+      if (
+        elevated.blockNav ||
+        !laneAllowed(elevated.plane, 'search', deps.pack.routingTree)
+      ) {
+        searchWork = false;
+      }
     }
   }
   return { mutationHit, tourWork, searchWork, instructCopy: null };

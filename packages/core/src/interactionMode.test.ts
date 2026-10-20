@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   askModeInstructCopy,
+  elevatePlane,
   modeBlocksAutoNavigate,
   modeBlocksMutations,
+  planeRequiredByHeads,
   resolveInteractionMode,
 } from './interactionMode.js';
 
@@ -31,9 +33,18 @@ describe('interactionMode', () => {
     expect(modeBlocksMutations('do')).toBe(false);
   });
 
-  it('instruct copy is mode-specific', () => {
-    expect(askModeInstructCopy('ask')).toMatch(/Ask mode/i);
-    expect(askModeInstructCopy('guide')).toMatch(/Guide mode/i);
+  it('instruct copy is always null (planes are silent)', () => {
+    expect(askModeInstructCopy('ask')).toBeNull();
+    expect(askModeInstructCopy('guide')).toBeNull();
     expect(askModeInstructCopy('do')).toBeNull();
+  });
+
+  it('elevatePlane and planeRequiredByHeads', () => {
+    expect(elevatePlane('ask', 'guide')).toBe('guide');
+    expect(elevatePlane('guide', 'do')).toBe('do');
+    expect(elevatePlane('do', 'ask')).toBe('do');
+    expect(planeRequiredByHeads({ mutationId: 'x' })).toBe('do');
+    expect(planeRequiredByHeads({ stepId: 's' })).toBe('guide');
+    expect(planeRequiredByHeads({})).toBeNull();
   });
 });

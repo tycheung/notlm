@@ -29,7 +29,6 @@ import {
   type PendingMutationConfirm,
 } from './confirmSession.js';
 import type { DispatchDeps } from './dispatchDeps.js';
-import { askModeInstructCopy } from './interactionMode.js';
 import { resolveDispatchPlane } from './dispatchPlane.js';
 import { gateEarlyCatalogByPlane } from './dispatchCatalogPlane.js';
 import {
@@ -116,11 +115,12 @@ export function tryHandlePendingDraftApplyPick(
     return { ...s, flags };
   });
   deps.pushAssistant(
-    `Ready to save this format and apply it to “${chosen.name}” (event ${chosen.id}). This replaces the current rounds, squads, and advancement links on that event. Continue?`,
+    `Ready to save this format and apply it to “${chosen.name}” (event ${chosen.id}). This replaces the current rounds, squads, and advancement links on that event. Continue? Say Undo to cancel.`,
     {
       choices: [
         { id: 'confirm_yes', label: 'Yes, do it' },
         { id: 'confirm_no', label: 'Cancel' },
+        { id: 'confirm_undo', label: 'Undo' },
       ],
     }
   );
@@ -582,15 +582,21 @@ export function tryDispatchCapabilityCatalog(
             features: deps.features,
             pack: deps.pack,
             text: trimmed,
+            parsed: {
+              stepId: hit.stepId,
+              slotPatches: {},
+              isCorrection: false,
+              goBack: false,
+              rawIntent: 'mutation',
+              mutationId: hit.id,
+            },
           });
           if (gate.blockMutate || gate.blockNav) {
-            const copy = askModeInstructCopy(gate.mode);
-            if (copy) deps.pushAssistant(copy);
-            else {
-              deps.pushAssistant(
-                `I can explain “${hit.title}” — switch to Do to open it.`
-              );
-            }
+            // Planes elevate silently when mutationId is on the parse; if still
+            // blocked (custom mask), explain without Ask/Guide/Do chrome talk.
+            deps.pushAssistant(
+              `I can help with “${hit.title}” once this desk allows that action.`
+            );
             return true;
           }
           deps.pushAssistant(`Opening “${hit.title}”.`);
@@ -664,6 +670,7 @@ export function tryDispatchCapabilityCatalog(
             choices: [
               { id: 'confirm_yes', label: 'Yes, do it' },
               { id: 'confirm_no', label: 'Cancel' },
+              { id: 'confirm_undo', label: 'Undo' },
             ],
           }
         );

@@ -13,8 +13,6 @@ import {
   utteranceMatchesTypedCatalog,
   mintConversationId,
   createMemoryPhraseLru,
-  askModeInstructCopy,
-  modeBlocksAutoNavigate,
   resolveInteractionMode,
   type AssistantFeatures,
   type InteractionMode,
@@ -544,9 +542,9 @@ export function NotLMProvider({
         writeDraft(pack.id, nav.draftKey, mergedPrefill);
       }
 
-      const mode = resolveInteractionMode(sessionRef.current, features);
-      const instructOnly =
-        Boolean(opts?.forceInstructOnly) || modeBlocksAutoNavigate(mode);
+      // Planes are silent: once executeStep runs, open the step. forceInstructOnly
+      // remains for explicit coach-only demos — never preach Ask/Guide/Do chrome.
+      const instructOnly = Boolean(opts?.forceInstructOnly);
       runBeforeOpen(nav);
       if (!instructOnly && nav.path) {
         navigate(nav.path, nav.search ? { search: nav.search } : undefined);
@@ -593,13 +591,11 @@ export function NotLMProvider({
         Boolean(surfaceKey);
       const roleCopy = coachCopyForRole(nav, stepId);
       let coached = false;
-      if (instructOnly && modeBlocksAutoNavigate(mode)) {
-        const askCopy = askModeInstructCopy(mode);
+      if (instructOnly) {
         const tip =
           nav.coachMessage ??
           roleCopy ??
-          askCopy ??
-          `To open “${stepId}”, switch to Guide or Do mode.`;
+          `Here’s how to open “${stepId}” from this page.`;
         pushAssistant(tip);
         coached = true;
       } else if (!skipCoach && nav.coachMessage) {
@@ -609,7 +605,6 @@ export function NotLMProvider({
         pushAssistant(roleCopy);
         coached = true;
       }
-      // Ask-blocked: do not coachmark controls on the wrong page (false “opened”).
       if (
         !instructOnly &&
         !coachCreate &&

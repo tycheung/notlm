@@ -174,10 +174,44 @@ export function jailbreakOnlyInNamedPayload(utterance: string): boolean {
   return jailIdx >= createOpen.index + createOpen[0].length;
 }
 
+/**
+ * Drop leading “ignore previous instructions and …” chrome when a product
+ * action remains. Pure prompt-dump probes are left intact for refuse.
+ */
+const JAILBREAK_LEAD_RE =
+  /^(?:please\s+)?ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|rules|prompts)\s*(?:and|,)\s*/i;
+
+export function stripJailbreakLeadKeepProduct(utterance: string): string {
+  const raw = utterance.trim();
+  if (!raw) return raw;
+  const m = raw.match(JAILBREAK_LEAD_RE);
+  if (!m) return raw;
+  const rest = raw.slice(m[0].length).trim();
+  if (!rest) return raw;
+  // Remainder is still a prompt/PII dump — keep full string for refuse.
+  const restN = normalizeAsk(rest) || rest;
+  if (
+    /\b(print|show|reveal|dump|leak|output)\b.{0,40}\b(system |developer |hidden )?(prompt|instructions|rules)\b/i.test(
+      restN
+    ) ||
+    /\b(print|show|reveal|dump|leak|output|list)\b.{0,60}\b(bowler |user |director )?(ssns?|social security(?: numbers?)?|passwords?)\b/i.test(
+      restN
+    )
+  ) {
+    return raw;
+  }
+  return rest;
+}
+
 export function looksLikeJailbreakProbe(utterance: string): boolean {
-  const n = normalizeAsk(utterance);
+  const stripped = stripJailbreakLeadKeepProduct(utterance);
+  const n = normalizeAsk(stripped);
   if (!n) return false;
-  if (jailbreakOnlyInNamedPayload(utterance)) return false;
+  if (jailbreakOnlyInNamedPayload(stripped)) return false;
+  // Leading chrome already removed and remainder is product-shaped.
+  if (stripped !== utterance.trim() && !JAILBREAK_PROBE_RE.test(n)) {
+    return false;
+  }
   return JAILBREAK_PROBE_RE.test(n);
 }
 

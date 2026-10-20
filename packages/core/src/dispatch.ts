@@ -29,6 +29,7 @@ import {
   looksLikeJailbreakProbe,
   looksLikeMarkupOrEmptyProbe,
   stripDangerousMarkup,
+  stripJailbreakLeadKeepProduct,
 } from './askNormalize.js';
 import {
   looksLikeNavCommand,
@@ -169,6 +170,7 @@ function tryDraftCompilers(live: DispatchDeps): boolean {
           choices: [
             { id: 'confirm_yes', label: 'Yes, do it' },
             { id: 'confirm_no', label: 'Cancel' },
+            { id: 'confirm_undo', label: 'Undo' },
           ],
         }
       );
@@ -255,6 +257,8 @@ export function dispatchUserUtterance(deps: DispatchDeps): void | Promise<void> 
   }
   // Drop inert injection chrome; keep trailing product how-tos for FAQ / steps.
   trimmed = stripDangerousMarkup(trimmed) || trimmed;
+  // “Ignore previous instructions and delete …” → keep the product act.
+  trimmed = stripJailbreakLeadKeepProduct(trimmed) || trimmed;
 
   // Jailbreak probes before draft/catalog — must never queue steps or navigate.
   // (General topic-bag OOD stays later so mixed “create X and muffin” can pack.)

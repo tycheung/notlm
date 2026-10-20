@@ -349,8 +349,9 @@ describe('capability dispatch', () => {
     expect(deps.executed).toContain('create_record');
   });
 
-  it('tree ask plane: does not open low-risk mutation via early catalog', async () => {
-    // Alias wording avoids mutate/nav heuristics so Stage0 stays ask.
+  it('tree ask chrome: silent-elevates and opens low-risk mutation', async () => {
+    // Alias wording avoids mutate/nav heuristics so Stage0 stays ask;
+    // matched mutation still elevates plane silently (no preach copy).
     const treePack = loadPackFromJson({
       manifest: { id: 'cap-tree' },
       flow: pack.steps,
@@ -383,8 +384,10 @@ describe('capability dispatch', () => {
       'run the prefill helper'
     );
     expect(handled).toBe(true);
-    expect(deps.executed).toHaveLength(0);
-    expect(deps.assistant.join(' ')).toMatch(/Ask mode|Guide mode|switch to Do/i);
+    expect(deps.executed).toContain('create_record');
+    expect(deps.assistant.join(' ')).not.toMatch(
+      /Ask mode|Guide mode|switch to Do/i
+    );
   });
 
   it('conceptual how-to does not early-open mutation aliases', async () => {
